@@ -17,6 +17,28 @@
 
 ---
 
+## Phiên 07 — 2026-11-18 19:25 | Thành viên: M3 (Backend & DB) | Task: `T-M3-01`, `T-M3-02`, `T-M3-03`, `T-M3-04`, `T-M3-05`
+- **Mục tiêu phiên:** Triển khai và nghiệm thu hoàn tất toàn bộ 5 tasks Sprint 1 của Thành viên M3 (`T-M3-01` đến `T-M3-05`), giữ nguyên các file `[LOCKED STUB]` (`requirements.txt`, `app/main.py`, `.gitignore`).
+- **Những file đã tạo / chỉnh sửa:**
+  - Hạ tầng & Auth (`T-M3-01`, `T-M3-03`): `backend/docker-compose.yml` (cập nhật image MinIO sang `cgr.dev/chainguard/minio:latest`), `backend/app/core/config.py`, `backend/app/core/security.py`, `backend/app/core/dependencies.py`, `backend/app/schemas/core_schemas.py` (dùng `StringConstraints` kiểm tra email không phụ thuộc `email-validator`), `backend/app/services/auth_service.py`, `backend/app/routers/auth.py`.
+  - Migration & Seed (`T-M3-02`, `T-M3-05`): `backend/alembic.ini`, `backend/alembic/env.py`, `backend/alembic/script.py.mako`, `backend/alembic/versions/0001_initial_schema.py`, `backend/app/db/seed_catalog_and_exercises.py` (36 món VNFood/USDA + 30 bài tập 3D chuẩn 11 `Mat_Muscle_*` + 4 giáo án mẫu), `backend/app/db/seed_demo_history.py` (30 ngày lịch sử cho M4).
+  - Privacy & CH Play (`T-M3-04`): `backend/app/services/storage_service.py`, `backend/app/routers/users.py` (`GET /me`, `GET /me/export`, `DELETE /me`, `POST /delete-via-web`).
+  - Kiểm thử & Tiến độ: `backend/tests/test_core_api.py`, `docs/taskboard.md` (đánh dấu `[x]` toàn bộ 5 tasks Sprint 1 của M3 sau khi người dùng xác nhận nghiệm thu).
+- **Quyết định kỹ thuật / Lưu ý quan trọng:**
+  - Chuyển image MinIO sang `cgr.dev/chainguard/minio:latest` do `minio/minio` và `quay.io/minio/minio` đã khóa anonymous pull.
+  - Dùng `StringConstraints` của Pydantic v2 cho kiểu `EmailAddress` để không phải sửa file `[LOCKED STUB]` `requirements.txt`.
+  - `TokenResponse` trả kèm object `user` (`UserProfileResponse`) khớp 100% với `AuthRepository` của M1.
+  - `get_current_user` truy vấn lại `User` trong DB trên mỗi request để bảo đảm sau khi `DELETE /api/v1/users/me`, token cũ lập tức trả về `401 Unauthorized`.
+- **Kiểm tra / Kết quả chạy thử:**
+  - `docker compose up -d --build`: Thành công (PostgreSQL 16 + Chainguard MinIO + FastAPI).
+  - `docker compose exec api alembic upgrade head`: Thành công (tạo đủ 12 bảng + Indexes).
+  - `docker compose exec api python -m app.db.seed_demo_history`: Thành công (seed 36 món ăn, 30 bài tập 3D, 4 giáo án mẫu và 30 ngày lịch sử cho `demo@vigorai.app`).
+  - `docker compose exec api pytest tests/test_core_api.py -v`: Pass toàn bộ test cases.
+- **Việc cần làm ở phiên kế tiếp:**
+  - M3 chuyển sang triển khai Sprint 2 (`T-M3-06` đến `T-M3-10`: Sync Engine Push/Pull LWW, API Health, API Exercises CDN, API Routines/Workouts và Analytics Summary).
+
+---
+
 ## Phiên 06 — 2026-11-18 16:04 | Thành viên: M1 | Task: Cài đặt Flutter SDK & Kiểm tra `flutter pub get` / `flutter analyze`
 - **Mục tiêu phiên:** Cài đặt Flutter SDK (`stable`) vào máy và chạy kiểm chứng mã nguồn `mobile/`.
 - **Những thay đổi đã thực hiện:**

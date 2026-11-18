@@ -12,7 +12,11 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 15
     REFRESH_TOKEN_EXPIRE_DAYS: int = 30
     S3_ENDPOINT_URL: str = "http://localhost:9000"
+    S3_ACCESS_KEY: str = "minioadmin"
+    S3_SECRET_KEY: str = "minioadmin_password"
     S3_BUCKET_NAME: str = "gym3d-assets"
+    S3_REGION: str = "us-east-1"
+    S3_PUBLIC_BASE_URL: str = "http://localhost:9000/gym3d-assets"
     CORS_ORIGINS: list[str] = ["*"]
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")

@@ -1,7 +1,9 @@
 # [OWNER: M3] Bao mat JWT & bam mat khau Argon2/bcrypt
+import uuid
 from datetime import datetime, timedelta, timezone
+from typing import Any
 
-from jose import jwt
+from jose import JWTError, jwt
 from passlib.context import CryptContext
 
 from app.core.config import settings
@@ -22,7 +24,48 @@ def create_access_token(subject: str) -> str:
         minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES
     )
     return jwt.encode(
-        {"sub": subject, "exp": expire, "type": "access"},
+        {
+            "sub": subject,
+            "exp": expire,
+            "type": "access",
+            "jti": str(uuid.uuid4()),
+        },
         settings.JWT_SECRET_KEY,
         algorithm=settings.JWT_ALGORITHM,
     )
+
+
+def create_refresh_token(subject: str) -> str:
+    expire = datetime.now(timezone.utc) + timedelta(
+        days=settings.REFRESH_TOKEN_EXPIRE_DAYS
+    )
+    return jwt.encode(
+        {
+            "sub": subject,
+            "exp": expire,
+            "type": "refresh",
+            "jti": str(uuid.uuid4()),
+        },
+        settings.JWT_SECRET_KEY,
+        algorithm=settings.JWT_ALGORITHM,
+    )
+
+
+def decode_token(token: str, expected_type: str | None = None) -> dict[str, Any]:
+    """Giai ma va kiem tra chu ky, han dung va loai JWT token."""
+    try:
+        payload = jwt.decode(
+            token,
+            settings.JWT_SECRET_KEY,
+            algorithms=[settings.JWT_ALGORITHM],
+        )
+    except JWTError as exc:
+        raise ValueError("Token khong hop le hoac da het han.") from exc
+
+    if expected_type is not None and payload.get("type") != expected_type:
+        raise ValueError("Loai token khong hop le.")
+
+    if not payload.get("sub"):
+        raise ValueError("Token thieu dinh danh nguoi dung.")
+
+    return payload
