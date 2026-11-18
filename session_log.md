@@ -17,6 +17,43 @@
 
 ---
 
+## Phiên 06 — 2026-11-18 16:04 | Thành viên: M1 | Task: Cài đặt Flutter SDK & Kiểm tra `flutter pub get` / `flutter analyze`
+- **Mục tiêu phiên:** Cài đặt Flutter SDK (`stable`) vào máy và chạy kiểm chứng mã nguồn `mobile/`.
+- **Những thay đổi đã thực hiện:**
+  - Cài đặt **Flutter 3.50.0 (channel stable)** & **Dart 3.14.0** tại `C:\Users\tranh\flutter` và thêm `C:\Users\tranh\flutter\bin` vào User `PATH`.
+  - Sửa lỗi cú pháp `_ = source;` trong `mobile/lib/core/platform/photo_picker_service.dart` và cập nhật `value:` $\rightarrow$ `initialValue:` trong `mobile/lib/features/auth_privacy/presentation/register_screen.dart` do `flutter analyze` phát hiện.
+  - Cập nhật trạng thái kiểm chứng trong `docs/taskboard.md`.
+- **Kiểm tra / Kết quả chạy thử:**
+  - `flutter pub get`: Thành công (tải 152 packages).
+  - `dart run build_runner build --delete-conflicting-outputs`: Chạy xong trong 64s (49 outputs); ghi nhận cảnh báo cần bỏ comment `part 'app_database.g.dart';` trong `[LOCKED STUB]` `app_database.dart` khi nhóm kích hoạt Drift generated class.
+  - `flutter analyze --no-fatal-infos`: Exit code `0` (0 error, 0 warning; chỉ còn 9 info deprecation của `package:flutter/material.dart` trên Flutter 3.50.0).
+  - `flutter doctor`: Flutter & Chrome OK; máy chưa cài Android Studio / Android SDK (`Unable to locate Android SDK`).
+- **Việc cần làm ở phiên kế tiếp:**
+  - Cài đặt **Android Studio + Android SDK (API 35 & NDK 27)** để chạy `flutter run --dart-define=USE_MOCK_API=true` trên máy ảo Android.
+
+---
+
+## Phiên 05 — 2026-11-18 15:52 | Thành viên: M1 (Mobile Core & Health) | Task: `T-M1-01`, `T-M1-02`, `T-M1-03`, `T-M1-04`, `T-M1-05`
+- **Mục tiêu phiên:** Triển khai toàn bộ 5 tasks của Thành viên M1 trong Sprint 1 (`T-M1-01` đến `T-M1-05`) tuân thủ ranh giới `[OWNER: M1]` và không chỉnh sửa `[LOCKED STUB]`.
+- **Những file đã tạo / chỉnh sửa:**
+  - Core (`T-M1-01`): `mobile/lib/core/theme/app_theme.dart`, `mobile/lib/core/network/dio_client.dart` (tích hợp `AuthInterceptor` + `MockApiInterceptor` + `FlutterSecureStorage`), `mobile/lib/core/router/health_routes.dart` (`/onboarding`, `/login`, `/register`, `/health`).
+  - Android & CH Play (`T-M1-02`): `mobile/android/app/src/main/AndroidManifest.xml` (bổ sung `ViewPermissionUsageActivity`), `mobile/android/app/build.gradle.kts` (`com.vigorai.app`, `minSdk = 26`, `targetSdk = 35`, NDK `27.0.12077973`, `arm64-v8a` & `x86_64`, `max-page-size=16384`, `useLegacyPackaging = false`, R8 minify), `mobile/android/settings.gradle.kts`, `mobile/android/gradle.properties`.
+  - DB & Platform (`T-M1-03`): `mobile/lib/core/database/health_tables.drift.dart` (bổ sung Domain Models, công thức BMI WHO Châu Á, nước thông minh, Mifflin-St Jeor), `mobile/lib/core/platform/photo_picker_service.dart` (kiểm tra `< 300 KB`, lưu riêng tư tại `getApplicationDocumentsDirectory()/progress_photos/`, hàm xóa sạch).
+  - Auth & Medical Disclaimer (`T-M1-04` / `F26`): `mobile/lib/features/auth_privacy/data/auth_repository.dart`, `mobile/lib/features/auth_privacy/presentation/auth_controller.dart`, `onboarding_disclaimer_screen.dart`, `login_screen.dart`, `register_screen.dart`.
+  - Mock Data & Health Dashboard (`T-M1-05`): `mobile/assets/mock_json/mock_m1_health.json`, `mobile/assets/mock_json/mock_m1.json`, `mobile/lib/features/health/data/health_repository.dart`, `mobile/lib/features/health/presentation/health_dashboard_screen.dart`.
+  - Quản lý tiến độ: `docs/taskboard.md` (`T-M1-02` đạt `[x]`, `T-M1-01`/`03`/`04`/`05` ở trạng thái `[~]` code xong chờ Flutter SDK chạy build/run).
+- **Quyết định kỹ thuật / Lưu ý quan trọng:**
+  - Giữ nguyên `[LOCKED STUB]` (`pubspec.yaml`, `main.dart`, `app_database.dart`, `app_router.dart`) để tránh conflict với `M2`/`M3`/`M4`.
+  - Sửa tên kiểu cột `FloatColumn` thành `RealColumn` (kiểu chuẩn của Drift) trong `health_tables.drift.dart`.
+- **Kiểm tra / Kết quả chạy thử:**
+  - Đã kiểm tra JSON hợp lệ (`mock_m1_health.json`, `mock_m1.json`), kiểm tra XML `AndroidManifest.xml` (đủ Health Connect & chặn 6 quyền cấm bằng `tools:node="remove"`), và kiểm tra `build.gradle.kts` (`minSdk=26`, `targetSdk=35`, 16KB page size, 64-bit).
+  - Máy hiện tại chưa có `flutter`/`dart` trong `PATH` nên chưa chạy `flutter pub get`, `build_runner`, `flutter analyze` và `flutter run`.
+- **Việc cần làm ở phiên kế tiếp:**
+  - Trên máy có cài Flutter SDK: chạy `cd mobile && flutter pub get && dart run build_runner build && flutter analyze && flutter run --dart-define=USE_MOCK_API=true` để nghiệm thu đóng `[x]` cho `T-M1-01`, `T-M1-03`, `T-M1-04`, `T-M1-05`.
+  - Sau khi xong Sprint 1, M1 chuyển sang Sprint 2 (`T-M1-06` – `T-M1-11`).
+
+---
+
 ## Phiên 04 — 2026-11-18 15:16 | Thành viên: Toàn nhóm (Tài liệu gốc) | Task: Tạo `README.md` dự án VigorAI
 - **Mục tiêu phiên:** Thiết kế file `README.md` tại thư mục gốc cho dự án **VigorAI** chuẩn GitHub Showcase.
 - **Những file đã tạo / chỉnh sửa:**
