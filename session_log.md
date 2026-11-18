@@ -17,6 +17,16 @@
 
 ---
 
+## Phiên 04 — 2026-11-18 15:16 | Thành viên: Toàn nhóm (Tài liệu gốc) | Task: Tạo `README.md` dự án VigorAI
+- **Mục tiêu phiên:** Thiết kế file `README.md` tại thư mục gốc cho dự án **VigorAI** chuẩn GitHub Showcase.
+- **Những file đã tạo / chỉnh sửa:**
+  - `README.md`: Header badges, 3 trụ cột công nghệ, sơ đồ kiến trúc Mermaid & vòng lặp AI khép kín, bảng 26 chức năng, cấu trúc Monorepo Team 4 người, Quick Start và bảng tuân thủ CH Play.
+  - `session_log.md`: Ghi nhận Phiên 04.
+- **Việc cần làm ở phiên kế tiếp:**
+  - Chạy `git init`, tạo nhánh `develop` và bắt đầu triển khai các task Sprint 1 trong `docs/taskboard.md`.
+
+---
+
 ## Phiên 03 — 2026-11-18 15:12 | Thành viên: Toàn nhóm (Đồng bộ thương hiệu) | Task: Chốt tên dự án chính thức `VigorAI`
 - **Mục tiêu phiên:** Chốt tên dự án chính thức thành **VigorAI** (`VigorAI: 3D Gym & Health Log`) và đồng bộ toàn bộ tài liệu + file khai báo ứng dụng.
 - **Những file đã chỉnh sửa:**
