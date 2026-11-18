@@ -14,9 +14,9 @@
 | :--- | :--- | :---: | :---: | :---: | :---: | :---: | :---: |
 | **M1** | Mobile Core & Health (Flutter) | 5 | 6 | 3 | 3 | **17** | `1 / 17 Done · 4 / 17 Code Ready (Chờ Flutter SDK)` |
 | **M2** | 3D Blender MCP & Gym Execution | 5 | 6 | 3 | 3 | **17** | `0 / 17 (0%)` |
-| **M3** | Backend FastAPI & PostgreSQL | 5 | 5 | 3 | 2 | **15** | `0 / 15 (0%)` |
+| **M3** | Backend FastAPI & PostgreSQL | 5 | 5 | 3 | 2 | **15** | `5 / 15 Done (33.3% — Hoàn tất Sprint 1)` |
 | **M4** | AI Engineer & Data Analytics | 5 | 4 | 4 | 2 | **15** | `0 / 15 (0%)` |
-| **Tổng cộng** | **Toàn đội (4 thành viên)** | **20** | **21** | **13** | **10** | **64** | **`1 / 64 Done · 4 / 64 Code Ready`** |
+| **Tổng cộng** | **Toàn đội (4 thành viên)** | **20** | **21** | **13** | **10** | **64** | **`6 / 64 Done · 4 / 64 Code Ready`** |
 
 ### 1.2. Bảng Ánh xạ 26 Chức năng (`F01`–`F26`) sang Mã Task
 
@@ -72,16 +72,17 @@
 | `[ ]` | **T-M2-03:** Xây dựng widget tái sử dụng **`Muscle3DViewerWidget`** (`model_viewer_plus` + JS Bridge xoay 360°, Pinch-to-Zoom, 4 nút góc nhìn Front/Side/Back/Top). | `F07`, `F08` | `mobile/lib/features/gym3d/presentation/widgets/muscle_3d_viewer_widget.dart` | Xuất interface sạch nhận `glbPath` & `muscleColorsMap` để M4 dùng sau cho `F23`. | Xoay 360° mượt trên máy Android thật; 4 nút chuyển góc nhìn hoạt động trong `< 300ms`. |
 | `[ ]` | **T-M2-04:** Viết `workout_tables.drift.dart`, `gym3d_workout_routes.dart` & file `mock_m2_exercises.json` cho 5 bài tập đầu. | `INFRA` | `mobile/lib/core/database/workout_tables.drift.dart`, `mobile/lib/core/router/gym3d_workout_routes.dart`, `mobile/assets/mock_json/mock_m2_exercises.json` | Dùng dữ liệu JSON tĩnh không cần đợi API `/api/v1/exercises` từ M3. | Drift sinh bảng `exercises`, `workout_routines`, `workout_sessions`, `workout_sets` sạch lỗi. |
 | `[ ]` | **T-M2-05:** Xây dựng `AssetCacheManager` tải lười `.glb` từ URL, kiểm tra mã băm SHA-256 và giới hạn LRU Cache tối đa `250 MB`. | `INFRA` | `mobile/lib/features/gym3d/data/asset_cache_manager.dart` | Test với localhost HTTP server hoặc file mock URL. | Tải 1 lần, lần mở thứ 2 đọc từ ổ đĩa cục bộ (`< 1.2s`); tự động xóa file cũ khi vượt `250 MB`. |
+| `[ ]` | **T-M2-05:** Xây dựng `AssetCacheManager` tải lười `.glb` từ URL, kiểm tra mã băm SHA-256 và giới hạn LRU Cache tối đa `250 MB`. | `INFRA` | `mobile/lib/features/gym3d/data/asset_cache_manager.dart` | Test với localhost HTTP server hoặc file mock URL. | Tải 1 lần, lần mở thứ 2 đọc từ ổ đĩa cục bộ (`< 1.2s`); tự động xóa file cũ khi vượt `250 MB`. |
 
 ### Thành viên 3 (`M3` – Backend FastAPI & PostgreSQL)
 
 | Trạng thái | Mã Task & Công việc | Mã `Fxx` | Phạm vi File (File Scope) | Chiến lược Song song (Mock / Unblock) | Tiêu chí Nghiệm thu (Definition of Done) |
 | :---: | :--- | :---: | :--- | :--- | :--- |
-| `[ ]` | **T-M3-01:** Khởi tạo FastAPI (`main.py` mount sẵn `ai.router` stub), `requirements.txt`, `docker-compose.yml` (PostgreSQL 16 + MinIO S3 local + FastAPI). | `INFRA` | `backend/requirements.txt`, `backend/docker-compose.yml`, `backend/app/main.py`, `backend/app/core/` | Chừa sẵn file stub `routers/ai.py` cho M4 toàn quyền chỉnh sửa. | `docker compose up` chạy ngay FastAPI (`/docs`) và PostgreSQL 16 trên local. |
-| `[ ]` | **T-M3-02:** Viết SQLAlchemy Models & Alembic Migration cho toàn bộ 11 bảng nghiệp vụ + bảng `food_nutrition_catalog` + script seed dữ liệu mẫu VNFood/USDA & 30 bài tập. | `INFRA` | `backend/app/models/`, `backend/alembic/`, `backend/app/db/` | Tạo seed dữ liệu ngay để M1, M2, M4 có dữ liệu kiểm thử. | `alembic upgrade head` chạy sạch trên DB mới; truy vấn thử thấy đủ 12 bảng và Indexes. |
-| `[ ]` | **T-M3-03:** Xây dựng luồng Auth JWT (`register`, `login`, `refresh`) băm mật khẩu Argon2/bcrypt, lưu `medical_disclaimer_accepted` & timestamp. | `F26` | `backend/app/routers/auth.py`, `backend/app/services/auth_service.py`, `backend/app/schemas/core_schemas.py` | Xuất Postman/OpenAPI JSON sớm để M1 ghép nối ở cuối Tuần 2. | Đăng ký bắt buộc `medical_disclaimer_accepted = true`; Token Access 15p / Refresh 30 ngày hoạt động đúng. |
-| `[ ]` | **T-M3-04:** Xây dựng `GET /api/v1/users/me/export`, `DELETE /api/v1/users/me` (Cascade Delete) & trang Web HTML công khai `GET /delete-account`. | `F26` | `backend/app/routers/users.py`, `backend/app/templates/delete_account.html` | Không phụ thuộc thành viên nào khác. | Mở `/delete-account` trên trình duyệt hiển thị form chuẩn Google Play; xóa user xong trả về `401` cho token cũ. |
-| `[ ]` | **T-M3-05:** Dựng Swagger OpenAPI `/docs` hoàn chỉnh & viết script `seed_demo_history.py` tạo 30 ngày lịch sử tập/ăn uống giả lập cho M4 train/test AI. | `INFRA` | `backend/app/db/seed_demo_history.py` | Gửi link Swagger cho M1, M2, M4 chốt lại toàn bộ tên trường JSON. | Script chạy sinh đủ dữ liệu 30 ngày sạch sẽ không vi phạm ràng buộc khóa ngoại. |
+| `[x]` | **T-M3-01:** Khởi tạo FastAPI (`main.py` mount sẵn `ai.router` stub), `requirements.txt`, `docker-compose.yml` (PostgreSQL 16 + MinIO S3 local + FastAPI). | `INFRA` | `backend/requirements.txt`, `backend/docker-compose.yml`, `backend/app/main.py`, `backend/app/core/` | Chừa sẵn file stub `routers/ai.py` cho M4 toàn quyền chỉnh sửa. | `docker compose up` chạy ngay FastAPI (`/docs`) và PostgreSQL 16 trên local. |
+| `[x]` | **T-M3-02:** Viết SQLAlchemy Models & Alembic Migration cho toàn bộ 11 bảng nghiệp vụ + bảng `food_nutrition_catalog` + script seed dữ liệu mẫu VNFood/USDA & 30 bài tập. | `INFRA` | `backend/app/models/`, `backend/alembic/`, `backend/app/db/` | Tạo seed dữ liệu ngay để M1, M2, M4 có dữ liệu kiểm thử. | `alembic upgrade head` chạy sạch trên DB mới; truy vấn thử thấy đủ 12 bảng và Indexes. |
+| `[x]` | **T-M3-03:** Xây dựng luồng Auth JWT (`register`, `login`, `refresh`) băm mật khẩu Argon2/bcrypt, lưu `medical_disclaimer_accepted` & timestamp. | `F26` | `backend/app/routers/auth.py`, `backend/app/services/auth_service.py`, `backend/app/schemas/core_schemas.py` | Xuất Postman/OpenAPI JSON sớm để M1 ghép nối ở cuối Tuần 2. | Đăng ký bắt buộc `medical_disclaimer_accepted = true`; Token Access 15p / Refresh 30 ngày hoạt động đúng. |
+| `[x]` | **T-M3-04:** Xây dựng `GET /api/v1/users/me/export`, `DELETE /api/v1/users/me` (Cascade Delete) & trang Web HTML công khai `GET /delete-account`. | `F26` | `backend/app/routers/users.py`, `backend/app/templates/delete_account.html` | Không phụ thuộc thành viên nào khác. | Mở `/delete-account` trên trình duyệt hiển thị form chuẩn Google Play; xóa user xong trả về `401` cho token cũ. |
+| `[x]` | **T-M3-05:** Dựng Swagger OpenAPI `/docs` hoàn chỉnh & viết script `seed_demo_history.py` tạo 30 ngày lịch sử tập/ăn uống giả lập cho M4 train/test AI. | `INFRA` | `backend/app/db/seed_demo_history.py` | Gửi link Swagger cho M1, M2, M4 chốt lại toàn bộ tên trường JSON. | Script chạy sinh đủ dữ liệu 30 ngày sạch sẽ không vi phạm ràng buộc khóa ngoại. |
 
 ### Thành viên 4 (`M4` – AI Engineer & Data Analytics)
 
