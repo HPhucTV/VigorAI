@@ -1,0 +1,18 @@
+{
+  "schema_alias": "mock_m1_health.json",
+  "auth_tokens": {
+    "access_token": "mock-vigorai-jwt-access-token-2026",
+    "refresh_token": "mock-vigorai-jwt-refresh-token-2026",
+    "token_type": "bearer"
+  },
+  "user": {
+    "id": "11111111-1111-4111-8111-111111111111",
+    "email": "demo@vigorai.app",
+    "full_name": "Nguyễn Văn An",
+    "gender": "MALE",
+    "height_cm": 172.0,
+    "activity_level": "MODERATE",
+    "fitness_goal": "BULK",
+    "medical_disclaimer_accepted": true
+  }
+}
