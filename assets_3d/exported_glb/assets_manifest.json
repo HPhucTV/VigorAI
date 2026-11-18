@@ -1,0 +1,39 @@
+{
+  "schema_version": "1.0.0",
+  "owner": "M2",
+  "compression": "Draco",
+  "max_triangles_budget": 25000,
+  "assets": [
+    {
+      "code": "BASE_MANNEQUIN",
+      "file_name": "base_mannequin.glb",
+      "bundled": true,
+      "sha256": "pending-blender-mcp-export",
+      "materials": [
+        "Mat_Muscle_Chest",
+        "Mat_Muscle_Shoulders",
+        "Mat_Muscle_Biceps",
+        "Mat_Muscle_Triceps",
+        "Mat_Muscle_Back_Lats",
+        "Mat_Muscle_Traps",
+        "Mat_Muscle_Abs_Core",
+        "Mat_Muscle_Glutes",
+        "Mat_Muscle_Quads",
+        "Mat_Muscle_Hamstrings",
+        "Mat_Muscle_Calves"
+      ]
+    },
+    {
+      "code": "BARBELL_SQUAT",
+      "file_name": "barbell_squat.glb",
+      "bundled": true,
+      "sha256": "pending-blender-mcp-export",
+      "clips": ["Anim_GoodForm", "Anim_BadForm"],
+      "phase_keyframes": {
+        "eccentric": [0, 50],
+        "isometric": [50, 65],
+        "concentric": [65, 110]
+      }
+    }
+  ]
+}

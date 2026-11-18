@@ -1,0 +1,83 @@
+# ==============================================================================
+# .gitignore chuan Monorepo (Flutter + FastAPI + AI + Blender 3D)
+# ==============================================================================
+
+# --- OS & IDE ---
+.DS_Store
+Thumbs.db
+desktop.ini
+.idea/
+.vscode/
+*.iml
+*.swp
+*.swo
+*~
+
+# --- Local Environment & Databases ---
+.env
+.env.*
+!.env.example
+*.db
+*.sqlite
+*.sqlite3
+sqlite_mcp_server.db
+
+# --- Flutter / Dart / Android ---
+mobile/.dart_tool/
+mobile/.flutter-plugins
+mobile/.flutter-plugins-dependencies
+mobile/.packages
+mobile/build/
+mobile/**/*.g.dart
+mobile/**/*.freezed.dart
+mobile/android/.gradle/
+mobile/android/app/debug/
+mobile/android/app/profile/
+mobile/android/app/release/
+mobile/android/captures/
+mobile/android/local.properties
+mobile/android/gradlew
+mobile/android/gradlew.bat
+mobile/android/gradle/wrapper/gradle-wrapper.jar
+*.apk
+*.aab
+*.ap_
+*.jks
+*.keystore
+key.properties
+
+# --- Python / FastAPI ---
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.Python
+.venv/
+venv/
+env/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+htmlcov/
+.coverage
+
+# --- AI Research & Model Weights ---
+ai_research/datasets/
+ai_research/**/runs/
+ai_research/**/wandb/
+ai_research/**/checkpoints/
+*.pt
+*.pth
+*.onnx
+*.tflite
+*.h5
+*.ckpt
+*.joblib
+*.pkl
+backend/ai_models/weights/
+
+# --- Blender 3D (Chan file backup tu sinh & file render nhap) ---
+*.blend1
+*.blend2
+*.blend3
+assets_3d/renders_tmp/

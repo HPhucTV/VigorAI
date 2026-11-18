@@ -1,0 +1,41 @@
+{
+  "exercises": [
+    {
+      "code": "BARBELL_SQUAT",
+      "name_vi": "Ganh ta don (Barbell Squat)",
+      "equipment_type": "BARBELL",
+      "model_3d_glb_url": "assets/3d_bundled/barbell_squat.glb",
+      "asset_checksum": "sha256-mock-squat-001",
+      "primary_muscles": ["Mat_Muscle_Quads", "Mat_Muscle_Glutes"],
+      "secondary_muscles": ["Mat_Muscle_Hamstrings", "Mat_Muscle_Abs_Core"],
+      "stabilizer_muscles": ["Mat_Muscle_Calves"],
+      "phase_keyframes": {
+        "eccentric": [0, 50],
+        "isometric": [50, 65],
+        "concentric": [65, 110]
+      },
+      "bad_form_warnings": [
+        "Giu lung duoi trung tinh, tranh cuon mong (butt wink).",
+        "Khong de hai dau goi chup vao trong khi dap len."
+      ]
+    },
+    {
+      "code": "BARBELL_BENCH_PRESS",
+      "name_vi": "Day nguc ngang ta don (Barbell Bench Press)",
+      "equipment_type": "BARBELL",
+      "model_3d_glb_url": "assets/3d_bundled/barbell_bench_press.glb",
+      "asset_checksum": "sha256-mock-bench-002",
+      "primary_muscles": ["Mat_Muscle_Chest"],
+      "secondary_muscles": ["Mat_Muscle_Triceps", "Mat_Muscle_Shoulders"],
+      "stabilizer_muscles": ["Mat_Muscle_Back_Lats"],
+      "phase_keyframes": {
+        "eccentric": [0, 45],
+        "isometric": [45, 55],
+        "concentric": [55, 100]
+      },
+      "bad_form_warnings": [
+        "Khep khuyu tay khoang 45 do so voi than nguoi, tranh be ngang 90 do gay dau khop vai."
+      ]
+    }
+  ]
+}

@@ -1,0 +1,37 @@
+<!-- [OWNER: M3] Trang Web Cong khai Xoa Tai khoan & Du lieu (Bat buoc CH Play Data Safety) -->
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Yêu cầu Xóa Tài khoản &amp; Dữ liệu — VigorAI</title>
+  <style>
+    body { font-family: system-ui, -apple-system, sans-serif; max-width: 640px; margin: 40px auto; padding: 0 16px; line-height: 1.6; color: #1f2937; }
+    .card { border: 1px solid #e5e7eb; border-radius: 12px; padding: 24px; background: #ffffff; }
+    h1 { font-size: 1.4rem; margin-top: 0; color: #111827; }
+    label { display: block; margin-top: 12px; font-weight: 600; }
+    input { width: 100%; padding: 10px; margin-top: 6px; border: 1px solid #d1d5db; border-radius: 8px; box-sizing: border-box; }
+    button { margin-top: 18px; padding: 12px 18px; background: #dc2626; color: #fff; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Xóa Tài khoản &amp; Toàn bộ Dữ liệu Cá nhân</h1>
+    <p>
+      Trang này dành cho người dùng ứng dụng <strong>VigorAI</strong> yêu cầu xóa vĩnh viễn tài khoản
+      và toàn bộ dữ liệu liên quan (hồ sơ sinh trắc học, nhật ký bữa ăn, ảnh món ăn, lịch sử buổi tập và bản ghi AI).
+    </p>
+    <ul>
+      <li><strong>Cách 1 (Trong ứng dụng):</strong> Mở ứng dụng &rarr; Cài đặt &rarr; Quyền riêng tư &rarr; <em>Xóa tài khoản vĩnh viễn</em>.</li>
+      <li><strong>Cách 2 (Qua Web):</strong> Nhập email và mật khẩu tài khoản cần xóa bên dưới (xử lý hoàn tất ngay lập tức, không thể khôi phục).</li>
+    </ul>
+    <form id="deleteForm" method="post" action="/api/v1/users/delete-via-web">
+      <label for="email">Email đăng ký</label>
+      <input id="email" name="email" type="email" required placeholder="name@example.com" />
+      <label for="password">Mật khẩu xác nhận</label>
+      <input id="password" name="password" type="password" required />
+      <button type="submit">Xác nhận Xóa Vĩnh viễn Tài khoản</button>
+    </form>
+  </div>
+</body>
+</html>

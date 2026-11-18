@@ -1,0 +1,70 @@
+{
+  "food_analyze_mock": {
+    "inference_time_ms": 112,
+    "model_version": "yolov8s-gymfood-stub",
+    "detected_items": [
+      {
+        "class_code": "GRILLED_CHICKEN_BREAST",
+        "name_vi": "Uc ga ap chao",
+        "confidence": 0.93,
+        "bbox_norm": [0.18, 0.25, 0.52, 0.61],
+        "estimated_grams": 180.0,
+        "calories": 297.0,
+        "protein_g": 55.8,
+        "carbs_g": 0.0,
+        "fat_g": 6.5
+      },
+      {
+        "class_code": "WHITE_RICE",
+        "name_vi": "Com trang",
+        "confidence": 0.91,
+        "bbox_norm": [0.54, 0.30, 0.88, 0.72],
+        "estimated_grams": 150.0,
+        "calories": 195.0,
+        "protein_g": 4.0,
+        "carbs_g": 42.3,
+        "fat_g": 0.4
+      }
+    ],
+    "total_nutrition": {
+      "calories": 492.0,
+      "protein_g": 59.8,
+      "carbs_g": 42.3,
+      "fat_g": 6.9
+    },
+    "disclaimer": "Gia tri dinh duong duoc AI uoc tinh dua tren hinh anh, vui long kiem tra lai khau phan gram truoc khi luu."
+  },
+  "readiness_mock": {
+    "target_date": "2026-11-18",
+    "model_version": "xgb-readiness-stub",
+    "readiness_score": 78.5,
+    "readiness_level": "READY",
+    "insights": [
+      "Ngu du 7.5 gio va luong dam 3 ngay qua dat 96% muc tieu.",
+      "Nhom co Dui truoc va Mong con du am moi nhe (42%) tu buoi Squat 36 gio truoc."
+    ],
+    "muscle_fatigue_map": {
+      "Mat_Muscle_Chest": 0.12,
+      "Mat_Muscle_Shoulders": 0.15,
+      "Mat_Muscle_Biceps": 0.08,
+      "Mat_Muscle_Triceps": 0.10,
+      "Mat_Muscle_Back_Lats": 0.20,
+      "Mat_Muscle_Traps": 0.18,
+      "Mat_Muscle_Abs_Core": 0.25,
+      "Mat_Muscle_Glutes": 0.42,
+      "Mat_Muscle_Quads": 0.45,
+      "Mat_Muscle_Hamstrings": 0.38,
+      "Mat_Muscle_Calves": 0.22
+    },
+    "weight_recommendations": [
+      {
+        "exercise_code": "BARBELL_BENCH_PRESS",
+        "action": "INCREASE",
+        "recommended_weight_kg": 72.5,
+        "recommended_reps": "8-10",
+        "reason": "Nhom co Nguc da hoi phuc 88% va buoi truoc dat RPE 7.5."
+      }
+    ],
+    "disclaimer": "Goi y tai trong do AI phan tich phuc vu muc dich tap luyen the hinh, hay dung tap ngay neu thay dau khop bat thuong."
+  }
+}
