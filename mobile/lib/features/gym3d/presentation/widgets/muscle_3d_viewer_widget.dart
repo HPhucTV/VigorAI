@@ -1,5 +1,10 @@
-// [OWNER: M2] Widget 3D dung chung cho Phong tap 3D (M2: F07-F13) va Ban do Phuc hoi 3D (M4: F23)
+// [OWNER: M2] Widget 3D dung chung cho Phong tap 3D (F07-F13) va Ban do Phuc hoi 3D (F23)
+import 'dart:convert';
+import 'dart:math' as math;
+
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:model_viewer_plus/model_viewer_plus.dart';
 
 /// 11 dinh danh Material co bap bat buoc khop 1-1 voi Blender MCP & AI Model C
 class MuscleMaterialIds {
@@ -30,18 +35,37 @@ class MuscleMaterialIds {
     hamstrings,
     calves,
   ];
+
+  static const Map<String, String> _labelsVi = {
+    chest: 'Cơ Ngực (Pectorals)',
+    shoulders: 'Cơ Vai (Deltoids)',
+    biceps: 'Cơ Tay trước (Biceps)',
+    triceps: 'Cơ Tay sau (Triceps)',
+    backLats: 'Cơ Lưng Xô (Lats)',
+    traps: 'Cơ Cầu vai & Lưng trên (Traps)',
+    absCore: 'Cơ Bụng & Lõi (Core)',
+    glutes: 'Cơ Mông (Glutes)',
+    quads: 'Cơ Đùi trước (Quads)',
+    hamstrings: 'Cơ Đùi sau (Hamstrings)',
+    calves: 'Cơ Bắp chân (Calves)',
+  };
+
+  static String labelVi(String materialId) =>
+      _labelsVi[materialId] ?? materialId;
 }
 
 enum CameraPreset3D { front, side, back, top }
 
-/// Giao dien cong khai da duoc khoa de M4 nhung truc tiep vao F23 ma khong sua code cua M2.
-class Muscle3DViewerWidget extends StatelessWidget {
+/// Giao dien cong khai da duoc khoa de dung chung cho F07-F13 (M2) va F23 (M2/M4 contract).
+class Muscle3DViewerWidget extends StatefulWidget {
   final String glbAssetOrUrl;
   final Map<String, Color> muscleColorsMap;
   final String animationName;
   final double playbackSpeed;
   final CameraPreset3D cameraPreset;
   final ValueChanged<String>? onMuscleTap;
+  final bool isPlaying;
+  final double height;
 
   const Muscle3DViewerWidget({
     super.key,
@@ -51,25 +75,274 @@ class Muscle3DViewerWidget extends StatelessWidget {
     this.playbackSpeed = 1.0,
     this.cameraPreset = CameraPreset3D.front,
     this.onMuscleTap,
+    this.isPlaying = true,
+    this.height = 340,
   });
 
   @override
+  State<Muscle3DViewerWidget> createState() => _Muscle3DViewerWidgetState();
+}
+
+class _Muscle3DViewerWidgetState extends State<Muscle3DViewerWidget> {
+  dynamic _webController;
+  bool _isModelLoaded = false;
+
+  static double _srgbToLinear(double c) {
+    if (c <= 0.04045) return c / 12.92;
+    return math.pow((c + 0.055) / 1.055, 2.4).toDouble();
+  }
+
+  static String _orbitForPreset(CameraPreset3D preset) {
+    switch (preset) {
+      case CameraPreset3D.front:
+        return '0deg 78deg auto';
+      case CameraPreset3D.side:
+        return '90deg 78deg auto';
+      case CameraPreset3D.back:
+        return '180deg 78deg auto';
+      case CameraPreset3D.top:
+        return '0deg 14deg auto';
+    }
+  }
+
+  Map<String, List<double>> _buildFullLinearColorPayload(
+    Map<String, Color> overrides,
+  ) {
+    const neutral = [0.341, 0.341, 0.341, 1.0];
+    final payload = <String, List<double>>{};
+    for (final matId in MuscleMaterialIds.all) {
+      final color = overrides[matId];
+      if (color == null) {
+        payload[matId] = neutral;
+      } else {
+        payload[matId] = [
+          _srgbToLinear(color.r),
+          _srgbToLinear(color.g),
+          _srgbToLinear(color.b),
+          color.a,
+        ];
+      }
+    }
+    return payload;
+  }
+
+  String _buildBridgeJs() {
+    final initialColors = jsonEncode(
+      _buildFullLinearColorPayload(widget.muscleColorsMap),
+    );
+    final initialAnim = jsonEncode(widget.animationName);
+    final initialSpeed = widget.playbackSpeed;
+    final initialPlaying = widget.isPlaying;
+
+    return '''
+(function() {
+  const getMv = () => document.getElementById('vigor-mv');
+
+  window.vigorApplyColors = function(colorMap) {
+    try {
+      const mv = getMv();
+      if (!mv || !mv.model) return;
+      for (const [matName, rgba] of Object.entries(colorMap)) {
+        const mat = mv.model.getMaterialByName(matName);
+        if (!mat || !mat.pbrMetallicRoughness) continue;
+        mat.pbrMetallicRoughness.setBaseColorFactor(rgba);
+        const isNeutral = Math.abs(rgba[0] - 0.341) < 0.01 &&
+                          Math.abs(rgba[1] - 0.341) < 0.01 &&
+                          Math.abs(rgba[2] - 0.341) < 0.01;
+        if (typeof mat.setEmissiveFactor === 'function') {
+          mat.setEmissiveFactor(isNeutral ? [0, 0, 0] : [rgba[0] * 0.14, rgba[1] * 0.14, rgba[2] * 0.14]);
+        }
+      }
+    } catch (e) {}
+  };
+
+  window.vigorSetCamera = function(orbit) {
+    try {
+      const mv = getMv();
+      if (mv) mv.cameraOrbit = orbit;
+    } catch (e) {}
+  };
+
+  window.vigorSetAnim = function(animName, speed, playing) {
+    try {
+      const mv = getMv();
+      if (!mv) return;
+      mv.timeScale = speed;
+      if (animName && mv.animationName !== animName) {
+        mv.animationName = animName;
+      }
+      if (playing) {
+        if (typeof mv.play === 'function') mv.play();
+      } else {
+        if (typeof mv.pause === 'function') mv.pause();
+      }
+    } catch (e) {}
+  };
+
+  function bindViewer() {
+    const mv = getMv();
+    if (!mv) {
+      setTimeout(bindViewer, 100);
+      return;
+    }
+    const onLoaded = function() {
+      window.vigorApplyColors($initialColors);
+      window.vigorSetAnim($initialAnim, $initialSpeed, $initialPlaying);
+      if (window.VigorStatusChannel) {
+        window.VigorStatusChannel.postMessage('loaded');
+      }
+    };
+    if (mv.loaded) onLoaded();
+    mv.addEventListener('load', onLoaded);
+
+    let downX = 0, downY = 0;
+    mv.addEventListener('pointerdown', function(e) {
+      downX = e.clientX;
+      downY = e.clientY;
+    });
+    mv.addEventListener('pointerup', function(e) {
+      try {
+        const dx = e.clientX - downX;
+        const dy = e.clientY - downY;
+        if (dx * dx + dy * dy > 64) return;
+        if (typeof mv.materialFromPoint !== 'function') return;
+        const mat = mv.materialFromPoint(e.clientX, e.clientY);
+        if (mat && mat.name && mat.name.startsWith('Mat_Muscle_') && window.VigorMuscleChannel) {
+          window.VigorMuscleChannel.postMessage(mat.name);
+        }
+      } catch (_) {}
+    });
+  }
+  bindViewer();
+})();
+''';
+  }
+
+  Future<void> _runJs(String script) async {
+    final ctrl = _webController;
+    if (ctrl == null) return;
+    try {
+      await ctrl.runJavaScript(script);
+    } catch (_) {
+      // Ignore transient calls before WebView finishes mounting
+    }
+  }
+
+  @override
+  void didUpdateWidget(covariant Muscle3DViewerWidget oldWidget) {
+    super.didUpdateWidget(oldWidget);
+
+    if (oldWidget.glbAssetOrUrl != widget.glbAssetOrUrl) {
+      setState(() => _isModelLoaded = false);
+      return;
+    }
+
+    if (!mapEquals(oldWidget.muscleColorsMap, widget.muscleColorsMap)) {
+      final payload = jsonEncode(
+        _buildFullLinearColorPayload(widget.muscleColorsMap),
+      );
+      _runJs('window.vigorApplyColors && window.vigorApplyColors($payload);');
+    }
+
+    if (oldWidget.cameraPreset != widget.cameraPreset) {
+      final orbit = jsonEncode(_orbitForPreset(widget.cameraPreset));
+      _runJs('window.vigorSetCamera && window.vigorSetCamera($orbit);');
+    }
+
+    if (oldWidget.animationName != widget.animationName ||
+        oldWidget.playbackSpeed != widget.playbackSpeed ||
+        oldWidget.isPlaying != widget.isPlaying) {
+      final anim = jsonEncode(widget.animationName);
+      _runJs(
+        'window.vigorSetAnim && window.vigorSetAnim($anim, ${widget.playbackSpeed}, ${widget.isPlaying});',
+      );
+    }
+  }
+
+  @override
+  void dispose() {
+    final ctrl = _webController;
+    _webController = null;
+    if (ctrl != null) {
+      try {
+        ctrl.runJavaScript(
+          "try{const mv=document.getElementById('vigor-mv');if(mv){mv.pause();mv.src='';}}catch(_){}",
+        );
+      } catch (_) {}
+    }
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    // Hoan thien tich hop ModelViewer + JS Bridge trong Task T-M2-03, T-M2-07 & T-M2-13
     return Container(
-      height: 320,
-      alignment: Alignment.center,
+      height: widget.height,
+      clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+        color: const Color(0xFF12161F),
         borderRadius: BorderRadius.circular(16),
       ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
+      child: Stack(
         children: [
-          const Icon(Icons.view_in_ar, size: 48),
-          const SizedBox(height: 8),
-          Text('3D Viewer Stub: $glbAssetOrUrl ($animationName @ ${playbackSpeed}x)'),
-          Text('Highlighted materials: ${muscleColorsMap.length}'),
+          ModelViewer(
+            key: ValueKey<String>(widget.glbAssetOrUrl),
+            id: 'vigor-mv',
+            src: widget.glbAssetOrUrl,
+            alt: 'Mô hình giải phẫu cơ bắp 3D VigorAI',
+            backgroundColor: const Color(0xFF12161F),
+            cameraControls: true,
+            disablePan: true,
+            autoRotate: false,
+            interactionPrompt: InteractionPrompt.none,
+            cameraOrbit: _orbitForPreset(widget.cameraPreset),
+            interpolationDecay: 120,
+            exposure: 1.05,
+            animationName: widget.animationName,
+            autoPlay: widget.isPlaying,
+            ar: false,
+            debugLogging: false,
+            relatedJs: _buildBridgeJs(),
+            javascriptChannels: {
+              JavascriptChannel(
+                'VigorMuscleChannel',
+                onMessageReceived: (message) {
+                  widget.onMuscleTap?.call(message.message);
+                },
+              ),
+              JavascriptChannel(
+                'VigorStatusChannel',
+                onMessageReceived: (message) {
+                  if (message.message == 'loaded' && mounted) {
+                    setState(() => _isModelLoaded = true);
+                  }
+                },
+              ),
+            },
+            onWebViewCreated: (controller) {
+              _webController = controller;
+            },
+          ),
+          if (!_isModelLoaded)
+            const Positioned.fill(
+              child: IgnorePointer(
+                child: ColoredBox(
+                  color: Color(0xAA12161F),
+                  child: Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        CircularProgressIndicator(strokeWidth: 2.5),
+                        SizedBox(height: 10),
+                        Text(
+                          'Đang dựng mô hình 3D...',
+                          style: TextStyle(color: Colors.white70, fontSize: 12),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
         ],
       ),
     );

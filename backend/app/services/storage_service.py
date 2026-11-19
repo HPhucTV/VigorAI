@@ -17,16 +17,28 @@ class StorageService:
 
     def __init__(self) -> None:
         self._bucket = settings.S3_BUCKET_NAME
-        self._client = boto3.client(
-            "s3",
-            endpoint_url=settings.S3_ENDPOINT_URL,
-            aws_access_key_id=settings.S3_ACCESS_KEY,
-            aws_secret_access_key=settings.S3_SECRET_KEY,
-            region_name=settings.S3_REGION,
-            config=BotoConfig(signature_version="s3v4", connect_timeout=2, read_timeout=5),
+        self._endpoint_url = (settings.S3_ENDPOINT_URL or "").strip()
+        self._client = (
+            boto3.client(
+                "s3",
+                endpoint_url=self._endpoint_url,
+                aws_access_key_id=settings.S3_ACCESS_KEY,
+                aws_secret_access_key=settings.S3_SECRET_KEY,
+                region_name=settings.S3_REGION,
+                config=BotoConfig(
+                    signature_version="s3v4",
+                    connect_timeout=2,
+                    read_timeout=5,
+                    retries={"max_attempts": 1},
+                ),
+            )
+            if self._endpoint_url
+            else None
         )
 
     def _delete_prefix_sync(self, prefix: str) -> int:
+        if self._client is None:
+            return 0
         deleted_count = 0
         paginator = self._client.get_paginator("list_objects_v2")
         for page in paginator.paginate(Bucket=self._bucket, Prefix=prefix):
@@ -43,11 +55,13 @@ class StorageService:
 
     async def delete_user_media(self, user_id: str) -> int:
         """Xoa toan bo anh mon an / tai nguyen cua user tren S3/MinIO khi Cascade Delete."""
+        if self._client is None:
+            return 0
         prefix = f"users/{user_id}/"
         try:
             return await asyncio.to_thread(self._delete_prefix_sync, prefix)
         except (BotoCoreError, ClientError, OSError) as exc:
-            # Trong moi truong test/offline khong co MinIO, ghi log canh bao thay vi chan xoa DB.
+            # Trong moi truong test/offline/Railway khong co MinIO, ghi log canh bao thay vi chan xoa DB.
             logger.warning(
                 "Bo qua loi ket noi Object Storage khi xoa prefix %s: %s",
                 prefix,

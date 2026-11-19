@@ -15,7 +15,7 @@ from httpx import ASGITransport, AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.pool import NullPool
 
-from app.core.config import settings
+from app.core.config import Settings, settings
 from app.db.base import Base
 from app.db.seed_catalog_and_exercises import (
     CANONICAL_MUSCLE_MATERIALS,
@@ -207,3 +207,42 @@ async def test_public_web_delete_account_flow(async_client: AsyncClient) -> None
         json={"email": email, "password": password},
     )
     assert login_after.status_code == 401
+
+
+def test_settings_database_url_normalization() -> None:
+    assert (
+        Settings.normalize_database_url("postgres://u:p@host:5432/db")
+        == "postgresql+asyncpg://u:p@host:5432/db"
+    )
+    assert (
+        Settings.normalize_database_url("postgresql://u:p@host:5432/db")
+        == "postgresql+asyncpg://u:p@host:5432/db"
+    )
+    assert (
+        Settings.normalize_database_url("postgresql+psycopg2://u:p@host:5432/db")
+        == "postgresql+asyncpg://u:p@host:5432/db"
+    )
+    assert (
+        Settings.normalize_database_url("postgresql+asyncpg://u:p@host:5432/db")
+        == "postgresql+asyncpg://u:p@host:5432/db"
+    )
+    assert (
+        Settings.normalize_database_url(
+            "postgresql://u:p@host:5432/db?sslmode=require&application_name=vigorai"
+        )
+        == "postgresql+asyncpg://u:p@host:5432/db?ssl=require&application_name=vigorai"
+    )
+    assert (
+        Settings.normalize_database_url("postgresql://u:p@host:5432/db?sslmode=disable")
+        == "postgresql+asyncpg://u:p@host:5432/db"
+    )
+
+
+def test_settings_cors_origins_parsing() -> None:
+    assert Settings.parse_cors_origins("*") == ["*"]
+    assert Settings.parse_cors_origins(
+        "https://vigorai.app, https://admin.vigorai.app"
+    ) == ["https://vigorai.app", "https://admin.vigorai.app"]
+    assert Settings.parse_cors_origins(
+        '["https://a.com", "https://b.com"]'
+    ) == ["https://a.com", "https://b.com"]

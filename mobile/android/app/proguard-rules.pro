@@ -12,3 +12,5 @@
     native <methods>;
 }
 -dontwarn com.google.errorprone.annotations.**
+# Flutter embedding optional deferred-components Play Core references
+-dontwarn com.google.android.play.core.**

@@ -1,11 +1,27 @@
-# [OWNER: M3] Dockerfile cho FastAPI + AI Runtime
+# [OWNER: M3] Dockerfile cho FastAPI + Railway Cloud Deploy (T-M3-01, T-M3-06)
 FROM python:3.11-slim
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1
 
 WORKDIR /app
 
+ARG INSTALL_AI_DEPS=false
+
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+
+RUN if [ "$INSTALL_AI_DEPS" = "true" ]; then \
+      apt-get update && apt-get install -y --no-install-recommends libgl1 libglib2.0-0 libgomp1 && rm -rf /var/lib/apt/lists/* && \
+      pip install --no-cache-dir --index-url https://download.pytorch.org/whl/cpu torch torchvision && \
+      pip install --no-cache-dir -r requirements.txt; \
+    else \
+      tr -d '\r' < requirements.txt | grep -vE '^(ultralytics|onnxruntime|xgboost|lightgbm|scikit-learn|numpy|pillow)([=<>~!]|\[|[[:space:]]|$)' > requirements-core.txt && \
+      pip install --no-cache-dir -r requirements-core.txt && \
+      rm -f requirements-core.txt; \
+    fi
 
 COPY . .
 
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+EXPOSE 8000
+
+CMD ["sh", "-c", "python -m app.db.startup && exec uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000} --proxy-headers --forwarded-allow-ips='*'"]
