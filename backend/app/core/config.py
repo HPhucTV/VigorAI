@@ -1,10 +1,10 @@
 # [OWNER: M3] Cau hinh ung dung FastAPI
 import json
-from typing import Annotated, Any
+from typing import Any
 from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
 from pydantic import field_validator
-from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
@@ -22,7 +22,7 @@ class Settings(BaseSettings):
     S3_BUCKET_NAME: str = "gym3d-assets"
     S3_REGION: str = "us-east-1"
     S3_PUBLIC_BASE_URL: str = "http://localhost:9000/gym3d-assets"
-    CORS_ORIGINS: Annotated[list[str], NoDecode] = ["*"]
+    CORS_ORIGINS: Any = ["*"]
     RUN_MIGRATIONS_ON_STARTUP: bool = True
     RUN_SEED_ON_STARTUP: bool = True
 
