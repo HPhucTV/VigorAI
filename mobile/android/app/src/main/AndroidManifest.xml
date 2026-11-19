@@ -1,4 +1,4 @@
-<!-- [OWNER: M1] - CHUAN CH PLAY (Android 15 Target SDK 35, Health Connect, Photo Picker) -->
+<!-- [OWNER: M1] - CHUAN CH PLAY (Ban MVP v1.0.0+1 Closed Testing: Tam tach quyen Health Connect sang v1.2.0) -->
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
@@ -6,19 +6,19 @@
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 
-    <!-- 2. Quyen Dem buoc chan & Health Connect (F02, F05) -->
+    <!-- 2. Quyen Dem buoc chan co ban & Camera / Thong bao -->
     <uses-permission android:name="android.permission.ACTIVITY_RECOGNITION" />
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+
+    <!-- [RE-ENABLE IN v1.2.0] Tam comment cac quyen can duyet video Health Connect / Foreground Service Health
+         de ban MVP v1.0.0+1 duoc Google duyet Closed Testing trong 24-48h:
     <uses-permission android:name="android.permission.health.READ_STEPS" />
     <uses-permission android:name="android.permission.health.READ_SLEEP" />
     <uses-permission android:name="android.permission.health.READ_ACTIVE_CALORIES_BURNED" />
-
-    <!-- 3. Camera cho AI Food Scan (F19) & Progress Photos cuc bo (F24) -->
-    <uses-permission android:name="android.permission.CAMERA" />
-
-    <!-- 4. Thong bao & Dong ho nghi giua hiep (F03, F06, F16) -->
-    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_HEALTH" />
+    -->
 
     <!-- ======================================================================= -->
     <!-- LUAT SAT CH PLAY: CHAN TUYET DOI CAC QUYEN BI TU CHOI TU THU VIEN NGOAI -->
@@ -29,13 +29,16 @@
     <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" tools:node="remove" />
     <uses-permission android:name="android.permission.USE_EXACT_ALARM" tools:node="remove" />
     <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" tools:node="remove" />
+    <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES" tools:node="remove" />
 
+    <!-- [RE-ENABLE IN v1.2.0] Queries danh rieng cho Android Health Connect
     <queries>
         <package android:name="com.google.android.apps.healthdata" />
         <intent>
             <action android:name="androidx.health.ACTION_SHOW_PERMISSIONS_RATIONALE" />
         </intent>
     </queries>
+    -->
 
     <application
         android:label="VigorAI"
@@ -58,7 +61,7 @@
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
-            <!-- Hien thi ly do dung Health Connect tren Android 14+ -->
+            <!-- [RE-ENABLE IN v1.2.0] Health Connect Permission Rationale
             <intent-filter>
                 <action android:name="androidx.health.ACTION_SHOW_PERMISSIONS_RATIONALE" />
             </intent-filter>
@@ -66,9 +69,10 @@
                 <action android:name="android.intent.action.VIEW_PERMISSION_USAGE" />
                 <category android:name="android.intent.category.HEALTH_PERMISSIONS" />
             </intent-filter>
+            -->
         </activity>
 
-        <!-- Bat buoc cho Android 14/15 Health Connect hien thi chinh sach quyen rieng tu -->
+        <!-- [RE-ENABLE IN v1.2.0] Android 14/15 Health Connect ViewPermissionUsageActivity
         <activity-alias
             android:name="ViewPermissionUsageActivity"
             android:exported="true"
@@ -79,6 +83,7 @@
                 <category android:name="android.intent.category.HEALTH_PERMISSIONS" />
             </intent-filter>
         </activity-alias>
+        -->
 
         <meta-data
             android:name="flutterEmbedding"

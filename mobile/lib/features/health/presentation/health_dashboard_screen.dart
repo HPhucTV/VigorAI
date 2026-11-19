@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/config/feature_flags.dart';
 import '../../../core/database/health_tables.drift.dart';
 import '../../../core/network/api_endpoints.dart';
 import '../../../core/theme/app_theme.dart';
@@ -277,29 +278,100 @@ class HealthDashboardScreen extends ConsumerWidget {
                     ),
                   ),
                   const SizedBox(height: 14),
-                  // Diep noi nhanh sang khu vuc M2 & M4
-                  Row(
-                    children: [
-                      Expanded(
-                        child: FilledButton.icon(
-                          onPressed: () => context.push('/workout/live'),
-                          icon: const Icon(Icons.fitness_center),
-                          label: const Text('Tập Gym 3D (M2)'),
+                  // An cac nut tro sang man hinh stub o ban MVP Closed Testing v1.0.0+1
+                  if (!FeatureFlags.isMvpClosedTesting) ...[
+                    Row(
+                      children: [
+                        Expanded(
+                          child: FilledButton.icon(
+                            onPressed: () => context.push('/workout/live'),
+                            icon: const Icon(Icons.fitness_center),
+                            label: const Text('Tập Gym 3D (M2)'),
+                          ),
                         ),
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: FilledButton.tonalIcon(
-                          onPressed: () => context.push('/ai-coach'),
-                          icon: const Icon(Icons.auto_awesome),
-                          label: const Text('AI Coach (M4)'),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: FilledButton.tonalIcon(
+                            onPressed: () => context.push('/ai-coach'),
+                            icon: const Icon(Icons.auto_awesome),
+                            label: const Text('AI Coach (M4)'),
+                          ),
                         ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                  ],
+                  // T-M1-06 (F26): Nut Xoa tai khoan & toan bo du lieu bat buoc CH Play
+                  Card(
+                    color: Colors.red.shade50,
+                    child: ListTile(
+                      leading: const Icon(Icons.delete_forever_outlined,
+                          color: AppColors.warningRed),
+                      title: const Text(
+                        'Quyền riêng tư & Xóa Tài khoản (F26)',
+                        style: TextStyle(fontWeight: FontWeight.bold),
                       ),
-                    ],
+                      subtitle: const Text(
+                        'Xóa vĩnh viễn tài khoản, hồ sơ sức khỏe, SQLite và ảnh cục bộ.',
+                      ),
+                      trailing: TextButton(
+                        onPressed: authState.isLoading
+                            ? null
+                            : () => _confirmDeleteAccount(context, ref),
+                        style: TextButton.styleFrom(
+                          foregroundColor: AppColors.warningRed,
+                        ),
+                        child: const Text('Xóa'),
+                      ),
+                    ),
                   ),
                 ],
               ),
             ),
     );
+  }
+
+  Future<void> _confirmDeleteAccount(BuildContext context, WidgetRef ref) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogCtx) => AlertDialog(
+        title: const Text('Xóa vĩnh viễn tài khoản?'),
+        content: const Text(
+          'Hành động này sẽ xóa toàn bộ dữ liệu trên máy chủ VigorAI, '
+          'CSDL SQLite cục bộ và ảnh tiến độ riêng tư. Không thể khôi phục sau khi xóa.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogCtx).pop(false),
+            child: const Text('Hủy'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: AppColors.warningRed,
+            ),
+            onPressed: () => Navigator.of(dialogCtx).pop(true),
+            child: const Text('Xác nhận Xóa'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+    final deleted =
+        await ref.read(authControllerProvider.notifier).deleteAccount();
+    if (!context.mounted) return;
+    if (deleted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Tài khoản và toàn bộ dữ liệu đã được xóa vĩnh viễn.'),
+        ),
+      );
+      context.go('/onboarding');
+    } else {
+      final err = ref.read(authControllerProvider).errorMessage;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(err ?? 'Xóa tài khoản thất bại.')),
+      );
+    }
   }
 }

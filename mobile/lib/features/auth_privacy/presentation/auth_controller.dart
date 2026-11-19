@@ -30,6 +30,7 @@ class AuthState {
     bool? isAuthenticated,
     AuthUserProfile? user,
     String? errorMessage,
+    bool clearUser = false,
     bool clearError = false,
   }) {
     return AuthState(
@@ -38,7 +39,7 @@ class AuthState {
       disclaimerAccepted: disclaimerAccepted ?? this.disclaimerAccepted,
       disclaimerAcceptedAt: disclaimerAcceptedAt ?? this.disclaimerAcceptedAt,
       isAuthenticated: isAuthenticated ?? this.isAuthenticated,
-      user: user ?? this.user,
+      user: clearUser ? null : (user ?? this.user),
       errorMessage: clearError ? null : (errorMessage ?? this.errorMessage),
     );
   }
@@ -145,9 +146,30 @@ class AuthController extends StateNotifier<AuthState> {
     await _repository.logout();
     state = state.copyWith(
       isAuthenticated: false,
-      user: null,
+      clearUser: true,
       clearError: true,
     );
+  }
+
+  Future<bool> deleteAccount() async {
+    state = state.copyWith(isLoading: true, clearError: true);
+    try {
+      await _repository.deleteAccountAndLocalData();
+      state = const AuthState(
+        isInitialized: true,
+        isLoading: false,
+        disclaimerAccepted: false,
+        isAuthenticated: false,
+        user: null,
+      );
+      return true;
+    } catch (e) {
+      state = state.copyWith(
+        isLoading: false,
+        errorMessage: 'Không thể xóa tài khoản: $e',
+      );
+      return false;
+    }
   }
 }
 

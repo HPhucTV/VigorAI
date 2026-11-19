@@ -19,7 +19,7 @@ dependencies:
   # Network & Sync
   dio: ^5.7.0
   connectivity_plus: ^6.1.0
-  workmanager: ^0.5.2
+  workmanager: ^0.10.10
 
   # Offline-First SQLite Database (Drift)
   drift: ^2.22.1

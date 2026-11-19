@@ -1,23 +1,18 @@
 // [OWNER: M1] Cau hinh Android Gradle chuan CH Play (Android 15 Target SDK 35, 16KB Page Size)
 plugins {
     id("com.android.application")
-    id("kotlin-android")
     id("dev.flutter.flutter-gradle-plugin")
 }
 
 android {
     namespace = "com.vigorai.app"
-    compileSdk = 35
-    // NDK r27+ bat buoc de ho tro 16 KB page size alignment tren Android 15+
-    ndkVersion = "27.0.12077973"
+    compileSdk = 36
+    // NDK r27+ / r28+ ho tro 16 KB page size alignment tren Android 15+
+    ndkVersion = "28.2.13676358"
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
-    }
-
-    kotlinOptions {
-        jvmTarget = JavaVersion.VERSION_17.toString()
     }
 
     defaultConfig {
@@ -60,7 +55,15 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            // Tam dung debug signing khi chua cau hinh key.properties Release rieng
+            signingConfig = signingConfigs.getByName("debug")
         }
+    }
+}
+
+kotlin {
+    compilerOptions {
+        jvmTarget = org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17
     }
 }
 

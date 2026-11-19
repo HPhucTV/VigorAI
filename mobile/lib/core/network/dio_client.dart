@@ -1,4 +1,4 @@
-// [OWNER: M1] HTTP Client tich hop SecureStorage JWT AuthInterceptor & MockApiInterceptor
+// [OWNER: M1] HTTP Client tich hop SecureStorage JWT AuthInterceptor (Auto-Refresh 401) & MockApiInterceptor
 import 'dart:convert';
 
 import 'package:dio/dio.dart';
@@ -24,15 +24,18 @@ final secureStorageProvider = Provider<FlutterSecureStorage>((ref) {
   );
 });
 
-/// Tu dong gan Bearer JWT vao header cac request yeu cau xac thuc.
+/// Tu dong gan Bearer JWT vao header va tu dong gia han token khi gap loi 401.
 class AuthInterceptor extends Interceptor {
   final FlutterSecureStorage _storage;
+  final Dio _refreshDio;
+  final Dio _retryDio;
 
-  AuthInterceptor(this._storage);
+  AuthInterceptor(this._storage, this._refreshDio, this._retryDio);
 
   static const _publicPaths = {
     ApiEndpoints.login,
     ApiEndpoints.register,
+    ApiEndpoints.refresh,
     ApiEndpoints.deleteAccountWeb,
   };
 
@@ -48,6 +51,56 @@ class AuthInterceptor extends Interceptor {
       }
     }
     handler.next(options);
+  }
+
+  @override
+  Future<void> onError(
+    DioException err,
+    ErrorInterceptorHandler handler,
+  ) async {
+    final statusCode = err.response?.statusCode;
+    final path = err.requestOptions.path;
+    final alreadyRetried = err.requestOptions.extra['_retried'] == true;
+
+    if (statusCode == 401 && !_publicPaths.contains(path) && !alreadyRetried) {
+      final storedRefresh = await _storage.read(key: StorageKeys.refreshToken);
+      if (storedRefresh != null && storedRefresh.isNotEmpty) {
+        try {
+          final refreshRes = await _refreshDio.post<Map<String, dynamic>>(
+            ApiEndpoints.refresh,
+            data: <String, dynamic>{'refresh_token': storedRefresh},
+          );
+          final data = refreshRes.data ?? const <String, dynamic>{};
+          final newAccess = data['access_token'] as String?;
+          final newRefresh = data['refresh_token'] as String?;
+
+          if (newAccess != null && newAccess.isNotEmpty) {
+            await _storage.write(key: StorageKeys.accessToken, value: newAccess);
+            if (newRefresh != null && newRefresh.isNotEmpty) {
+              await _storage.write(
+                key: StorageKeys.refreshToken,
+                value: newRefresh,
+              );
+            }
+
+            final retryOptions = err.requestOptions;
+            retryOptions.headers['Authorization'] = 'Bearer $newAccess';
+            retryOptions.extra['_retried'] = true;
+
+            final retryResponse = await _retryDio.fetch<dynamic>(retryOptions);
+            handler.resolve(retryResponse);
+            return;
+          }
+        } catch (_) {
+          // Refresh token het han hoac tai khoan da bi xoa -> don session cuc bo
+          await _storage.delete(key: StorageKeys.accessToken);
+          await _storage.delete(key: StorageKeys.refreshToken);
+          await _storage.delete(key: StorageKeys.currentUserJson);
+        }
+      }
+    }
+
+    handler.next(err);
   }
 }
 
@@ -110,6 +163,7 @@ class MockApiInterceptor extends Interceptor {
             statusCode: 200,
             data: <String, dynamic>{
               ...mock['auth_tokens'] as Map<String, dynamic>,
+              'expires_in_seconds': 900,
               'user': userMap,
             },
           ),
@@ -118,12 +172,31 @@ class MockApiInterceptor extends Interceptor {
       }
 
       if (path == ApiEndpoints.login || path == ApiEndpoints.refresh) {
+        if (path == ApiEndpoints.refresh) {
+          final body = options.data as Map<String, dynamic>? ?? <String, dynamic>{};
+          final rt = body['refresh_token'] as String?;
+          if (rt == null || rt.isEmpty) {
+            handler.reject(
+              DioException.badResponse(
+                statusCode: 401,
+                requestOptions: options,
+                response: Response<Map<String, dynamic>>(
+                  requestOptions: options,
+                  statusCode: 401,
+                  data: <String, dynamic>{'detail': 'Refresh token khong hop le.'},
+                ),
+              ),
+            );
+            return;
+          }
+        }
         handler.resolve(
           Response<Map<String, dynamic>>(
             requestOptions: options,
             statusCode: 200,
             data: <String, dynamic>{
               ...mock['auth_tokens'] as Map<String, dynamic>,
+              'expires_in_seconds': 900,
               'user': mock['user'],
             },
           ),
@@ -207,17 +280,20 @@ class MockApiInterceptor extends Interceptor {
 
 final dioProvider = Provider<Dio>((ref) {
   final storage = ref.watch(secureStorageProvider);
-  final dio = Dio(
-    BaseOptions(
-      baseUrl: ApiEndpoints.baseUrl,
-      connectTimeout: const Duration(seconds: 10),
-      receiveTimeout: const Duration(seconds: 15),
-      headers: const {'Content-Type': 'application/json; charset=utf-8'},
-    ),
+  final baseOptions = BaseOptions(
+    baseUrl: ApiEndpoints.baseUrl,
+    connectTimeout: const Duration(seconds: 10),
+    receiveTimeout: const Duration(seconds: 15),
+    headers: const {'Content-Type': 'application/json; charset=utf-8'},
   );
+
+  final mockInterceptor = MockApiInterceptor();
+  final refreshDio = Dio(baseOptions)..interceptors.add(mockInterceptor);
+  final dio = Dio(baseOptions);
+
   dio.interceptors.addAll([
-    AuthInterceptor(storage),
-    MockApiInterceptor(),
+    AuthInterceptor(storage, refreshDio, dio),
+    mockInterceptor,
   ]);
   return dio;
 });
