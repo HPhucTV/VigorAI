@@ -17,6 +17,42 @@
 
 ---
 
+## Phiên 09 — 2026-11-19 15:26 | Thành viên: M1 | Task: `T-M1-01`, `T-M1-02`, `T-M1-03`, `T-M1-04`, `T-M1-05`, `T-M1-06`
+- **Mục tiêu phiên:** Hoàn thiện 3 nhóm việc còn lại của M1 trong Sprint 1 (`FeatureFlags` + Xóa tài khoản + Manifest MVP `T-M1-06`, Android native scaffolding `T-M1-01`/`02`, Drift `app_database.g.dart` & JWT Auto-Refresh `401` `T-M1-03`/`04`/`05`), kết nối Android Studio/SDK và chạy kiểm thử E2E trên máy ảo Android 15 (chưa commit/push theo yêu cầu).
+- **Những file đã tạo / chỉnh sửa:**
+  - MVP & FeatureFlags (`T-M1-06`): `mobile/lib/core/config/feature_flags.dart` (`isMvpClosedTesting = true`, `enableHealthConnect = false`), `mobile/android/app/src/main/AndroidManifest.xml` (tạm comment quyền `health.READ_*`, `FOREGROUND_SERVICE_HEALTH`, `<queries>`, `<activity-alias>` với ghi chú `[RE-ENABLE IN v1.2.0]` và bổ sung `tools:node="remove"` đủ 7 quyền cấm gồm `QUERY_ALL_PACKAGES`), `mobile/lib/features/health/presentation/health_dashboard_screen.dart` (ẩn nút stub M2/M4 khi MVP, thêm thẻ & hộp thoại Xóa tài khoản `F26`).
+  - Android Native Scaffolding (`T-M1-01`, `T-M1-02`): `mobile/android/build.gradle.kts`, `mobile/android/settings.gradle.kts` (`AGP 9.3.1`, `KGP 2.4.20`), `mobile/android/app/build.gradle.kts` (`compileSdk 36`, `ndkVersion 28.2.13676358`, `minSdk 26`, `targetSdk 35`, `arm64-v8a`/`x86_64`, cờ ELF 16 KB page size, R8 minify), `mobile/android/gradle.properties` (gỡ cờ deprecated `android.bundle.enableUncompressedNativeLibs`), `mobile/android/app/proguard-rules.pro`, `mobile/android/gradle/wrapper/gradle-wrapper.properties` (`gradle-9.5.0-all.zip`), `mobile/android/app/src/main/kotlin/com/vigorai/app/MainActivity.kt`, bộ `res/` (`styles.xml`, `colors.xml`, `launch_background.xml`, `ic_launcher*`, mipmap PNG), `src/{debug,profile}/AndroidManifest.xml`, cùng Gradle wrapper binaries (`.gitignored`).
+  - Drift & JWT (`T-M1-03`..`05`): Mở khóa `[LOCKED STUB]` `mobile/lib/core/database/app_database.dart` (đã được user duyệt) & sinh `mobile/lib/core/database/app_database.g.dart`, cập nhật `mobile/lib/core/network/dio_client.dart` (tự refresh JWT khi gặp `401` + retry 1 lần), `mobile/lib/features/auth_privacy/data/auth_repository.dart` (`refreshToken()`, `deleteAccountAndLocalData()`), `mobile/lib/features/auth_privacy/presentation/auth_controller.dart` (`deleteAccount()`, sửa `logout()` xóa sạch `state.user` qua `clearUser: true`).
+  - Nâng cấp dependency (Micro-PR cần tách riêng khi commit): Mở khóa `[LOCKED STUB]` `mobile/pubspec.yaml` theo xác nhận của user để nâng `workmanager: ^0.5.2` $\rightarrow$ `^0.10.10` (`workmanager_android 0.10.9`) vì bản `0.5.2` gọi Flutter Android v1 embedding đã bị gỡ khỏi Flutter `3.50.0`.
+  - Tiến độ: `docs/taskboard.md` (đánh dấu `[x]` `T-M1-01`, `T-M1-03`, `T-M1-04`, `T-M1-05`, `T-M1-06` $\rightarrow$ `M1: 6 / 17 Done`, `Tổng cộng: 11 / 63 Done`).
+- **Quyết định kỹ thuật / Lưu ý quan trọng:**
+  - Khi commit lên nhánh `HPhucTV`, **tách riêng 1 Micro-PR** cho `[LOCKED STUB]` (`mobile/pubspec.yaml` & `mobile/lib/core/database/app_database.dart`) đúng luật [AGENTS.md](./AGENTS.md).
+  - Cài đặt Android SDK (`platforms;android-35/36`, `build-tools;35.0.0`, `ndk;28.2.13676358`, `cmake;3.22.1`, `system-images;android-35;google_apis_playstore;x86_64`) + AVD **`VigorAI_Pixel6_API35`** (`pixel_6`, 3 GB RAM, 4 cores, WHPX) chạy mượt trên i7-13700H / 16 GB RAM.
+- **Kiểm tra / Kết quả chạy thử:**
+  - `dart run build_runner build` & `flutter pub get`: Thành công (`app_database.g.dart` sinh sạch, `workmanager 0.10.10` khớp hoàn toàn).
+  - `flutter analyze --no-fatal-infos`: Exit `0` (0 lỗi, 0 cảnh báo).
+  - `flutter build apk --debug --dart-define=USE_MOCK_API=true`: Thành công (`build/app/outputs/flutter-apk/app-debug.apk`).
+  - Kiểm tra `Merged AndroidManifest.xml` (`processDebugMainManifest`): Đạt `minSdkVersion="26"`, `targetSdkVersion="35"`, `extractNativeLibs="false"`, **0 quyền cấm CH Play** và **0 quyền Health Connect/FGS Health** đang kích hoạt ở bản MVP.
+  - Chạy thực tế trên `VigorAI_Pixel6_API35` (`emulator-5554`): Khởi chạy `COLD` không crash; Onboarding chặn nút tiếp tục cho tới khi tick Medical Disclaimer; Đăng nhập tài khoản demo mở Health Dashboard (`BMI 23.7`, `Bước chân`, `Giấc ngủ`, `+250 ml` cập nhật `2000 / 2950 ml` & hiện nút `Sync (1)`, `Mifflin-St Jeor`, `F06 Supplements`); xác nhận nút stub M2/M4 bị ẩn; chạy trọn luồng **Xóa tài khoản** gọi `DELETE /api/v1/users/me` + `clearAllLocalData()` quay về `/onboarding` kèm SnackBar xác nhận; `adb logcat` sạch lỗi.
+- **Việc cần làm ở phiên kế tiếp:**
+  - M1 commit/push thay đổi (tách riêng Micro-PR cho `[LOCKED STUB]`) khi sẵn sàng, đồng thời thực hiện `T-M1-07` (đăng ký Google Play Console \$25 & gom 20–25 Gmail testers) và bắt đầu Sprint 2 (`T-M1-08`..`12`).
+
+---
+
+## Phiên 08 — 2026-11-19 14:04 | Thành viên: Toàn nhóm (Điều chỉnh Lộ trình) | Task: Tách `M4` Pure AI & Áp dụng Lộ trình CH Play 2 Nhịp
+- **Mục tiêu phiên:** Tách toàn bộ công việc Flutter ra khỏi Dev AI (`M4`) để tập trung thu thập dữ liệu & train model, đồng thời tích hợp chiến lược phát hành CH Play 2 nhịp ("Vừa code vừa chạy đồng hồ Closed Testing 14 ngày").
+- **Những file đã cập nhật:**
+  - `AGENTS.md`: Cập nhật bảng `[OWNER]` mới (`M4` chỉ làm Python AI; `M1` nhận UI `F19` + Ảnh `F24`; `M2` nhận UI `F20`–`F23` + Radar `F24`), bổ sung quy tắc CH Play 2 nhịp.
+  - `docs/roadmap.md`: Vẽ lại lộ trình 3 Mốc CH Play (`v1.0.0+1` Closed Testing cuối Sprint 1 $\rightarrow$ `v1.1.0` Production & Chiến dịch 1.000 lượt tải cuối Sprint 2 $\rightarrow$ `v1.2.0` Full 26 chức năng gồm Health Connect & AI `v1.2` ở Sprint 3).
+  - `docs/taskboard.md`: Tái cấu trúc thành **63 tasks** (`M1`: 17, `M2`: 17, `M3`: 15, `M4`: 14), giữ nguyên tiến độ đã đạt của M1 (`1/17 Done`, `4/17 Code Ready`) và M3 (`5/15 Done` — hoàn tất `T-M3-01`..`05`), kéo sớm `T-M1-06`/`07`, `T-M2-06`, `T-M3-06` lên Sprint 1 và chia Model B thành 2 đợt (`v1.0` 15–20 món từ Roboflow/Kaggle $\rightarrow$ `v1.2` 35–50 món).
+  - `docs/system-design-spec.md` & `README.md`: Đồng bộ phân công 4 thành viên và lộ trình Sprint 1–4.
+- **Lưu ý cho phiên tiếp theo:**
+  - `M1` ưu tiên hoàn thiện `T-M1-06` (nút Xóa tài khoản + `FeatureFlags` ẩn stub cho bản MVP `v1.0.0+1`) và `T-M1-07` (Play Console \$25 + gom 20–25 Gmail).
+  - `M3` thực hiện `T-M3-06` (deploy Backend vừa hoàn thành ở Phiên 07 lên host HTTPS công khai với `/delete-account`).
+  - Nhắc `M2` khi mở các file stub cũ trong `mobile/lib/features/ai_analytics/`, `ai_cache_tables.drift.dart`, `ai_analytics_routes.dart` lưu ý quyền sở hữu đã chuyển từ `M4` sang `M2`.
+
+---
+
 ## Phiên 07 — 2026-11-18 19:25 | Thành viên: M3 (Backend & DB) | Task: `T-M3-01`, `T-M3-02`, `T-M3-03`, `T-M3-04`, `T-M3-05`
 - **Mục tiêu phiên:** Triển khai và nghiệm thu hoàn tất toàn bộ 5 tasks Sprint 1 của Thành viên M3 (`T-M3-01` đến `T-M3-05`), giữ nguyên các file `[LOCKED STUB]` (`requirements.txt`, `app/main.py`, `.gitignore`).
 - **Những file đã tạo / chỉnh sửa:**

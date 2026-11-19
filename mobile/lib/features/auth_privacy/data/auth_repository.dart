@@ -1,12 +1,14 @@
-// [OWNER: M1] Repository quan ly Auth (Login/Register/JWT) & CH Play Medical Disclaimer (T-M1-04, T-M1-05)
+// [OWNER: M1] Repository quan ly Auth (Login/Register/Refresh/Delete) & CH Play Medical Disclaimer (T-M1-04..06)
 import 'dart:convert';
 
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
+import '../../../core/database/app_database.dart';
 import '../../../core/network/api_endpoints.dart';
 import '../../../core/network/dio_client.dart';
+import '../../../core/platform/photo_picker_service.dart';
 
 class AuthUserProfile {
   final String id;
@@ -58,8 +60,15 @@ class AuthUserProfile {
 class AuthRepository {
   final Dio _dio;
   final FlutterSecureStorage _storage;
+  final AppDatabase _database;
+  final PhotoPickerService _photoPickerService;
 
-  AuthRepository(this._dio, this._storage);
+  AuthRepository(
+    this._dio,
+    this._storage,
+    this._database,
+    this._photoPickerService,
+  );
 
   Future<bool> hasAcceptedDisclaimer() async {
     final value = await _storage.read(key: StorageKeys.disclaimerAccepted);
@@ -137,6 +146,27 @@ class AuthRepository {
     );
   }
 
+  /// Lam moi Access Token bang Refresh Token (khop POST /api/v1/auth/refresh cua M3).
+  Future<AuthUserProfile> refreshToken() async {
+    final storedRefresh = await _storage.read(key: StorageKeys.refreshToken);
+    if (storedRefresh == null || storedRefresh.isEmpty) {
+      throw StateError('Không tìm thấy Refresh Token hợp lệ.');
+    }
+    final response = await _dio.post<Map<String, dynamic>>(
+      ApiEndpoints.refresh,
+      data: <String, dynamic>{'refresh_token': storedRefresh},
+    );
+    return _persistSessionFromResponse(response.data ?? const {});
+  }
+
+  /// Xoa vinh vien tai khoan tren Server (DELETE /api/v1/users/me) + don sach du lieu cuc bo (T-M1-06 / F26).
+  Future<void> deleteAccountAndLocalData() async {
+    await _dio.delete<Map<String, dynamic>>(ApiEndpoints.deleteMe);
+    await _storage.deleteAll();
+    await _photoPickerService.deleteAllPrivateProgressPhotos();
+    await _database.clearAllLocalData();
+  }
+
   Future<AuthUserProfile> _persistSessionFromResponse(
     Map<String, dynamic> data, {
     String? fallbackEmail,
@@ -183,5 +213,7 @@ class AuthRepository {
 final authRepositoryProvider = Provider<AuthRepository>((ref) {
   final dio = ref.watch(dioProvider);
   final storage = ref.watch(secureStorageProvider);
-  return AuthRepository(dio, storage);
+  final db = ref.watch(appDatabaseProvider);
+  final photoPicker = ref.watch(photoPickerServiceProvider);
+  return AuthRepository(dio, storage, db, photoPicker);
 });
