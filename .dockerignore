@@ -1,0 +1,14 @@
+.git
+mobile
+assets_3d
+ai_research
+docs
+**/__pycache__
+**/*.py[cod]
+.venv
+venv
+.env
+.env.*
+*.db
+*.sqlite*
+session_log.md
