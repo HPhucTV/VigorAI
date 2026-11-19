@@ -247,6 +247,26 @@ class HealthDashboardScreen extends ConsumerWidget {
                     ),
                   ),
                   const SizedBox(height: 10),
+                  // T-M2-03 (F07-F10): The noi bat mo Phong tap 3D Tuong tac ngay duoi muc Dinh duong
+                  Card(
+                    color: const Color(0xFFE3F2FD),
+                    child: ListTile(
+                      leading: const CircleAvatar(
+                        backgroundColor: AppColors.primary,
+                        child: Icon(Icons.view_in_ar, color: Colors.white),
+                      ),
+                      title: const Text(
+                        'Phòng tập 3D Tương tác (3 bài mẫu MVP)',
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      subtitle: const Text(
+                        'Xoay 360°, 4 góc nhìn, tư thế Đúng/Sai & bản đồ cơ bắp 3D',
+                      ),
+                      trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                      onTap: () => context.push('/gym3d'),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
                   // F06: Supplement Reminder Checklist
                   Card(
                     child: Padding(
