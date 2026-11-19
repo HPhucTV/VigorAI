@@ -4,7 +4,7 @@
 > **Tài liệu nguồn (Single Source of Truth):**
 > - Đặc tả thiết kế hệ thống (26 chức năng, ERD, AI, 3D, CH Play): [docs/system-design-spec.md](./docs/system-design-spec.md)
 > - Lộ trình 10 tuần & Phân quyền Monorepo: [docs/roadmap.md](./docs/roadmap.md)
-> - Bảng phân công & Tiến độ 64 tasks: [docs/taskboard.md](./docs/taskboard.md)
+> - Bảng phân công & Tiến độ 63 tasks: [docs/taskboard.md](./docs/taskboard.md)
 > - Nhật ký bàn giao các phiên làm việc: [session_log.md](./session_log.md)
 
 Mọi AI Coding Agent và thành viên trong nhóm **BẮT BUỘC** đọc và tuân thủ các quy tắc dưới đây trước khi chỉnh sửa bất kỳ dòng code nào.
@@ -29,10 +29,10 @@ Mọi AI Coding Agent và thành viên trong nhóm **BẮT BUỘC** đọc và t
 
 | Thành viên | Vai trò | Thư mục / File được phép sửa (`[OWNER]`) |
 | :--- | :--- | :--- |
-| **M1** | Mobile Core & Health (Flutter) | `mobile/android/app/src/main/AndroidManifest.xml`, `mobile/lib/core/theme/`, `mobile/lib/core/network/`, `mobile/lib/core/platform/`, `mobile/lib/core/sync/`, `mobile/lib/core/database/health_tables.drift.dart`, `mobile/lib/core/router/health_routes.dart`, `mobile/lib/features/auth_privacy/`, `mobile/lib/features/health/`, `mobile/assets/mock_json/mock_m1_health.json`, `mobile/test/health/` |
-| **M2** | 3D Blender MCP & Gym Execution | `assets_3d/`, `mobile/assets/3d_bundled/`, `mobile/lib/core/database/workout_tables.drift.dart`, `mobile/lib/core/router/gym3d_workout_routes.dart`, `mobile/lib/features/gym3d/`, `mobile/lib/features/workout/`, `mobile/assets/mock_json/mock_m2_exercises.json`, `mobile/test/workout/` |
-| **M3** | Backend FastAPI & PostgreSQL | `backend/docker-compose.yml`, `backend/alembic/`, `backend/app/core/`, `backend/app/db/`, `backend/app/models/`, `backend/app/templates/`, `backend/app/schemas/core_schemas.py`, `backend/app/services/{auth_service,sync_service,storage_service,analytics_service}.py`, `backend/app/routers/{auth,users,sync,health,exercises,routines,workouts,analytics}.py`, `backend/tests/test_core_api.py` |
-| **M4** | AI Engineer & Data Analytics | `ai_research/`, `backend/ai_models/`, `backend/app/schemas/ai_schema.py`, `backend/app/services/{feature_extractor,ai_food_yolo,ai_readiness_ml}.py`, `backend/app/routers/ai.py`, `backend/tests/test_ai_api.py`, `mobile/lib/core/database/ai_cache_tables.drift.dart`, `mobile/lib/core/router/ai_analytics_routes.dart`, `mobile/lib/features/ai_analytics/`, `mobile/assets/mock_json/mock_m4_ai.json` |
+| **M1** | Mobile Core, Health, Food/Photo UI & CH Play (Flutter) | `mobile/android/app/src/main/AndroidManifest.xml`, `mobile/android/{settings.gradle.kts,gradle.properties}`, `mobile/android/app/build.gradle.kts`, `mobile/lib/core/{theme,network,platform,sync}/`, `mobile/lib/core/database/health_tables.drift.dart`, `mobile/lib/core/router/health_routes.dart`, `mobile/lib/features/auth_privacy/`, `mobile/lib/features/health/` (bao gồm `food_scan/` `F19` UI & `progress_photos/` `F24` ảnh cục bộ), `mobile/assets/mock_json/mock_m1*.json`, `mobile/test/health/`, `docs/chplay_submission_checklist.md` |
+| **M2** | 3D Blender MCP, Workout, Recovery 3D & Charts (Flutter) | `assets_3d/`, `mobile/assets/3d_bundled/`, `mobile/lib/core/database/{workout_tables,ai_cache_tables}.drift.dart`, `mobile/lib/core/router/{gym3d_workout_routes,ai_analytics_routes}.dart`, `mobile/lib/features/gym3d/`, `mobile/lib/features/workout/`, `mobile/lib/features/ai_analytics/` (`F20`/`F21`/`F22`/`F23`/`F24` Radar), `mobile/assets/mock_json/{mock_m2_exercises,mock_m4_ai}.json`, `mobile/test/workout/` |
+| **M3** | Backend FastAPI, PostgreSQL & Cloud Deploy | `backend/Dockerfile`, `backend/docker-compose.yml`, `backend/alembic/`, `backend/app/core/`, `backend/app/db/`, `backend/app/models/`, `backend/app/templates/`, `backend/app/schemas/core_schemas.py`, `backend/app/services/{auth_service,sync_service,storage_service,analytics_service}.py`, `backend/app/routers/{auth,users,sync,health,exercises,routines,workouts,analytics}.py`, `backend/tests/test_core_api.py` |
+| **M4** | 100% Pure AI Engineer (Python Only) | `ai_research/`, `backend/ai_models/`, `backend/app/schemas/ai_schema.py`, `backend/app/services/{feature_extractor,ai_food_yolo,ai_readiness_ml}.py`, `backend/app/routers/ai.py`, `backend/tests/test_ai_api.py` |
 
 ### Các File Khóa Giao diện (`[LOCKED STUB]`) — Không tự ý sửa đổi
 - `mobile/pubspec.yaml`, `mobile/lib/main.dart`, `mobile/lib/core/database/app_database.dart`, `mobile/lib/core/router/app_router.dart`
@@ -40,8 +40,9 @@ Mọi AI Coding Agent và thành viên trong nhóm **BẮT BUỘC** đọc và t
 - `.gitignore`
 
 **Giao ước dùng chung giữa các thành viên (Không sửa code của nhau):**
-- `M4` dùng `Muscle3DViewerWidget` tại `mobile/lib/features/gym3d/presentation/widgets/muscle_3d_viewer_widget.dart` của `M2` qua import cho màn hình `F23`.
-- `M4` dùng `PhotoPickerService` tại `mobile/lib/core/platform/photo_picker_service.dart` của `M1` qua import cho `F19` và `F24`.
+- `M4` chỉ làm Python AI & FastAPI AI endpoints (`/api/v1/ai/*`); không viết code Flutter/Dart để tránh phụ thuộc chéo khi đang tìm dữ liệu & train model.
+- `M1` gọi API `POST /api/v1/ai/food-analyze` của `M4` cho màn hình Quét món ăn (`F19`) và tự dùng `PhotoPickerService` của chính mình cho `F19` và `F24`.
+- `M2` gọi API `GET /api/v1/ai/readiness-and-overload` của `M4` cho `F20`/`F21`/`F23` và tự dùng `Muscle3DViewerWidget` của chính mình cho Bản đồ Phục hồi 3D (`F23`).
 
 ---
 
@@ -58,6 +59,9 @@ Mọi Agent **TUYỆT ĐỐI KHÔNG** vi phạm các ràng buộc dưới đây:
 3. **Miễn trừ Y tế (Medical Disclaimer):** Bắt buộc giữ xác nhận ở Onboarding (`F26`), hiển thị trích dẫn công thức (`Mifflin-St Jeor` cho BMR/TDEE, `Epley/Brzycki` cho 1RM) và dòng disclaimer dưới kết quả AI Model B & C.
 4. **Xóa Tài khoản 2 kênh:** Phải duy trì cả API `DELETE /api/v1/users/me` (xóa Cascade DB + Object Storage + dữ liệu cục bộ) và trang HTML công khai `GET /delete-account`.
 5. **Đóng gói `.aab`:** `minSdk = 26`, `targetSdk = 35` (Android 15), 64-bit (`arm64-v8a`, `x86_64`), hỗ trợ **16 KB page size alignment**, kích thước cài gốc **`< 40 MB`** (tách file 3D `.glb` mở rộng lên CDN).
+6. **Chiến lược Phát hành CH Play 2 Nhịp (Chống kẹt 14 ngày & Minimum Functionality):**
+   - **Bản MVP `v1.0.0+1` (Closed Testing) & `v1.1.0` (Production lần 1):** Ẩn toàn bộ nút/màn hình stub bằng cờ `FeatureFlags`; tạm comment quyền nâng cao chưa xong/cần duyệt video lâu (`health.READ_*`, `FOREGROUND_SERVICE_HEALTH`) để kích hoạt đồng hồ 14 ngày sớm và đạt Production đúng hạn.
+   - **Bản Update `v1.2.0` (Full 26 chức năng):** Bật lại Health Connect + `FOREGROUND_SERVICE_HEALTH` kèm video chứng minh sau khi ứng dụng đã có link Production công khai.
 
 ---
 
