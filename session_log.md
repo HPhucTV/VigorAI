@@ -17,6 +17,25 @@
 
 ---
 
+## Phiên 12 — 2026-11-20 00:11 | Thành viên: M3 + M2 (Hoàn tất Cloud Deploy & Final Signed AAB Sprint 1) | Task: `T-M3-06` (`[x]`), `T-M2-06` (`[~]`)
+- **Mục tiêu phiên:** Sử dụng **Railway MCP** để triển khai live Backend FastAPI + PostgreSQL lên `unique-grace / production`, xác minh HTTPS E2E cho **`T-M3-06`**, và build lại file `.aab` Release đã ký (`USE_MOCK_API=false`) trỏ thẳng server thật cho **`T-M2-06`**.
+- **Hạ tầng Railway & Thao tác đã thực hiện:**
+  - Gỡ bỏ service nháp trùng lặp `secure-kindness` (`10d57bff-4b16-438d-910c-fb466343e6ba`) khỏi staged changes.
+  - Khởi tạo template chính thức **`Postgres`** (`01352b25-a306-4e8a-872d-0cf73db91991`, `ghcr.io/railwayapp-templates/postgres-ssl:18`, deployment `7ae25a4f-1b1c-4ce8-b83b-903b19adc691` `[SUCCESS]`).
+  - Cấu hình service **`VigorAI`** (`3d16d190-58a9-4ada-b451-1b407b5dcc7f`): `builder=DOCKERFILE`, `dockerfilePath=backend/Dockerfile.railway`, `healthcheckPath=/healthz`, `healthcheckTimeout=120`, `watchPatterns=["backend/**", "railway.json"]`, gán biến `DATABASE_URL=${{Postgres.DATABASE_URL}}`, `JWT_SECRET_KEY`, `S3_ENDPOINT_URL=""`, tạo domain HTTPS **`https://vigorai-production.up.railway.app`**.
+  - Sửa lỗi `ImportError: cannot import name 'NoDecode' from 'pydantic_settings'` trên `pydantic-settings==2.6.1` trong `backend/app/core/config.py` (commit `bef0d9c`, merge PR #5 `323ab90`), gắn lại nguồn `HPhucTV/VigorAI@main` và theo dõi deployment **`51958d75-17b1-44a1-accb-b5d611faaa77`** đạt **`[SUCCESS]`**.
+- **File cập nhật phiên này:**
+  - `docs/taskboard.md` (`T-M3-06` `[x]` $\rightarrow$ `M3: 6 / 15 Done (40.0%)`, `Tổng cộng: 17 / 63 Done (27.0%)`; cập nhật trạng thái `.aab` trỏ server thật ở `T-M2-06`).
+  - `session_log.md` (Phiên 12).
+- **Kiểm tra / Kết quả chạy thử:**
+  - **Railway Deploy Logs (`51958d75`):** `alembic upgrade head` chạy `0001_initial_schema` thành công, seed hoàn tất `36` món ăn / `30` bài tập / `4` giáo án mẫu, Uvicorn chạy trên `:8080`, healthcheck `/healthz` trả `200 OK`.
+  - **10/10 Live HTTPS E2E Smoke Checks (`https://vigorai-production.up.railway.app`):** `GET /healthz` (`200`), `GET /delete-account` (`200`), `GET /docs` (`200`), `POST /api/v1/auth/register` thiếu disclaimer (`400`), Register hợp lệ (`201`), `POST /api/v1/auth/refresh` (`200`), `GET /api/v1/users/me/export` (`200`), `DELETE /api/v1/users/me` (`200`), token cũ gọi lại sau xóa (`401`), và kênh Web `POST /api/v1/users/delete-via-web` (`200`) + login lại (`401`). Không để lại user test trong DB production.
+  - **Final Signed Release `.aab` (`USE_MOCK_API=false`, `API_BASE_URL=https://vigorai-production.up.railway.app`):** Exit `0`, xuất `mobile/build/app/outputs/bundle/release/app-release.aab` (`44,689,240 B`), xác minh bởi `jarsigner -verify -verbose -certs` (`jar verified.`, `CN=VigorAI`).
+- **Việc cần làm ở phiên kế tiếp:**
+  - Bạn thực hiện **`T-M1-07`** (đăng ký Google Play Console \$25, xác minh danh tính, gom 20–25 email testers) và tải `mobile/build/app/outputs/bundle/release/app-release.aab` lên **Closed Testing** cùng URL chính sách xóa tài khoản `https://vigorai-production.up.railway.app/delete-account` để chốt **`T-M2-06`** và kích hoạt đồng hồ 14 ngày.
+
+---
+
 ## Phiên 11 — 2026-11-19 23:52 | Thành viên: M3 + M2 (Chốt Sprint 1) | Task: `T-M3-06` (`[~]`), `T-M2-06` (`[~]`)
 - **Mục tiêu phiên:** Xử lý lỗi build Railpack trên Railway (`T-M3-06`), hoàn thiện cấu hình ký Release `.aab` với Upload Keystore thật (`T-M2-06`), trừ `T-M1-07` làm cuối cùng theo yêu cầu người dùng; chuẩn bị commit sạch sẽ theo phạm vi và push/mở PR lên GitHub.
 - **Những file đã tạo / chỉnh sửa:**
