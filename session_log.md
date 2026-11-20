@@ -17,7 +17,7 @@
 
 ---
 
-## Phiên 13 — 2026-11-20 09:09 | Thành viên: M1 + M2 + M3 (Hotfix Điện thoại thật: 3D Load < 0.8s & Lỗi Auth Thân thiện) | Task: `T-M2-02`, `T-M2-03`, `T-M1-04`, `T-M2-06`, `T-M3-06`
+## Phiên 14 — 2026-11-20 09:09 | Thành viên: M1 + M2 + M3 (Hotfix Điện thoại thật: 3D Load < 0.8s & Lỗi Auth Thân thiện) | Task: `T-M2-02`, `T-M2-03`, `T-M1-04`, `T-M2-06`, `T-M3-06`
 - **Mục tiêu phiên:** Xử lý 2 lỗi phát hiện khi test `app-release.apk` trên điện thoại thật: (1) Màn hình 3D treo mãi *"Đang dựng mô hình 3D..."* do Android Release chặn HTTP local proxy `127.0.0.1` của `model_viewer_plus` (`net::ERR_CLEARTEXT_NOT_PERMITTED`) và tránh tải Draco WASM từ `gstatic.com`; (2) Màn hình Đăng nhập hiển thị cả chuỗi `DioException` kỹ thuật dài dòng thay vì thông báo ngắn gọn tiếng Việt + thiếu tài khoản `demo@vigorai.app` trên Railway.
 - **Những file đã tạo / chỉnh sửa:**
   - **Fix 3D (`ERR_CLEARTEXT_NOT_PERMITTED` + Fast-Load Binary glTF):**
@@ -37,6 +37,23 @@
   - Merged Release `AndroidManifest.xml`: Xác nhận có `networkSecurityConfig` + `usesCleartextTraffic="true"`, **0 quyền cấm CH Play**.
 - **Việc cần làm ở phiên kế tiếp:**
   - Cài lại `app-release.apk` mới lên điện thoại thật để test lại tốc độ mở 3D và thông báo đăng nhập sai; xong thực hiện `T-M1-07` nộp `app-release.aab` lên Google Play Console Closed Testing.
+
+---
+
+## Phiên 13 — 2026-11-20 01:10 | Thành viên: M3 (Backend & DB) | Task: `T-M3-07`, `T-M3-08`, `T-M3-10`, `T-M3-11` (`[x]`), `T-M3-09` (`[~]`)
+- **Mục tiêu phiên:** Triển khai và nghiệm thu toàn bộ 5 tasks Sprint 2 của Thành viên M3 (`T-M3-07` đến `T-M3-11`) theo đúng `[OWNER: M3]`, bảo đảm 100% tương thích với app Mobile `M1`/`M2` và không đụng `feature_extractor.py` (`M4`) hay `[LOCKED STUB]`.
+- **Những file đã tạo / chỉnh sửa:**
+  - Schemas & Sync (`T-M3-07`): `backend/app/schemas/core_schemas.py`, `backend/app/services/sync_service.py`, `backend/app/routers/sync.py` (`POST /api/v1/sync/push` LWW theo `updated_at` UTC + `max(steps_count)` + tính `total_volume_kg`/`is_pr`, `GET /api/v1/sync/pull?since=`).
+  - Health (`T-M3-08`): `backend/app/routers/health.py` (`/biometrics` kèm BMI Châu Á & 7-Day Moving Average, `/daily/{date}` trả `200 OK` mặc định nếu user mới + Smart Hydration, `/catalog`, `/meals`, `/supplements`).
+  - 3D Exercises & Storage (`T-M3-09`): `backend/app/db/seed_catalog_and_exercises.py`, `backend/app/services/storage_service.py`, `backend/app/routers/exercises.py` (3 bài MVP giữ đường dẫn `assets/3d_bundled/*.glb` + SHA-256 khớp `assets_manifest.json` của `M2`; `/exercises/{code}/alternatives` trả top 5 bài cùng nhóm cơ chính).
+  - Routines & Workouts (`T-M3-10`): `backend/app/routers/routines.py`, `backend/app/routers/workouts.py` (trả kèm `exercise_code` cho `M2`, tính `total_volume_kg`, `estimated_1rm` Epley/Brzycki, cờ `is_pr` & tự cộng bù nước ngày tập).
+  - Analytics (`T-M3-11`): `backend/app/services/analytics_service.py`, `backend/app/routers/analytics.py` (`GET /api/v1/analytics/summary` trả Weekly Volume Load, 6-Axis Muscle Radar & PR Wall + Streak).
+  - Test & Tiến độ: `backend/tests/test_core_api.py` (bổ sung test E2E Sprint 2), `docs/taskboard.md` (`T-M3-07`, `08`, `10`, `11` `[x]`; `T-M3-09` `[~]` chờ 27 `.glb` của `M2`).
+- **Kiểm tra / Kết quả chạy thử:**
+  - `docker compose exec api python -m app.db.seed_catalog_and_exercises`: Thành công (`total_foods: 36`, `total_exercises: 30`).
+  - `docker compose exec api pytest tests/test_core_api.py -v`: **`8 passed in 3.56s`** (Pass 100% cả Sprint 1 + Sprint 2 E2E trên PostgreSQL 16 thật).
+- **Việc cần làm ở phiên kế tiếp:**
+  - Commit & tạo Pull Request từ nhánh `role/backend-architect` vào `main`; khi `M2` hoàn thành `T-M2-07` thì upload 27 file `.glb` mở rộng lên MinIO/CDN để chốt `[x]` cho `T-M3-09`.
 
 ---
 

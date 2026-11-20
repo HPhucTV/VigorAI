@@ -246,3 +246,159 @@ def test_settings_cors_origins_parsing() -> None:
     assert Settings.parse_cors_origins(
         '["https://a.com", "https://b.com"]'
     ) == ["https://a.com", "https://b.com"]
+
+
+@pytest.mark.asyncio
+async def test_sprint2_health_exercises_routines_workouts_sync_analytics(
+    async_client: AsyncClient,
+) -> None:
+    email = f"sprint2_{uuid.uuid4().hex[:8]}@vigorai.app"
+    password = "Sprint2Password!"
+
+    reg = await async_client.post(
+        "/api/v1/auth/register",
+        json={
+            "email": email,
+            "password": password,
+            "full_name": "Sprint 2 Tester",
+            "gender": "MALE",
+            "height_cm": 175.0,
+            "fitness_goal": "BULK",
+            "medical_disclaimer_accepted": True,
+        },
+    )
+    assert reg.status_code == 201
+    headers = {"Authorization": f"Bearer {reg.json()['access_token']}"}
+
+    # 1. T-M3-09: Exercises & Alternatives (3 bundled MVP exercises + top 5 chest alternatives)
+    ex_res = await async_client.get("/api/v1/exercises")
+    assert ex_res.status_code == 200
+    exercises = ex_res.json()["items"]
+    assert len(exercises) == 30
+    bench = next(e for e in exercises if e["code"] == "BARBELL_BENCH_PRESS")
+    assert bench["bundled"] is True
+    assert bench["model_3d_glb_url"] == "assets/3d_bundled/barbell_bench_press.glb"
+
+    alt_res = await async_client.get("/api/v1/exercises/BARBELL_BENCH_PRESS/alternatives")
+    assert alt_res.status_code == 200
+    alts = alt_res.json()["alternatives"]
+    assert 1 <= len(alts) <= 5
+    assert all("Mat_Muscle_Chest" in a["primary_muscles"] for a in alts)
+
+    # 2. T-M3-08: Health (daily default 200 OK, biometrics, catalog, meals, supplements)
+    daily_empty = await async_client.get("/api/v1/health/daily/2026-11-20", headers=headers)
+    assert daily_empty.status_code == 200
+    assert daily_empty.json()["steps_count"] == 0
+
+    bio_res = await async_client.post(
+        "/api/v1/health/biometrics",
+        headers=headers,
+        json={"weight_kg": 72.0, "logged_date": "2026-11-20"},
+    )
+    assert bio_res.status_code == 201
+    assert bio_res.json()["bmi_category_asian"] == "OVERWEIGHT"
+
+    cat_res = await async_client.get("/api/v1/health/catalog?q=ga")
+    assert cat_res.status_code == 200
+    assert len(cat_res.json()["items"]) >= 1
+
+    meal_res = await async_client.post(
+        "/api/v1/health/meals",
+        headers=headers,
+        json={"class_code": "GRILLED_CHICKEN_BREAST", "grams": 200.0, "meal_type": "LUNCH"},
+    )
+    assert meal_res.status_code == 201
+    assert meal_res.json()["protein_g"] == 62.0
+
+    supp_res = await async_client.post(
+        "/api/v1/health/supplements",
+        headers=headers,
+        json={"supplement_name": "Creatine", "dosage_label": "5g", "reminder_time": "08:00"},
+    )
+    assert supp_res.status_code == 201
+
+    # 3. T-M3-10: Routines & Workout Sessions (Volume + 1RM + PR)
+    routine_res = await async_client.post(
+        "/api/v1/routines",
+        headers=headers,
+        json={
+            "name": "Test Push Day",
+            "split_type": "PUSH_PULL_LEGS",
+            "scheduled_weekdays": [1, 4],
+            "exercises": [{"exercise_code": "BARBELL_BENCH_PRESS", "target_sets": 3}],
+        },
+    )
+    assert routine_res.status_code == 201
+    routine_id = routine_res.json()["id"]
+    assert routine_res.json()["exercises"][0]["exercise_code"] == "BARBELL_BENCH_PRESS"
+
+    sess_res = await async_client.post(
+        "/api/v1/workouts/sessions",
+        headers=headers,
+        json={
+            "routine_id": routine_id,
+            "session_title": "Push Session 1",
+            "duration_seconds": 3700,
+            "sets": [
+                {"exercise_code": "BARBELL_BENCH_PRESS", "set_number": 1, "weight_kg": 80.0, "reps": 8, "rpe": 8.0},
+                {"exercise_code": "BARBELL_BENCH_PRESS", "set_number": 2, "weight_kg": 85.0, "reps": 6, "rpe": 8.5},
+            ],
+        },
+    )
+    assert sess_res.status_code == 201
+    sess_data = sess_res.json()
+    assert sess_data["total_volume_kg"] == 1150.0
+    assert sess_data["sets"][0]["is_pr"] is True
+    assert sess_data["sets"][1]["estimated_1rm"] > sess_data["sets"][0]["estimated_1rm"]
+
+    # 4. T-M3-07: Sync Push (LWW + max(steps_count) + Idempotent) & Pull
+    sync_bio_id = str(uuid.uuid4())
+    push1 = await async_client.post(
+        "/api/v1/sync/push",
+        headers=headers,
+        json={
+            "biometric_logs": [
+                {"id": sync_bio_id, "weight_kg": 73.0, "logged_date": "2026-11-19", "updated_at": "2026-11-19T10:00:00Z"}
+            ],
+            "daily_health_logs": [
+                {"log_date": "2026-11-19", "steps_count": 9000, "water_ml": 2200, "updated_at": "2026-11-19T10:00:00Z"}
+            ],
+        },
+    )
+    assert push1.status_code == 200
+
+    # Push older timestamp with smaller steps -> must keep 9000 steps and 73.0 kg
+    push2 = await async_client.post(
+        "/api/v1/sync/push",
+        headers=headers,
+        json={
+            "biometric_logs": [
+                {"id": sync_bio_id, "weight_kg": 71.0, "logged_date": "2026-11-19", "updated_at": "2026-11-19T08:00:00Z"}
+            ],
+            "daily_health_logs": [
+                {"log_date": "2026-11-19", "steps_count": 4000, "water_ml": 1500, "updated_at": "2026-11-19T12:00:00Z"}
+            ],
+        },
+    )
+    assert push2.status_code == 200
+
+    pull_res = await async_client.get("/api/v1/sync/pull", headers=headers)
+    assert pull_res.status_code == 200
+    pulled = pull_res.json()["records"]
+    pulled_bio = next(b for b in pulled["biometric_logs"] if b["id"] == sync_bio_id)
+    assert pulled_bio["weight_kg"] == 73.0
+    pulled_daily = next(d for d in pulled["daily_health_logs"] if d["log_date"] == "2026-11-19")
+    assert pulled_daily["steps_count"] == 9000
+
+    # 5. T-M3-11: Analytics Summary (Weekly Volume, 6-axis Radar, PR Wall)
+    ana_res = await async_client.get("/api/v1/analytics/summary?days=90", headers=headers)
+    assert ana_res.status_code == 200
+    ana = ana_res.json()
+    assert len(ana["weekly_volume"]) >= 1
+    assert ana["muscle_radar"]["chest"] == 2
+    assert len(ana["personal_records"]) >= 1
+
+    # Cleanup user created during test
+    del_res = await async_client.delete("/api/v1/users/me", headers=headers)
+    assert del_res.status_code == 200
+

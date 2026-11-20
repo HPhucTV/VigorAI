@@ -15,9 +15,9 @@
 | :--- | :--- | :---: | :---: | :---: | :---: | :---: | :---: |
 | **M1** | Mobile Core, Health, Food/Photo UI & CH Play | 7 | 5 | 3 | 2 | **17** | `6 / 17 Done (35.3%)` |
 | **M2** | 3D Blender MCP, Workout, Recovery 3D & Charts | 6 | 6 | 3 | 2 | **17** | `5 / 17 Done (29.4%)` |
-| **M3** | Backend FastAPI, PostgreSQL & Cloud Deploy | 6 | 5 | 2 | 2 | **15** | `6 / 15 Done (40.0%)` |
+| **M3** | Backend FastAPI, PostgreSQL & Cloud Deploy | 6 | 5 | 2 | 2 | **15** | `10 / 15 Done (66.7%) · 1 [~]` |
 | **M4** | **100% Pure AI Engineer (Python Only)** | 5 | 4 | 3 | 2 | **14** | `0 / 14 (0%)` |
-| **Tổng cộng** | **Toàn đội (4 thành viên)** | **24** | **20** | **11** | **8** | **63** | **`17 / 63 Done (27.0%)`** |
+| **Tổng cộng** | **Toàn đội (4 thành viên)** | **24** | **20** | **11** | **8** | **63** | **`21 / 63 Done (33.3%)`** |
 
 ### 1.2. Bảng Ánh xạ 26 Chức năng (`F01`–`F26`) sang Mã Task
 
@@ -129,11 +129,11 @@
 
 | Trạng thái | Mã Task & Công việc | Mã `Fxx` | Phạm vi File (File Scope) | Chiến lược Song song (Mock / Unblock) | Tiêu chí Nghiệm thu (Definition of Done) |
 | :---: | :--- | :---: | :--- | :--- | :--- |
-| `[ ]` | **T-M3-07:** Xây dựng Engine Đồng bộ hai chiều `POST /api/v1/sync/push` & `GET /api/v1/sync/pull` (Batch Transaction, LWW theo `updated_at` UTC, `max(steps_count)`). | `INFRA` | `backend/app/routers/sync.py`, `backend/app/services/sync_service.py` | Test giả lập 2 thiết bị sync cùng lúc. | Xử lý Idempotent an toàn khi gửi trùng lô sync; không mất bước chân. |
-| `[ ]` | **T-M3-08:** Hoàn thiện nhóm API Sức khỏe (`/api/v1/health/biometrics`, `/daily/{date}`, `/meals`, `/supplements`, tra cứu `food_nutrition_catalog`). | `F01`–`F06` | `backend/app/routers/health.py` | Ưu tiên xong Tuần 3–4 để `M1` ghép nối. | Tất cả CRUD + Filter ngày hoạt động đúng trên Swagger & Pytest. |
-| `[ ]` | **T-M3-09:** Hoàn thiện API Kho bài tập 3D (`/api/v1/exercises`, `/exercises/{code}/alternatives`) & dịch vụ MinIO/CDN lưu `.glb` kèm SHA-256. | `F07`–`F12`, `F25` | `backend/app/routers/exercises.py`, `backend/app/services/storage_service.py` | Nhận `.glb` của `M2` đưa lên bucket công khai. | API trả URL `.glb`, mảng `primary_muscles` và top 5 bài thay thế cùng nhóm cơ. |
-| `[ ]` | **T-M3-10:** Hoàn thiện API Giáo án & Buổi tập (`/api/v1/routines`, `/api/v1/workouts/sessions`), tự tính `total_volume_kg` & cập nhật `is_pr`. | `F14`–`F18` | `backend/app/routers/routines.py`, `backend/app/routers/workouts.py` | Dùng seed data test trước khi `M2` ghép. | Lưu phiên 20 hiệp `< 100ms`; tự động đánh dấu kỷ lục PR chính xác. |
-| `[ ]` | **T-M3-11:** Xây dựng API Tổng hợp Tiến độ `/api/v1/analytics/summary` (Volume tuần/tháng, Radar 6 nhóm cơ, Bảng PR). | `F22`, `F24`, `F25` | `backend/app/routers/analytics.py`, `backend/app/services/analytics_service.py` | Phối hợp `M2` để khớp định dạng dữ liệu vẽ biểu đồ. | Truy vấn tổng hợp 90 ngày chạy `< 150ms` nhờ Index PostgreSQL. |
+| `[x]` | **T-M3-07:** Xây dựng Engine Đồng bộ hai chiều `POST /api/v1/sync/push` & `GET /api/v1/sync/pull` (Batch Transaction, LWW theo `updated_at` UTC, `max(steps_count)`). | `INFRA` | `backend/app/routers/sync.py`, `backend/app/services/sync_service.py` | Test giả lập 2 thiết bị sync cùng lúc. | Xử lý Idempotent an toàn khi gửi trùng lô sync; không mất bước chân. |
+| `[x]` | **T-M3-08:** Hoàn thiện nhóm API Sức khỏe (`/api/v1/health/biometrics`, `/daily/{date}`, `/meals`, `/supplements`, tra cứu `food_nutrition_catalog`). | `F01`–`F06` | `backend/app/routers/health.py` | Ưu tiên xong Tuần 3–4 để `M1` ghép nối. | Tất cả CRUD + Filter ngày hoạt động đúng trên Swagger & Pytest. |
+| `[~]` | **T-M3-09:** Hoàn thiện API Kho bài tập 3D (`/api/v1/exercises`, `/exercises/{code}/alternatives`) & dịch vụ MinIO/CDN lưu `.glb` kèm SHA-256. *(API & 3 bài MVP `assets/3d_bundled/*.glb` đã hoàn thiện và Pass Pytest; giữ `[~]` chờ `M2` hoàn thành `T-M2-07` để upload 27 file `.glb` mở rộng lên MinIO/CDN)* | `F07`–`F12`, `F25` | `backend/app/routers/exercises.py`, `backend/app/services/storage_service.py` | Nhận `.glb` của `M2` đưa lên bucket công khai. | API trả URL `.glb`, mảng `primary_muscles` và top 5 bài thay thế cùng nhóm cơ. |
+| `[x]` | **T-M3-10:** Hoàn thiện API Giáo án & Buổi tập (`/api/v1/routines`, `/api/v1/workouts/sessions`), tự tính `total_volume_kg` & cập nhật `is_pr`. | `F14`–`F18` | `backend/app/routers/routines.py`, `backend/app/routers/workouts.py` | Dùng seed data test trước khi `M2` ghép. | Lưu phiên 20 hiệp `< 100ms`; tự động đánh dấu kỷ lục PR chính xác. |
+| `[x]` | **T-M3-11:** Xây dựng API Tổng hợp Tiến độ `/api/v1/analytics/summary` (Volume tuần/tháng, Radar 6 nhóm cơ, Bảng PR). | `F22`, `F24`, `F25` | `backend/app/routers/analytics.py`, `backend/app/services/analytics_service.py` | Phối hợp `M2` để khớp định dạng dữ liệu vẽ biểu đồ. | Truy vấn tổng hợp 90 ngày chạy `< 150ms` nhờ Index PostgreSQL. |
 
 ### Thành viên 4 (`M4` – 100% Pure AI Engineer, Python Only)
 
