@@ -17,6 +17,36 @@
 
 ---
 
+## Phiên 15 — 2026-11-20 14:38 | Thành viên: M1 (Mobile Core, Health, Food/Photo UI & CH Play) | Task: `T-M1-08`, `T-M1-09`, `T-M1-10`, `T-M1-11`, `T-M1-12` (`[~]`)
+- **Mục tiêu phiên:** Triển khai đầy đủ 5 tasks Sprint 2 của Thành viên M1 (`T-M1-08` đến `T-M1-12`) theo đúng `[OWNER: M1]`, giữ nguyên 100% file `[LOCKED STUB]` (`pubspec.yaml`, `main.dart`, `app_database.dart`, `app_router.dart`) và chuẩn tuân thủ Google Play Store.
+- **Những file đã tạo / chỉnh sửa:**
+  - **Core Network, DB Models & WorkManager (`T-M1-08`, `T-M1-09`, `T-M1-12`):**
+    - `mobile/lib/core/network/{api_endpoints,dio_client}.dart`: Bổ sung endpoint `/api/v1/health/catalog`, `DELETE /supplements/{id}`, mở rộng `MockApiInterceptor` cho `/api/v1/sync/*`, `/api/v1/ai/food-analyze` và CRUD Health.
+    - `mobile/lib/core/database/health_tables.drift.dart`: Giữ nguyên 4 Drift `Table` (tương thích `schemaVersion = 1`), bổ sung `calculateMovingAverage7Day`, `calculateMacroTargets`, `classifySleepStatus`, `MealLogModel.extractTitleFromDetectedItems` và `toJson`/`copyWith`.
+    - `mobile/lib/core/platform/workmanager_reminder_service.dart`: Nhắc uống nước (`07:00–21:30`, chu kỳ 2h) & Supplement bằng `WorkManager` (`ExistingPeriodicWorkPolicy.update`), `SupplementIntakeStore` lưu trạng thái `"Đã uống"` và tính % tuân thủ 7 ngày.
+    - `mobile/android/app/src/main/kotlin/com/vigorai/app/{MainActivity,SupplementTakenReceiver}.kt` & `AndroidManifest.xml`: Kênh thông báo Android API 26+ với nút hành động **"Đã uống"** xử lý ngầm qua `BroadcastReceiver` (0 quyền cấm CH Play, giữ nguyên khối `[RE-ENABLE IN v1.2.0]`).
+    - `mobile/lib/core/sync/sync_queue_manager.dart`: Push/Pull hai chiều với `M3` (7 bảng Drift, `SyncConflictResolver` LWW theo `updated_at` UTC & `max(steps_count)`, auto-sync khi `connectivity_plus` báo có mạng).
+    - `mobile/lib/features/auth_privacy/data/auth_repository.dart`: Dọn sạch `SupplementIntakeStore` khi xóa tài khoản (`F26`).
+  - **Health Offline-First & 7 Màn hình Sprint 2 (`T-M1-08`..`11`):**
+    - `mobile/lib/features/health/data/health_repository.dart`: Đọc/ghi trực tiếp Drift SQLite cho Cân nặng, Nước bù tập (`+500/+750ml`), Calo/Macro, Giấc ngủ, Supplement & Sync.
+    - `mobile/lib/features/health/biometrics/presentation/biometrics_screen.dart` (`F01`: `fl_chart` Moving Average 7 ngày + 5 vòng đo + WHO Châu Á BMI).
+    - `mobile/lib/features/health/hydration/presentation/hydration_screen.dart` (`F03`: nước nền + bù buổi tập + `WorkManager`).
+    - `mobile/lib/features/health/nutrition/{data/offline_food_catalog,presentation/nutrition_screen}.dart` (`F04`: Mifflin-St Jeor, 4 bữa, từ điển 27+ món offline).
+    - `mobile/lib/features/health/sleep/presentation/sleep_screen.dart` (`F05`: `fl_chart` 7 ngày + nhập tay 2 chạm).
+    - `mobile/lib/features/health/supplements/presentation/supplements_screen.dart` (`F06`: lịch nhắc + `"Đã uống"` + % tuân thủ).
+    - `mobile/lib/features/health/food_scan/{data/food_scan_repository,presentation/food_scan_screen}.dart` (`F19`: Photo Picker + vẽ BBox `CustomPainter` + thanh kéo gram + disclaimer + lưu thẳng vào `MealLogsTable`).
+    - `mobile/lib/features/health/progress_photos/{data/progress_photos_repository,presentation/progress_photos_screen}.dart` (`F24`: lưu 100% cục bộ `progress_photos/`, Slider so sánh Before/After).
+    - `mobile/lib/core/router/health_routes.dart` & `mobile/lib/features/health/presentation/health_dashboard_screen.dart`: Kết nối toàn bộ 7 route mới & nút Sync thật.
+  - **CH Play Checklist, Tests & Tiến độ:**
+    - `docs/chplay_submission_checklist.md`, `mobile/test/health/health_sprint2_test.dart`, `docs/taskboard.md` (`T-M1-08`..`12` đánh dấu `[~]` chờ nghiệm thu trên Flutter SDK & phụ thuộc `M4` / Closed Testing 14 ngày).
+- **Kiểm tra / Kết quả chạy thử:**
+  - Máy hiện tại chưa cài `flutter`/`dart` SDK trong `PATH` nên chưa chạy `flutter analyze` & `flutter test`; đã kiểm tra tĩnh toàn bộ import nội bộ, API gói (`workmanager ^0.10.10`, `connectivity_plus ^6.1.0`, `fl_chart ^0.69.2`) và `AndroidManifest.xml` sạch 0 quyền cấm.
+- **Việc cần làm ở phiên kế tiếp:**
+  - Trên máy có cài Flutter SDK: chạy `cd mobile && dart run build_runner build --delete-conflicting-outputs && flutter analyze --no-fatal-infos && flutter test test/health/` để nghiệm thu đóng `[x]` cho `T-M1-08`, `T-M1-09`, `T-M1-11`.
+  - Theo dõi `T-M4-06` (`M4` deploy Model B thật) để chốt `T-M1-10`, và đủ 14 ngày Closed Testing (`T-M1-07` / `T-M2-06`) để chốt `T-M1-12`.
+
+---
+
 ## Phiên 14 — 2026-11-20 09:09 | Thành viên: M1 + M2 + M3 (Hotfix Điện thoại thật: 3D Load < 0.8s & Lỗi Auth Thân thiện) | Task: `T-M2-02`, `T-M2-03`, `T-M1-04`, `T-M2-06`, `T-M3-06`
 - **Mục tiêu phiên:** Xử lý 2 lỗi phát hiện khi test `app-release.apk` trên điện thoại thật: (1) Màn hình 3D treo mãi *"Đang dựng mô hình 3D..."* do Android Release chặn HTTP local proxy `127.0.0.1` của `model_viewer_plus` (`net::ERR_CLEARTEXT_NOT_PERMITTED`) và tránh tải Draco WASM từ `gstatic.com`; (2) Màn hình Đăng nhập hiển thị cả chuỗi `DioException` kỹ thuật dài dòng thay vì thông báo ngắn gọn tiếng Việt + thiếu tài khoản `demo@vigorai.app` trên Railway.
 - **Những file đã tạo / chỉnh sửa:**

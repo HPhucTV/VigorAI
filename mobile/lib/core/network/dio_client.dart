@@ -16,6 +16,7 @@ class StorageKeys {
   static const String disclaimerAccepted = 'vigorai_medical_disclaimer_accepted';
   static const String disclaimerAcceptedAt = 'vigorai_medical_disclaimer_at';
   static const String currentUserJson = 'vigorai_current_user_json';
+  static const String lastSyncUtc = 'vigorai_last_sync_utc';
 }
 
 final secureStorageProvider = Provider<FlutterSecureStorage>((ref) {
@@ -107,12 +108,20 @@ class AuthInterceptor extends Interceptor {
 /// Gia lap API Auth & Health tu assets/mock_json/mock_m1_health.json khi useMockApi = true.
 class MockApiInterceptor extends Interceptor {
   Map<String, dynamic>? _cachedMockM1;
+  Map<String, dynamic>? _cachedMockM4;
 
   Future<Map<String, dynamic>> _loadMockM1() async {
     if (_cachedMockM1 != null) return _cachedMockM1!;
     final raw = await rootBundle.loadString('assets/mock_json/mock_m1_health.json');
     _cachedMockM1 = jsonDecode(raw) as Map<String, dynamic>;
     return _cachedMockM1!;
+  }
+
+  Future<Map<String, dynamic>> _loadMockM4() async {
+    if (_cachedMockM4 != null) return _cachedMockM4!;
+    final raw = await rootBundle.loadString('assets/mock_json/mock_m4_ai.json');
+    _cachedMockM4 = jsonDecode(raw) as Map<String, dynamic>;
+    return _cachedMockM4!;
   }
 
   @override
@@ -126,6 +135,78 @@ class MockApiInterceptor extends Interceptor {
     }
 
     final path = options.path;
+    final method = options.method.toUpperCase();
+
+    if (path == ApiEndpoints.aiFoodAnalyze && method == 'POST') {
+      final mockAi = await _loadMockM4();
+      handler.resolve(
+        Response<Map<String, dynamic>>(
+          requestOptions: options,
+          statusCode: 200,
+          data: Map<String, dynamic>.from(
+            mockAi['food_analyze_mock'] as Map<String, dynamic>,
+          ),
+        ),
+      );
+      return;
+    }
+
+    if (path.startsWith('/api/v1/sync')) {
+      final nowUtcIso = DateTime.now().toUtc().toIso8601String();
+      if (path == ApiEndpoints.syncPush && method == 'POST') {
+        final body = options.data as Map<String, dynamic>? ?? <String, dynamic>{};
+        final syncedIds = <String, List<String>>{};
+        var totalApplied = 0;
+        for (final key in const [
+          'biometric_logs',
+          'daily_health_logs',
+          'supplement_schedules',
+          'meal_logs',
+          'workout_routines',
+          'workout_sessions',
+          'workout_sets',
+        ]) {
+          final items = (body[key] as List?) ?? const [];
+          final ids = <String>[];
+          for (final item in items) {
+            if (item is Map && item['id'] != null) {
+              ids.add(item['id'].toString());
+            }
+          }
+          syncedIds[key] = ids;
+          totalApplied += items.length;
+        }
+        handler.resolve(
+          Response<Map<String, dynamic>>(
+            requestOptions: options,
+            statusCode: 200,
+            data: <String, dynamic>{
+              'status': 'ok',
+              'synced_ids': syncedIds,
+              'total_applied': totalApplied,
+              'server_time_utc': nowUtcIso,
+            },
+          ),
+        );
+        return;
+      }
+
+      if (path == ApiEndpoints.syncPull && method == 'GET') {
+        handler.resolve(
+          Response<Map<String, dynamic>>(
+            requestOptions: options,
+            statusCode: 200,
+            data: <String, dynamic>{
+              'since': options.queryParameters['since'],
+              'server_time_utc': nowUtcIso,
+              'records': <String, dynamic>{},
+            },
+          ),
+        );
+        return;
+      }
+    }
+
     if (path.startsWith('/api/v1/auth') ||
         path.startsWith('/api/v1/health') ||
         path.startsWith('/api/v1/users')) {
@@ -205,6 +286,17 @@ class MockApiInterceptor extends Interceptor {
       }
 
       if (path == ApiEndpoints.biometrics) {
+        if (method == 'POST') {
+          final body = options.data as Map<String, dynamic>? ?? <String, dynamic>{};
+          handler.resolve(
+            Response<Map<String, dynamic>>(
+              requestOptions: options,
+              statusCode: 201,
+              data: body,
+            ),
+          );
+          return;
+        }
         handler.resolve(
           Response<Map<String, dynamic>>(
             requestOptions: options,
@@ -216,6 +308,17 @@ class MockApiInterceptor extends Interceptor {
       }
 
       if (path.startsWith('/api/v1/health/daily/')) {
+        if (method == 'PUT') {
+          final body = options.data as Map<String, dynamic>? ?? <String, dynamic>{};
+          handler.resolve(
+            Response<Map<String, dynamic>>(
+              requestOptions: options,
+              statusCode: 200,
+              data: body,
+            ),
+          );
+          return;
+        }
         handler.resolve(
           Response<Map<String, dynamic>>(
             requestOptions: options,
@@ -226,7 +329,52 @@ class MockApiInterceptor extends Interceptor {
         return;
       }
 
+      if (path == ApiEndpoints.foodCatalog) {
+        handler.resolve(
+          Response<Map<String, dynamic>>(
+            requestOptions: options,
+            statusCode: 200,
+            data: <String, dynamic>{
+              'items': const [
+                {
+                  'class_code': 'GRILLED_CHICKEN_BREAST',
+                  'name_vi': 'Ức gà áp chảo',
+                  'name_en': 'Grilled Chicken Breast',
+                  'kcal_per_100g': 165.0,
+                  'protein_per_100g': 31.0,
+                  'carbs_per_100g': 0.0,
+                  'fat_per_100g': 3.6,
+                  'default_serving_g': 180.0,
+                },
+                {
+                  'class_code': 'WHITE_RICE',
+                  'name_vi': 'Cơm trắng',
+                  'name_en': 'Steamed White Rice',
+                  'kcal_per_100g': 130.0,
+                  'protein_per_100g': 2.7,
+                  'carbs_per_100g': 28.2,
+                  'fat_per_100g': 0.3,
+                  'default_serving_g': 150.0,
+                },
+              ],
+            },
+          ),
+        );
+        return;
+      }
+
       if (path == ApiEndpoints.meals) {
+        if (method == 'POST') {
+          final body = options.data as Map<String, dynamic>? ?? <String, dynamic>{};
+          handler.resolve(
+            Response<Map<String, dynamic>>(
+              requestOptions: options,
+              statusCode: 201,
+              data: body,
+            ),
+          );
+          return;
+        }
         handler.resolve(
           Response<Map<String, dynamic>>(
             requestOptions: options,
@@ -238,11 +386,33 @@ class MockApiInterceptor extends Interceptor {
       }
 
       if (path == ApiEndpoints.supplements) {
+        if (method == 'POST') {
+          final body = options.data as Map<String, dynamic>? ?? <String, dynamic>{};
+          handler.resolve(
+            Response<Map<String, dynamic>>(
+              requestOptions: options,
+              statusCode: 201,
+              data: body,
+            ),
+          );
+          return;
+        }
         handler.resolve(
           Response<Map<String, dynamic>>(
             requestOptions: options,
             statusCode: 200,
             data: <String, dynamic>{'items': mock['supplements']},
+          ),
+        );
+        return;
+      }
+
+      if (path.startsWith('${ApiEndpoints.supplements}/') && method == 'DELETE') {
+        handler.resolve(
+          Response<Map<String, dynamic>>(
+            requestOptions: options,
+            statusCode: 200,
+            data: <String, dynamic>{'status': 'deleted'},
           ),
         );
         return;
