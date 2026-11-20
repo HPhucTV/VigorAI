@@ -28,8 +28,10 @@ class ApiEndpoints {
   // Health & Biometrics (M3 & M1)
   static const String biometrics = '/api/v1/health/biometrics';
   static String dailyHealth(String date) => '/api/v1/health/daily/$date';
+  static const String foodCatalog = '/api/v1/health/catalog';
   static const String meals = '/api/v1/health/meals';
   static const String supplements = '/api/v1/health/supplements';
+  static String deleteSupplement(String id) => '/api/v1/health/supplements/$id';
 
   // 3D Exercises & Workouts (M3 & M2)
   static const String exercises = '/api/v1/exercises';

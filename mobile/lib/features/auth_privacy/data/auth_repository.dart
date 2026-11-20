@@ -9,6 +9,7 @@ import '../../../core/database/app_database.dart';
 import '../../../core/network/api_endpoints.dart';
 import '../../../core/network/dio_client.dart';
 import '../../../core/platform/photo_picker_service.dart';
+import '../../../core/platform/workmanager_reminder_service.dart';
 
 class AuthUserProfile {
   final String id;
@@ -164,6 +165,7 @@ class AuthRepository {
     await _dio.delete<Map<String, dynamic>>(ApiEndpoints.deleteMe);
     await _storage.deleteAll();
     await _photoPickerService.deleteAllPrivateProgressPhotos();
+    await SupplementIntakeStore().clearAll();
     await _database.clearAllLocalData();
   }
 
