@@ -622,14 +622,17 @@ def export_draco_glb(filepath: str) -> None:
     bpy.ops.export_scene.gltf(
         filepath=str(out),
         export_format="GLB",
-        export_draco_mesh_compression_enable=True,
-        export_draco_mesh_compression_level=6,
+        export_draco_mesh_compression_enable=False,
+        export_texcoords=False,
+        export_tangents=False,
+        export_normals=True,
         export_animations=True,
         export_animation_mode="NLA_TRACKS",
+        export_force_sampling=False,
         export_skins=True,
         export_apply=False,
     )
-    print(f"[VigorAI] Exported Draco .glb -> {out} ({out.stat().st_size} bytes)")
+    print(f"[VigorAI] Exported Binary glTF .glb -> {out} ({out.stat().st_size} bytes)")
 
 
 if __name__ == "__main__":

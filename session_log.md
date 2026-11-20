@@ -17,12 +17,35 @@
 
 ---
 
-## Phiên 12 — 2026-11-20 01:10 | Thành viên: M3 (Backend & DB) | Task: `T-M3-07`, `T-M3-08`, `T-M3-10`, `T-M3-11` (`[x]`), `T-M3-09` (`[~]`)
+## Phiên 14 — 2026-11-20 09:09 | Thành viên: M1 + M2 + M3 (Hotfix Điện thoại thật: 3D Load < 0.8s & Lỗi Auth Thân thiện) | Task: `T-M2-02`, `T-M2-03`, `T-M1-04`, `T-M2-06`, `T-M3-06`
+- **Mục tiêu phiên:** Xử lý 2 lỗi phát hiện khi test `app-release.apk` trên điện thoại thật: (1) Màn hình 3D treo mãi *"Đang dựng mô hình 3D..."* do Android Release chặn HTTP local proxy `127.0.0.1` của `model_viewer_plus` (`net::ERR_CLEARTEXT_NOT_PERMITTED`) và tránh tải Draco WASM từ `gstatic.com`; (2) Màn hình Đăng nhập hiển thị cả chuỗi `DioException` kỹ thuật dài dòng thay vì thông báo ngắn gọn tiếng Việt + thiếu tài khoản `demo@vigorai.app` trên Railway.
+- **Những file đã tạo / chỉnh sửa:**
+  - **Fix 3D (`ERR_CLEARTEXT_NOT_PERMITTED` + Fast-Load Binary glTF):**
+    - `mobile/android/app/src/main/res/xml/network_security_config.xml` & `mobile/android/app/src/main/AndroidManifest.xml`: Cấu hình `android:networkSecurityConfig` & `android:usesCleartextTraffic="true"` (kèm `domain-config` cho `127.0.0.1`, `localhost`, `10.0.2.2`) để WebView cho phép nạp trang/model từ local HTTP proxy `http://127.0.0.1:<port>/`.
+    - `assets_3d/scripts_blender_mcp/build_base_mannequin.py` & `build_mvp_exercises.py`: Chuyển xuất 4 file bundled (`base_mannequin.glb`, `barbell_squat.glb`, `push_up.glb`, `barbell_bench_press.glb`) sang chuẩn **Binary glTF 2.0 (`export_draco_mesh_compression_enable=False`)** để mở tức thì cả khi offline mà không cần fetch Draco decoder WASM từ `gstatic.com`; đồng bộ SHA-256 sang `assets_3d/exported_glb/assets_manifest.json` và `mobile/assets/mock_json/mock_m2_exercises.json` (`extensionsUsed = []`, tổng 4 `.glb` trước nén Zip `5,513,360 B`, sau nén vào APK gần như không tăng `+0.1 MB`).
+    - `mobile/lib/features/gym3d/presentation/widgets/muscle_3d_viewer_widget.dart`: Bật `loading: Loading.eager`, gửi tín hiệu `'loaded'` trước khi tô màu, thêm bắt sự kiện `error` + watchdog timeout 8 giây hiển thị nút **"Thử tải lại"** trên nền đặc `0xFF12161F`.
+  - **Fix Auth UI & Seed tài khoản Demo trên Railway:**
+    - `mobile/lib/features/auth_privacy/presentation/auth_controller.dart`: Bổ sung `AuthController.mapAuthErrorMessage(...)` biến lỗi `DioException` (`400`/`401`/`404`) khi đăng nhập thành `"Tài khoản hoặc mật khẩu không chính xác."`, `409` khi đăng ký thành thông báo trùng email rõ ràng, và lỗi kết nối thành hướng dẫn kiểm tra mạng.
+    - `backend/app/db/startup.py`: Gọi thêm `await seed_demo_history(db)` (idempotent) khi container khởi động để tự tạo tài khoản `demo@vigorai.app` (`VigorAI@2026`) cùng 30 ngày lịch sử mẫu. Đã seed và kiểm tra trực tiếp login/sai mật khẩu trên `https://vigorai-production.up.railway.app`.
+- **Kiểm tra / Kết quả chạy thử:**
+  - Headless Blender 5.3 (`--python-exit-code 1`): Xuất sạch 4 `.glb` chuẩn Binary glTF 2.0, kiểm tra binary header xác nhận `extensionsUsed = []`.
+  - Live Railway `https://vigorai-production.up.railway.app`: `demo@vigorai.app` / `VigorAI@2026` login `200 OK`; sai mật khẩu trả `401` (`RAILWAY_DEMO_USER_OK`).
+  - `flutter analyze --no-fatal-infos`: Exit `0`.
+  - `flutter test test/workout/`: Pass `5 / 5`.
+  - `flutter build apk --release --target-platform android-arm64` (`USE_MOCK_API=false`, `API_BASE_URL=https://vigorai-production.up.railway.app`): Exit `0`, `26,430,584 B` (`25.2 MB`).
+  - `flutter build appbundle --release` + `jarsigner -verify`: Exit `0`, `44,850,488 B` (`42.8 MB`), `jar verified.` (`CN=VigorAI`).
+  - Merged Release `AndroidManifest.xml`: Xác nhận có `networkSecurityConfig` + `usesCleartextTraffic="true"`, **0 quyền cấm CH Play**.
+- **Việc cần làm ở phiên kế tiếp:**
+  - Cài lại `app-release.apk` mới lên điện thoại thật để test lại tốc độ mở 3D và thông báo đăng nhập sai; xong thực hiện `T-M1-07` nộp `app-release.aab` lên Google Play Console Closed Testing.
+
+---
+
+## Phiên 13 — 2026-11-20 01:10 | Thành viên: M3 (Backend & DB) | Task: `T-M3-07`, `T-M3-08`, `T-M3-10`, `T-M3-11` (`[x]`), `T-M3-09` (`[~]`)
 - **Mục tiêu phiên:** Triển khai và nghiệm thu toàn bộ 5 tasks Sprint 2 của Thành viên M3 (`T-M3-07` đến `T-M3-11`) theo đúng `[OWNER: M3]`, bảo đảm 100% tương thích với app Mobile `M1`/`M2` và không đụng `feature_extractor.py` (`M4`) hay `[LOCKED STUB]`.
 - **Những file đã tạo / chỉnh sửa:**
   - Schemas & Sync (`T-M3-07`): `backend/app/schemas/core_schemas.py`, `backend/app/services/sync_service.py`, `backend/app/routers/sync.py` (`POST /api/v1/sync/push` LWW theo `updated_at` UTC + `max(steps_count)` + tính `total_volume_kg`/`is_pr`, `GET /api/v1/sync/pull?since=`).
   - Health (`T-M3-08`): `backend/app/routers/health.py` (`/biometrics` kèm BMI Châu Á & 7-Day Moving Average, `/daily/{date}` trả `200 OK` mặc định nếu user mới + Smart Hydration, `/catalog`, `/meals`, `/supplements`).
-  - 3D Exercises & Storage (`T-M3-09`): `backend/app/db/seed_catalog_and_exercises.py`, `backend/app/services/storage_service.py`, `backend/app/routers/exercises.py` (3 bài MVP giữ đường dẫn `assets/3d_bundled/*.glb` + SHA-256 thật khớp `assets_manifest.json` của `M2`; `/exercises/{code}/alternatives` trả top 5 bài cùng nhóm cơ chính).
+  - 3D Exercises & Storage (`T-M3-09`): `backend/app/db/seed_catalog_and_exercises.py`, `backend/app/services/storage_service.py`, `backend/app/routers/exercises.py` (3 bài MVP giữ đường dẫn `assets/3d_bundled/*.glb` + SHA-256 khớp `assets_manifest.json` của `M2`; `/exercises/{code}/alternatives` trả top 5 bài cùng nhóm cơ chính).
   - Routines & Workouts (`T-M3-10`): `backend/app/routers/routines.py`, `backend/app/routers/workouts.py` (trả kèm `exercise_code` cho `M2`, tính `total_volume_kg`, `estimated_1rm` Epley/Brzycki, cờ `is_pr` & tự cộng bù nước ngày tập).
   - Analytics (`T-M3-11`): `backend/app/services/analytics_service.py`, `backend/app/routers/analytics.py` (`GET /api/v1/analytics/summary` trả Weekly Volume Load, 6-Axis Muscle Radar & PR Wall + Streak).
   - Test & Tiến độ: `backend/tests/test_core_api.py` (bổ sung test E2E Sprint 2), `docs/taskboard.md` (`T-M3-07`, `08`, `10`, `11` `[x]`; `T-M3-09` `[~]` chờ 27 `.glb` của `M2`).
@@ -31,6 +54,25 @@
   - `docker compose exec api pytest tests/test_core_api.py -v`: **`8 passed in 3.56s`** (Pass 100% cả Sprint 1 + Sprint 2 E2E trên PostgreSQL 16 thật).
 - **Việc cần làm ở phiên kế tiếp:**
   - Commit & tạo Pull Request từ nhánh `role/backend-architect` vào `main`; khi `M2` hoàn thành `T-M2-07` thì upload 27 file `.glb` mở rộng lên MinIO/CDN để chốt `[x]` cho `T-M3-09`.
+
+---
+
+## Phiên 12 — 2026-11-20 00:11 | Thành viên: M3 + M2 (Hoàn tất Cloud Deploy & Final Signed AAB Sprint 1) | Task: `T-M3-06` (`[x]`), `T-M2-06` (`[~]`)
+- **Mục tiêu phiên:** Sử dụng **Railway MCP** để triển khai live Backend FastAPI + PostgreSQL lên `unique-grace / production`, xác minh HTTPS E2E cho **`T-M3-06`**, và build lại file `.aab` Release đã ký (`USE_MOCK_API=false`) trỏ thẳng server thật cho **`T-M2-06`**.
+- **Hạ tầng Railway & Thao tác đã thực hiện:**
+  - Gỡ bỏ service nháp trùng lặp `secure-kindness` (`10d57bff-4b16-438d-910c-fb466343e6ba`) khỏi staged changes.
+  - Khởi tạo template chính thức **`Postgres`** (`01352b25-a306-4e8a-872d-0cf73db91991`, `ghcr.io/railwayapp-templates/postgres-ssl:18`, deployment `7ae25a4f-1b1c-4ce8-b83b-903b19adc691` `[SUCCESS]`).
+  - Cấu hình service **`VigorAI`** (`3d16d190-58a9-4ada-b451-1b407b5dcc7f`): `builder=DOCKERFILE`, `dockerfilePath=backend/Dockerfile.railway`, `healthcheckPath=/healthz`, `healthcheckTimeout=120`, `watchPatterns=["backend/**", "railway.json"]`, gán biến `DATABASE_URL=${{Postgres.DATABASE_URL}}`, `JWT_SECRET_KEY`, `S3_ENDPOINT_URL=""`, tạo domain HTTPS **`https://vigorai-production.up.railway.app`**.
+  - Sửa lỗi `ImportError: cannot import name 'NoDecode' from 'pydantic_settings'` trên `pydantic-settings==2.6.1` trong `backend/app/core/config.py` (commit `bef0d9c`, merge PR #5 `323ab90`), gắn lại nguồn `HPhucTV/VigorAI@main` và theo dõi deployment **`51958d75-17b1-44a1-accb-b5d611faaa77`** đạt **`[SUCCESS]`**.
+- **File cập nhật phiên này:**
+  - `docs/taskboard.md` (`T-M3-06` `[x]` $\rightarrow$ `M3: 6 / 15 Done (40.0%)`, `Tổng cộng: 17 / 63 Done (27.0%)`; cập nhật trạng thái `.aab` trỏ server thật ở `T-M2-06`).
+  - `session_log.md` (Phiên 12).
+- **Kiểm tra / Kết quả chạy thử:**
+  - **Railway Deploy Logs (`51958d75`):** `alembic upgrade head` chạy `0001_initial_schema` thành công, seed hoàn tất `36` món ăn / `30` bài tập / `4` giáo án mẫu, Uvicorn chạy trên `:8080`, healthcheck `/healthz` trả `200 OK`.
+  - **10/10 Live HTTPS E2E Smoke Checks (`https://vigorai-production.up.railway.app`):** `GET /healthz` (`200`), `GET /delete-account` (`200`), `GET /docs` (`200`), `POST /api/v1/auth/register` thiếu disclaimer (`400`), Register hợp lệ (`201`), `POST /api/v1/auth/refresh` (`200`), `GET /api/v1/users/me/export` (`200`), `DELETE /api/v1/users/me` (`200`), token cũ gọi lại sau xóa (`401`), và kênh Web `POST /api/v1/users/delete-via-web` (`200`) + login lại (`401`). Không để lại user test trong DB production.
+  - **Final Signed Release `.aab` (`USE_MOCK_API=false`, `API_BASE_URL=https://vigorai-production.up.railway.app`):** Exit `0`, xuất `mobile/build/app/outputs/bundle/release/app-release.aab` (`44,689,240 B`), xác minh bởi `jarsigner -verify -verbose -certs` (`jar verified.`, `CN=VigorAI`).
+- **Việc cần làm ở phiên kế tiếp:**
+  - Bạn thực hiện **`T-M1-07`** (đăng ký Google Play Console \$25, xác minh danh tính, gom 20–25 email testers) và tải `mobile/build/app/outputs/bundle/release/app-release.aab` lên **Closed Testing** cùng URL chính sách xóa tài khoản `https://vigorai-production.up.railway.app/delete-account` để chốt **`T-M2-06`** và kích hoạt đồng hồ 14 ngày.
 
 ---
 

@@ -1,4 +1,5 @@
 // [OWNER: M2] Widget 3D dung chung cho Phong tap 3D (F07-F13) va Ban do Phuc hoi 3D (F23)
+import 'dart:async';
 import 'dart:convert';
 import 'dart:math' as math;
 
@@ -86,6 +87,34 @@ class Muscle3DViewerWidget extends StatefulWidget {
 class _Muscle3DViewerWidgetState extends State<Muscle3DViewerWidget> {
   dynamic _webController;
   bool _isModelLoaded = false;
+  String? _errorMessage;
+  int _reloadNonce = 0;
+  Timer? _loadTimeoutTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    _startLoadWatchdog();
+  }
+
+  void _startLoadWatchdog() {
+    _loadTimeoutTimer?.cancel();
+    _loadTimeoutTimer = Timer(const Duration(seconds: 8), () {
+      if (!mounted || _isModelLoaded) return;
+      setState(() {
+        _errorMessage = 'Không thể dựng mô hình 3D. Vui lòng thử tải lại.';
+      });
+    });
+  }
+
+  void _retryLoad() {
+    setState(() {
+      _isModelLoaded = false;
+      _errorMessage = null;
+      _reloadNonce++;
+    });
+    _startLoadWatchdog();
+  }
 
   static double _srgbToLinear(double c) {
     if (c <= 0.04045) return c / 12.92;
@@ -186,14 +215,19 @@ class _Muscle3DViewerWidgetState extends State<Muscle3DViewerWidget> {
       return;
     }
     const onLoaded = function() {
-      window.vigorApplyColors($initialColors);
-      window.vigorSetAnim($initialAnim, $initialSpeed, $initialPlaying);
       if (window.VigorStatusChannel) {
         window.VigorStatusChannel.postMessage('loaded');
       }
+      window.vigorApplyColors($initialColors);
+      window.vigorSetAnim($initialAnim, $initialSpeed, $initialPlaying);
     };
     if (mv.loaded) onLoaded();
     mv.addEventListener('load', onLoaded);
+    mv.addEventListener('error', function() {
+      if (window.VigorStatusChannel) {
+        window.VigorStatusChannel.postMessage('error');
+      }
+    });
 
     let downX = 0, downY = 0;
     mv.addEventListener('pointerdown', function(e) {
@@ -233,7 +267,11 @@ class _Muscle3DViewerWidgetState extends State<Muscle3DViewerWidget> {
     super.didUpdateWidget(oldWidget);
 
     if (oldWidget.glbAssetOrUrl != widget.glbAssetOrUrl) {
-      setState(() => _isModelLoaded = false);
+      setState(() {
+        _isModelLoaded = false;
+        _errorMessage = null;
+      });
+      _startLoadWatchdog();
       return;
     }
 
@@ -261,6 +299,8 @@ class _Muscle3DViewerWidgetState extends State<Muscle3DViewerWidget> {
 
   @override
   void dispose() {
+    _loadTimeoutTimer?.cancel();
+    _loadTimeoutTimer = null;
     final ctrl = _webController;
     _webController = null;
     if (ctrl != null) {
@@ -285,10 +325,11 @@ class _Muscle3DViewerWidgetState extends State<Muscle3DViewerWidget> {
       child: Stack(
         children: [
           ModelViewer(
-            key: ValueKey<String>(widget.glbAssetOrUrl),
+            key: ValueKey<String>('${widget.glbAssetOrUrl}#$_reloadNonce'),
             id: 'vigor-mv',
             src: widget.glbAssetOrUrl,
             alt: 'Mô hình giải phẫu cơ bắp 3D VigorAI',
+            loading: Loading.eager,
             backgroundColor: const Color(0xFF12161F),
             cameraControls: true,
             disablePan: true,
@@ -312,8 +353,18 @@ class _Muscle3DViewerWidgetState extends State<Muscle3DViewerWidget> {
               JavascriptChannel(
                 'VigorStatusChannel',
                 onMessageReceived: (message) {
-                  if (message.message == 'loaded' && mounted) {
-                    setState(() => _isModelLoaded = true);
+                  if (!mounted) return;
+                  if (message.message == 'loaded') {
+                    _loadTimeoutTimer?.cancel();
+                    setState(() {
+                      _isModelLoaded = true;
+                      _errorMessage = null;
+                    });
+                  } else if (message.message.startsWith('error')) {
+                    _loadTimeoutTimer?.cancel();
+                    setState(() {
+                      _errorMessage = 'Không thể tải mô hình 3D.';
+                    });
                   }
                 },
               ),
@@ -323,23 +374,63 @@ class _Muscle3DViewerWidgetState extends State<Muscle3DViewerWidget> {
             },
           ),
           if (!_isModelLoaded)
-            const Positioned.fill(
-              child: IgnorePointer(
-                child: ColoredBox(
-                  color: Color(0xAA12161F),
-                  child: Center(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        CircularProgressIndicator(strokeWidth: 2.5),
-                        SizedBox(height: 10),
-                        Text(
-                          'Đang dựng mô hình 3D...',
-                          style: TextStyle(color: Colors.white70, fontSize: 12),
+            Positioned.fill(
+              child: ColoredBox(
+                color: const Color(0xFF12161F),
+                child: Center(
+                  child: _errorMessage != null
+                      ? Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 20),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(
+                                Icons.warning_amber_rounded,
+                                color: Colors.amber,
+                                size: 32,
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                _errorMessage!,
+                                textAlign: TextAlign.center,
+                                style: const TextStyle(
+                                  color: Colors.white70,
+                                  fontSize: 13,
+                                ),
+                              ),
+                              const SizedBox(height: 12),
+                              OutlinedButton.icon(
+                                onPressed: _retryLoad,
+                                icon: const Icon(
+                                  Icons.refresh,
+                                  size: 18,
+                                  color: Colors.white,
+                                ),
+                                label: const Text(
+                                  'Thử tải lại',
+                                  style: TextStyle(color: Colors.white),
+                                ),
+                                style: OutlinedButton.styleFrom(
+                                  side: const BorderSide(color: Colors.white38),
+                                ),
+                              ),
+                            ],
+                          ),
+                        )
+                      : const Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            CircularProgressIndicator(strokeWidth: 2.5),
+                            SizedBox(height: 10),
+                            Text(
+                              'Đang dựng mô hình 3D...',
+                              style: TextStyle(
+                                color: Colors.white70,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ],
                         ),
-                      ],
-                    ),
-                  ),
                 ),
               ),
             ),
