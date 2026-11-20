@@ -8,6 +8,7 @@ from urllib.parse import urlsplit, urlunsplit
 
 from app.core.config import settings
 from app.db.seed_catalog_and_exercises import seed_catalog_and_exercises
+from app.db.seed_demo_history import seed_demo_history
 from app.db.session import AsyncSessionLocal, engine
 
 logging.basicConfig(
@@ -67,11 +68,13 @@ def _run_migrations_with_retry() -> bool:
 
 
 async def _run_seed() -> None:
-    """Nap du lieu chuan (food catalog + 30 bai tap + 4 giao an mau) mot cach idempotent."""
+    """Nap du lieu chuan (food catalog + 30 bai tap + 4 giao an mau + user demo) mot cach idempotent."""
     try:
         async with AsyncSessionLocal() as db:
             stats = await seed_catalog_and_exercises(db)
             logger.info("Idempotent seed hoan tat: %s", stats)
+            demo_stats = await seed_demo_history(db)
+            logger.info("Idempotent demo history seed hoan tat: %s", demo_stats)
     finally:
         await engine.dispose()
 

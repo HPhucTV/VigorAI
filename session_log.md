@@ -17,6 +17,29 @@
 
 ---
 
+## Phiên 13 — 2026-11-20 09:09 | Thành viên: M1 + M2 + M3 (Hotfix Điện thoại thật: 3D Load < 0.8s & Lỗi Auth Thân thiện) | Task: `T-M2-02`, `T-M2-03`, `T-M1-04`, `T-M2-06`, `T-M3-06`
+- **Mục tiêu phiên:** Xử lý 2 lỗi phát hiện khi test `app-release.apk` trên điện thoại thật: (1) Màn hình 3D treo mãi *"Đang dựng mô hình 3D..."* do Android Release chặn HTTP local proxy `127.0.0.1` của `model_viewer_plus` (`net::ERR_CLEARTEXT_NOT_PERMITTED`) và tránh tải Draco WASM từ `gstatic.com`; (2) Màn hình Đăng nhập hiển thị cả chuỗi `DioException` kỹ thuật dài dòng thay vì thông báo ngắn gọn tiếng Việt + thiếu tài khoản `demo@vigorai.app` trên Railway.
+- **Những file đã tạo / chỉnh sửa:**
+  - **Fix 3D (`ERR_CLEARTEXT_NOT_PERMITTED` + Fast-Load Binary glTF):**
+    - `mobile/android/app/src/main/res/xml/network_security_config.xml` & `mobile/android/app/src/main/AndroidManifest.xml`: Cấu hình `android:networkSecurityConfig` & `android:usesCleartextTraffic="true"` (kèm `domain-config` cho `127.0.0.1`, `localhost`, `10.0.2.2`) để WebView cho phép nạp trang/model từ local HTTP proxy `http://127.0.0.1:<port>/`.
+    - `assets_3d/scripts_blender_mcp/build_base_mannequin.py` & `build_mvp_exercises.py`: Chuyển xuất 4 file bundled (`base_mannequin.glb`, `barbell_squat.glb`, `push_up.glb`, `barbell_bench_press.glb`) sang chuẩn **Binary glTF 2.0 (`export_draco_mesh_compression_enable=False`)** để mở tức thì cả khi offline mà không cần fetch Draco decoder WASM từ `gstatic.com`; đồng bộ SHA-256 sang `assets_3d/exported_glb/assets_manifest.json` và `mobile/assets/mock_json/mock_m2_exercises.json` (`extensionsUsed = []`, tổng 4 `.glb` trước nén Zip `5,513,360 B`, sau nén vào APK gần như không tăng `+0.1 MB`).
+    - `mobile/lib/features/gym3d/presentation/widgets/muscle_3d_viewer_widget.dart`: Bật `loading: Loading.eager`, gửi tín hiệu `'loaded'` trước khi tô màu, thêm bắt sự kiện `error` + watchdog timeout 8 giây hiển thị nút **"Thử tải lại"** trên nền đặc `0xFF12161F`.
+  - **Fix Auth UI & Seed tài khoản Demo trên Railway:**
+    - `mobile/lib/features/auth_privacy/presentation/auth_controller.dart`: Bổ sung `AuthController.mapAuthErrorMessage(...)` biến lỗi `DioException` (`400`/`401`/`404`) khi đăng nhập thành `"Tài khoản hoặc mật khẩu không chính xác."`, `409` khi đăng ký thành thông báo trùng email rõ ràng, và lỗi kết nối thành hướng dẫn kiểm tra mạng.
+    - `backend/app/db/startup.py`: Gọi thêm `await seed_demo_history(db)` (idempotent) khi container khởi động để tự tạo tài khoản `demo@vigorai.app` (`VigorAI@2026`) cùng 30 ngày lịch sử mẫu. Đã seed và kiểm tra trực tiếp login/sai mật khẩu trên `https://vigorai-production.up.railway.app`.
+- **Kiểm tra / Kết quả chạy thử:**
+  - Headless Blender 5.3 (`--python-exit-code 1`): Xuất sạch 4 `.glb` chuẩn Binary glTF 2.0, kiểm tra binary header xác nhận `extensionsUsed = []`.
+  - Live Railway `https://vigorai-production.up.railway.app`: `demo@vigorai.app` / `VigorAI@2026` login `200 OK`; sai mật khẩu trả `401` (`RAILWAY_DEMO_USER_OK`).
+  - `flutter analyze --no-fatal-infos`: Exit `0`.
+  - `flutter test test/workout/`: Pass `5 / 5`.
+  - `flutter build apk --release --target-platform android-arm64` (`USE_MOCK_API=false`, `API_BASE_URL=https://vigorai-production.up.railway.app`): Exit `0`, `26,430,584 B` (`25.2 MB`).
+  - `flutter build appbundle --release` + `jarsigner -verify`: Exit `0`, `44,850,488 B` (`42.8 MB`), `jar verified.` (`CN=VigorAI`).
+  - Merged Release `AndroidManifest.xml`: Xác nhận có `networkSecurityConfig` + `usesCleartextTraffic="true"`, **0 quyền cấm CH Play**.
+- **Việc cần làm ở phiên kế tiếp:**
+  - Cài lại `app-release.apk` mới lên điện thoại thật để test lại tốc độ mở 3D và thông báo đăng nhập sai; xong thực hiện `T-M1-07` nộp `app-release.aab` lên Google Play Console Closed Testing.
+
+---
+
 ## Phiên 12 — 2026-11-20 00:11 | Thành viên: M3 + M2 (Hoàn tất Cloud Deploy & Final Signed AAB Sprint 1) | Task: `T-M3-06` (`[x]`), `T-M2-06` (`[~]`)
 - **Mục tiêu phiên:** Sử dụng **Railway MCP** để triển khai live Backend FastAPI + PostgreSQL lên `unique-grace / production`, xác minh HTTPS E2E cho **`T-M3-06`**, và build lại file `.aab` Release đã ký (`USE_MOCK_API=false`) trỏ thẳng server thật cho **`T-M2-06`**.
 - **Hạ tầng Railway & Thao tác đã thực hiện:**

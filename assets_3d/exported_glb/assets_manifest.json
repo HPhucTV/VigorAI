@@ -1,19 +1,17 @@
 {
   "schema_version": "1.0.0",
   "owner": "M2",
-  "compression": "Draco",
+  "compression": "Binary_glTF_FastLoad",
   "max_triangles_budget": 25000,
-  "total_bundled_bytes": 1503704,
+  "total_bundled_bytes": 5513360,
   "assets": [
     {
       "code": "BASE_MANNEQUIN",
       "file_name": "base_mannequin.glb",
       "bundled": true,
-      "size_bytes": 322160,
-      "sha256": "c295c760f0e7970d89d906568ae69916aa93b929774b91b11258a3b93b5d1597",
-      "extensions_used": [
-        "KHR_draco_mesh_compression"
-      ],
+      "size_bytes": 1315064,
+      "sha256": "f8c76723747aba8167fa734434b9ad4870e3c42be220fa712edadb716480a9ae",
+      "extensions_used": [],
       "materials": [
         "Mat_Muscle_Abs_Core",
         "Mat_Muscle_Back_Lats",
@@ -32,11 +30,9 @@
       "code": "BARBELL_SQUAT",
       "file_name": "barbell_squat.glb",
       "bundled": true,
-      "size_bytes": 408360,
-      "sha256": "3f5fd7f31b48bd49d11a3720176a0c0e9779e1dde39568dea4a35fb9a976e6b0",
-      "extensions_used": [
-        "KHR_draco_mesh_compression"
-      ],
+      "size_bytes": 1418420,
+      "sha256": "c5285d532b9725449af9a126d042e5ea4b196b7698389b3dbba511ab391ed0e2",
+      "extensions_used": [],
       "materials": [
         "Mat_Muscle_Abs_Core",
         "Mat_Muscle_Back_Lats",
@@ -73,11 +69,9 @@
       "code": "PUSH_UP",
       "file_name": "push_up.glb",
       "bundled": true,
-      "size_bytes": 381872,
-      "sha256": "4b1604053097364a3a65325c39b6b6a2f86e0a4e23ff3d31df372eac0e2ca41d",
-      "extensions_used": [
-        "KHR_draco_mesh_compression"
-      ],
+      "size_bytes": 1375396,
+      "sha256": "966052fdbadcced4458068b603d2b3b43d6bf1f0bc4816b1d4d7b296274e9c49",
+      "extensions_used": [],
       "materials": [
         "Mat_Muscle_Abs_Core",
         "Mat_Muscle_Back_Lats",
@@ -114,11 +108,9 @@
       "code": "BARBELL_BENCH_PRESS",
       "file_name": "barbell_bench_press.glb",
       "bundled": true,
-      "size_bytes": 391312,
-      "sha256": "59c6f242ff3bf18446240c642b46576f46a342d9dad65fc5eaffcdbad4ab0562",
-      "extensions_used": [
-        "KHR_draco_mesh_compression"
-      ],
+      "size_bytes": 1404480,
+      "sha256": "6cb3cda03d8d0e57783ec5388436be2c2f754638f9faa384e6da8bd79c4272cf",
+      "extensions_used": [],
       "materials": [
         "Mat_Muscle_Abs_Core",
         "Mat_Muscle_Back_Lats",

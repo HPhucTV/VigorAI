@@ -6,7 +6,7 @@
       "name_en": "Barbell Bench Press",
       "equipment_type": "BARBELL",
       "model_3d_glb_url": "assets/3d_bundled/barbell_bench_press.glb",
-      "asset_checksum": "59c6f242ff3bf18446240c642b46576f46a342d9dad65fc5eaffcdbad4ab0562",
+      "asset_checksum": "6cb3cda03d8d0e57783ec5388436be2c2f754638f9faa384e6da8bd79c4272cf",
       "primary_muscles": [
         "Mat_Muscle_Chest"
       ],
@@ -114,7 +114,7 @@
       "name_en": "Push-Up",
       "equipment_type": "BODYWEIGHT",
       "model_3d_glb_url": "assets/3d_bundled/push_up.glb",
-      "asset_checksum": "4b1604053097364a3a65325c39b6b6a2f86e0a4e23ff3d31df372eac0e2ca41d",
+      "asset_checksum": "966052fdbadcced4458068b603d2b3b43d6bf1f0bc4816b1d4d7b296274e9c49",
       "primary_muscles": [
         "Mat_Muscle_Chest"
       ],
@@ -950,7 +950,7 @@
       "name_en": "Barbell Back Squat",
       "equipment_type": "BARBELL",
       "model_3d_glb_url": "assets/3d_bundled/barbell_squat.glb",
-      "asset_checksum": "3f5fd7f31b48bd49d11a3720176a0c0e9779e1dde39568dea4a35fb9a976e6b0",
+      "asset_checksum": "c5285d532b9725449af9a126d042e5ea4b196b7698389b3dbba511ab391ed0e2",
       "primary_muscles": [
         "Mat_Muscle_Quads",
         "Mat_Muscle_Glutes"
