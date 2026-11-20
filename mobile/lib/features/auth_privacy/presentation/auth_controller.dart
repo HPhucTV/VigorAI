@@ -1,4 +1,5 @@
 // [OWNER: M1] Riverpod StateNotifier quan ly trang thai Onboarding Disclaimer & Auth (T-M1-04)
+import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../data/auth_repository.dart';
@@ -52,6 +53,44 @@ class AuthController extends StateNotifier<AuthState> {
     restoreSession();
   }
 
+  static String mapAuthErrorMessage(
+    Object error, {
+    required bool isLogin,
+    required String fallback,
+  }) {
+    if (error is DioException) {
+      final code = error.response?.statusCode;
+      if (isLogin && (code == 400 || code == 401 || code == 404)) {
+        return 'Tài khoản hoặc mật khẩu không chính xác.';
+      }
+      if (code == 401) {
+        return 'Tài khoản hoặc mật khẩu không chính xác.';
+      }
+      if (code == 409) {
+        return 'Email này đã được đăng ký. Vui lòng đăng nhập hoặc dùng email khác.';
+      }
+      if (code == 422) {
+        return 'Thông tin nhập chưa hợp lệ. Vui lòng kiểm tra lại email và mật khẩu.';
+      }
+      if (error.type == DioExceptionType.connectionTimeout ||
+          error.type == DioExceptionType.sendTimeout ||
+          error.type == DioExceptionType.receiveTimeout ||
+          error.type == DioExceptionType.connectionError) {
+        return 'Không thể kết nối tới máy chủ. Vui lòng kiểm tra kết nối mạng.';
+      }
+      final data = error.response?.data;
+      if (data is Map && data['detail'] is String) {
+        final detail = (data['detail'] as String).trim();
+        if (detail.isNotEmpty) return detail;
+      }
+      return fallback;
+    }
+    if (error is StateError) {
+      return error.message;
+    }
+    return fallback;
+  }
+
   Future<void> restoreSession() async {
     final disclaimer = await _repository.hasAcceptedDisclaimer();
     final hasToken = await _repository.hasValidToken();
@@ -95,7 +134,11 @@ class AuthController extends StateNotifier<AuthState> {
     } catch (e) {
       state = state.copyWith(
         isLoading: false,
-        errorMessage: 'Đăng nhập thất bại: $e',
+        errorMessage: mapAuthErrorMessage(
+          e,
+          isLogin: true,
+          fallback: 'Tài khoản hoặc mật khẩu không chính xác.',
+        ),
       );
       return false;
     }
@@ -136,7 +179,11 @@ class AuthController extends StateNotifier<AuthState> {
     } catch (e) {
       state = state.copyWith(
         isLoading: false,
-        errorMessage: 'Đăng ký thất bại: $e',
+        errorMessage: mapAuthErrorMessage(
+          e,
+          isLogin: false,
+          fallback: 'Đăng ký không thành công. Vui lòng kiểm tra lại thông tin.',
+        ),
       );
       return false;
     }
@@ -166,7 +213,11 @@ class AuthController extends StateNotifier<AuthState> {
     } catch (e) {
       state = state.copyWith(
         isLoading: false,
-        errorMessage: 'Không thể xóa tài khoản: $e',
+        errorMessage: mapAuthErrorMessage(
+          e,
+          isLogin: false,
+          fallback: 'Không thể xóa tài khoản lúc này. Vui lòng thử lại.',
+        ),
       );
       return false;
     }

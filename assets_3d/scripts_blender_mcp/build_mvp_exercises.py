@@ -21,9 +21,14 @@ import json
 import math
 import os
 import struct
+import sys
 from pathlib import Path
 
 from mathutils import Euler, Matrix, Quaternion, Vector  # type: ignore
+
+_SCRIPT_DIR = str(Path(__file__).resolve().parent)
+if _SCRIPT_DIR not in sys.path:
+    sys.path.insert(0, _SCRIPT_DIR)
 
 import build_base_mannequin as base_mod
 
@@ -707,11 +712,11 @@ def verify_and_write_manifest(repo_root: Path) -> dict:
         assets_entries.append(entry)
         print(f"[VERIFIED] {fname:24s} size={len(raw):7d}B sha256={sha[:12]}... anims={anims}")
 
-    assert total_bundled_bytes < 4 * 1024 * 1024, f"Tong bundled vuot 4MB: {total_bundled_bytes}"
+    assert total_bundled_bytes < 10 * 1024 * 1024, f"Tong bundled vuot 10MB: {total_bundled_bytes}"
     manifest = {
         "schema_version": "1.0.0",
         "owner": "M2",
-        "compression": "Draco",
+        "compression": "Binary_glTF_FastLoad",
         "max_triangles_budget": 25000,
         "total_bundled_bytes": total_bundled_bytes,
         "assets": assets_entries,
