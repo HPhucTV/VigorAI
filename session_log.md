@@ -17,7 +17,7 @@
 
 ---
 
-## Phiên 24 — 2026-11-21 21:42 | Thành viên: M2 (3D Blender MCP, Workout, Recovery 3D & Charts) | Task: `T-M2-07` (`[x]` Hoàn tất 100% — Nhóm 10 Bụng & Lõi / Abs & Core — 3 bài, tổng **30/30** bài `gym.txt`)
+## Phiên 26 — 2026-11-21 21:42 | Thành viên: M2 (3D Blender MCP, Workout, Recovery 3D & Charts) | Task: `T-M2-07` (`[x]` Hoàn tất 100% — Nhóm 10 Bụng & Lõi / Abs & Core — 3 bài, tổng **30/30** bài `gym.txt`)
 - **Phạm vi thực hiện (Strict `[OWNER: M2]`):**
   - Hoàn thiện **3 bài Nhóm 10 Cơ Bụng & Lõi (`Abs & Core`)** trong `gym.txt` qua Blender 5.3 headless script (`build_sprint2_exercises.py`), nâng tổng tiến độ `T-M2-07` lên **30/30 bài (100%)** và tổng asset `.glb` đồng bộ lên **33/33 file** (gồm 2 Mannequin Nam/Nữ + `PUSH_UP` MVP + 30/30 bài `gym.txt`):
     1. `HANGING_LEG_RAISE` (*Treo người nâng chân*): `hanging_leg_raise.glb` (`1,412,008 B`, `12,176 tris`, SHA-256 `f55ba36ec0de...`) & `abs_hanging_leg_raise.blend` (`Anim_GoodForm` kiểm soát cuộn xương chậu nâng chân song song/cao không đung đưa vs `Anim_BadForm` đánh lăng hông kipping lấy đà; dùng giàn Pull-Up `Equip_PullUpRig`).
@@ -39,7 +39,7 @@
 
 ---
 
-## Phiên 23 — 2026-11-21 21:29 | Thành viên: M2 (3D Blender MCP, Workout, Recovery 3D & Charts) | Task: `T-M2-07` (`[~]` Nhóm 9 Cơ Mông / Glutes — 3 bài, tổng **27/30** bài `gym.txt`)
+## Phiên 25 — 2026-11-21 21:29 | Thành viên: M2 (3D Blender MCP, Workout, Recovery 3D & Charts) | Task: `T-M2-07` (`[~]` Nhóm 9 Cơ Mông / Glutes — 3 bài, tổng **27/30** bài `gym.txt`)
 - **Mục tiêu phiên:** Tiếp tục dựng, kiểm tra trực quan đa góc/đa khung hình và đồng bộ SHA-256 cho **3 bài Nhóm 9: Cơ Mông (Glutes)** theo `gym.txt` (`BARBELL_HIP_THRUST`, `WALKING_LUNGE`, `CABLE_GLUTE_KICKBACK`) trong phạm vi `[OWNER: M2]`.
 - **Những file đã tạo / chỉnh sửa:**
   - `assets_3d/scripts_blender_mcp/build_sprint2_exercises.py`: Bổ sung `Phase 9` với `_build_hip_thrust_bench_object`, `_build_cable_kickback_station`, cài đặt `_pose_barbell_hip_thrust`/`build_barbell_hip_thrust`, `_pose_walking_lunge`/`build_walking_lunge`, `_pose_cable_glute_kickback`/`build_cable_glute_kickback` (`30 FPS`, `100 frames`) và đăng ký vào `EXERCISE_SPECS` + `ordered_specs`.
@@ -64,7 +64,7 @@
 
 ---
 
-## Phiên 22 — 2026-11-21 21:18 | Thành viên: M2 (3D Blender MCP, Workout, Recovery 3D & Charts) | Task: `T-M2-07` (`[~]` Nhóm 8 Cơ Đùi sau / Hamstrings — 3 bài, tổng **24/30** bài `gym.txt`)
+## Phiên 24 — 2026-11-21 21:18 | Thành viên: M2 (3D Blender MCP, Workout, Recovery 3D & Charts) | Task: `T-M2-07` (`[~]` Nhóm 8 Cơ Đùi sau / Hamstrings — 3 bài, tổng **24/30** bài `gym.txt`)
 - **Mục tiêu phiên:** Tiếp tục dựng, kiểm tra trực quan đa góc/đa khung hình và đồng bộ SHA-256 cho **3 bài Nhóm 8: Cơ Đùi sau (Hamstrings)** theo `gym.txt` (`ROMANIAN_DEADLIFT`, `LEG_CURL_MACHINE`, `SEATED_LEG_CURL`) trong phạm vi `[OWNER: M2]`.
 - **Những file đã tạo / chỉnh sửa:**
   - `assets_3d/scripts_blender_mcp/build_sprint2_exercises.py`: Bổ sung `Phase 8` với `_build_lying_leg_curl_machine`, `_build_seated_leg_curl_machine`, cài đặt `_pose_romanian_deadlift`/`build_romanian_deadlift`, `_pose_leg_curl_machine`/`build_leg_curl_machine`, `_pose_seated_leg_curl`/`build_seated_leg_curl` (`30 FPS`, `100 frames`) và đăng ký vào `EXERCISE_SPECS` + `ordered_specs`.
@@ -89,7 +89,7 @@
 
 ---
 
-## Phiên 21 — 2026-11-21 21:05 | Thành viên: M2 (3D Blender MCP, Workout, Recovery 3D & Charts) | Task: `T-M2-07` (`[~]` Nhóm 7 Cơ Đùi trước / Quadriceps — 3 bài, tổng **21/30** bài `gym.txt`)
+## Phiên 23 — 2026-11-21 21:05 | Thành viên: M2 (3D Blender MCP, Workout, Recovery 3D & Charts) | Task: `T-M2-07` (`[~]` Nhóm 7 Cơ Đùi trước / Quadriceps — 3 bài, tổng **21/30** bài `gym.txt`)
 - **Mục tiêu phiên:** Tiếp tục dựng, kiểm tra trực quan đa góc/đa khung hình và đồng bộ SHA-256 cho **3 bài Nhóm 7: Cơ Đùi trước (Quadriceps)** theo `gym.txt` (`BARBELL_SQUAT`, `LEG_PRESS`, `LEG_EXTENSION`) trong phạm vi `[OWNER: M2]`.
 - **Những file đã tạo / chỉnh sửa:**
   - `assets_3d/scripts_blender_mcp/build_sprint2_exercises.py`: Bổ sung `Phase 7` với `_build_squat_rack_object`, `_build_leg_press_machine`, `_build_leg_extension_machine`, cài đặt `_pose_barbell_squat`/`build_barbell_squat`, `_pose_leg_press`/`build_leg_press`, `_pose_leg_extension`/`build_leg_extension` (`30 FPS`, `100 frames`) và đăng ký vào `EXERCISE_SPECS` + `ordered_specs`.
@@ -114,7 +114,7 @@
 
 ---
 
-## Phiên 20 — 2026-11-21 20:51 | Thành viên: M2 (3D Blender MCP, Workout, Recovery 3D & Charts) | Task: `T-M2-07` (`[~]` Nhóm 6 Cơ Tay sau / Triceps — 3 bài, tổng **18/30** bài `gym.txt`)
+## Phiên 22 — 2026-11-21 20:51 | Thành viên: M2 (3D Blender MCP, Workout, Recovery 3D & Charts) | Task: `T-M2-07` (`[~]` Nhóm 6 Cơ Tay sau / Triceps — 3 bài, tổng **18/30** bài `gym.txt`)
 - **Mục tiêu phiên:** Tiếp tục dựng, kiểm tra trực quan đa góc/đa khung hình và đồng bộ SHA-256 cho **3 bài Nhóm 6: Cơ Tay sau (Triceps)** theo `gym.txt` (`CABLE_TRICEP_PUSHDOWN`, `SKULL_CRUSHER`, `OVERHEAD_DUMBBELL_TRICEP_EXT`) trong phạm vi `[OWNER: M2]`.
 - **Những file đã tạo / chỉnh sửa:**
   - `assets_3d/scripts_blender_mcp/build_sprint2_exercises.py`: Cài đặt `_pose_cable_tricep_pushdown`/`build_cable_tricep_pushdown`, `_pose_skull_crusher`/`build_skull_crusher`, `_pose_overhead_dumbbell_tricep_ext`/`build_overhead_dumbbell_tricep_ext` với đủ 2 clip `Anim_GoodForm` & `Anim_BadForm` (`30 FPS`, `100 frames`) và đăng ký vào `EXERCISE_SPECS` + `ordered_specs`.
@@ -139,7 +139,7 @@
 
 ---
 
-## Phiên 19 — 2026-11-21 20:37 | Thành viên: M2 (3D Blender MCP, Workout, Recovery 3D & Charts) | Task: `T-M2-07` (`[~]` Nhóm 5 Cơ Tay trước / Biceps — 3 bài, tổng **15/30** bài `gym.txt`)
+## Phiên 21 — 2026-11-21 20:37 | Thành viên: M2 (3D Blender MCP, Workout, Recovery 3D & Charts) | Task: `T-M2-07` (`[~]` Nhóm 5 Cơ Tay trước / Biceps — 3 bài, tổng **15/30** bài `gym.txt`)
 - **Mục tiêu phiên:** Tiếp tục dựng qua **Blender 5.3 MCP** (`execute_blender_code` + `look`), kiểm tra trực quan đa góc/đa khung hình và đồng bộ SHA-256 cho **3 bài Nhóm 5: Cơ Tay trước (Biceps)** theo `gym.txt` (`BARBELL_BICEP_CURL`, `DUMBBELL_HAMMER_CURL`, `INCLINE_DUMBBELL_CURL`) trong phạm vi `[OWNER: M2]`.
 - **Những file đã tạo / chỉnh sửa:**
   - `assets_3d/scripts_blender_mcp/build_sprint2_exercises.py`: Tái sử dụng `Equip_Barbell`, `Equip_Dumbbell_L/R` và ghế nghiêng `45°` (`Equip_Bench_Incline45`), cài đặt `build_barbell_bicep_curl`, `build_dumbbell_hammer_curl`, `build_incline_dumbbell_curl` với đủ 2 clip `Anim_GoodForm` & `Anim_BadForm` (`30 FPS`, `100 frames`) và đăng ký vào `EXERCISE_SPECS` + `ordered_specs`.
@@ -164,7 +164,29 @@
 
 ---
 
-## Phiên 18 — 2026-11-21 11:00 | Thành viên: M2 (3D Blender MCP, Workout, Recovery 3D & Charts) | Task: `T-M2-07` (`[~]` Nhóm 4 Cơ Vai / Shoulders — 3 bài, tổng **12/30** bài `gym.txt`)
+## Phiên 20 — 2026-11-21 19:16 | Thành viên: M1 (Mobile Core, Health, Food/Photo UI & CH Play) | Task: `T-M1-08`, `T-M1-09`, `T-M1-11` (`[x]`), `T-M1-10`, `T-M1-12` (`[~]`)
+- **Mục tiêu phiên:** Rà soát chéo toàn bộ code Phiên 15 trên Flutter SDK, sửa toàn bộ 4 lỗi biên dịch, 1 warning và các lỗi logic phát hiện được, giữ nguyên 100% `[LOCKED STUB]` và phạm vi `[OWNER: M1]`.
+- **Những file đã tạo / chỉnh sửa:**
+  - `mobile/lib/features/auth_privacy/data/auth_repository.dart`: Bổ sung `birthDateIso` (`birth_date`) + `calculateAgeYears()` (fallback `24`), đồng thời gọi `deleteAllPrivateMealPhotos()` khi xóa tài khoản (`F26`).
+  - `mobile/lib/features/health/data/health_repository.dart`: Sửa lỗi thiếu import `AuthUserProfile` và 3 lỗi `unchecked_use_of_nullable_value` trong `_bootstrapInitialData`; giữ mức bù nước buổi tập (`workoutBonusWaterMl`) qua các lần `load()` và đánh dấu `PENDING_UPDATE` khi tự cộng bù nước; giữ `_fitnessGoalOverride`/`_activityLevelOverride` trong `HealthDashboardController` và truyền `_ageYears` thật vào `calculateBmrMifflinStJeor`.
+  - `mobile/lib/features/health/nutrition/presentation/nutrition_screen.dart`: Xóa unused import `health_tables.drift.dart`.
+  - `mobile/lib/core/sync/sync_queue_manager.dart`: Bổ sung Pull cho 3 bảng `workout_routines`, `workout_sessions`, `workout_sets` (đủ 7 bảng Drift), xử lý `legacyMockId` (`bio-{logged_date}`) tránh nhân đôi khi đổi sang UUID v5, và giữ `PENDING_UPDATE` khi `mergedSteps > serverSteps`.
+  - `mobile/android/app/src/main/kotlin/com/vigorai/app/SupplementTakenReceiver.kt` & `mobile/lib/features/health/presentation/health_dashboard_screen.dart`: Đánh dấu `sync_status = 'PENDING_UPDATE'` khi bấm nút *"Đã uống"* trên notification và lắng nghe `AppLifecycleState.resumed` trên `HealthDashboardScreen` để tự refresh UI.
+  - `mobile/lib/core/platform/photo_picker_service.dart` & `mobile/lib/features/health/food_scan/presentation/food_scan_screen.dart`: Lưu bền vững ảnh món ăn vào thư mục riêng tư `meal_photos/` khi lưu bữa, dùng `decodeImageFromList` + `AspectRatio` + `BoxFit.fill` để khớp 100% tọa độ `_FoodBboxPainter`.
+  - `mobile/test/health/health_sprint2_test.dart`, `docs/taskboard.md` (`T-M1-08`, `T-M1-09`, `T-M1-11` đạt `[x]` $\rightarrow$ `M1: 9 / 17 Done`, `Tổng cộng: 24 / 63 Done (38.1%)`).
+- **Lưu ý kỹ thuật còn mở (từ rà soát Phiên 15):**
+  - `WorkManager` background isolate khi app tắt hẳn chưa có native handler riêng cho `com.vigorai.app/health_reminders` và `kBackgroundSyncTaskName` đang để stub `return true`; cần lưu ý hoặc hoàn thiện thêm nếu test notification chạy ngầm khi app killed.
+  - Dữ liệu mock `meal-*` / `supp-*` nếu đẩy lên backend `M3` (chuyển sang UUID v5) vẫn cần chú ý ở giai đoạn tích hợp Sync thật (`T-M1-12`), trong khi `biometric_logs` đã có xử lý fallback `bio-{logged_date}`.
+- **Kiểm tra / Kết quả chạy thử:**
+  - `flutter analyze --no-fatal-infos`: Exit `0` (**0 errors, 0 warnings**; chỉ còn 18 info deprecation `package:flutter/material.dart` trên Flutter 3.50.0).
+  - `flutter test test/health/health_sprint2_test.dart`: **Pass 11 / 11**.
+  - `flutter test test/workout/`: **Pass 5 / 5**.
+- **Việc cần làm ở phiên kế tiếp:**
+  - Theo dõi `T-M4-06` (`M4` deploy Model B thật) để chốt `T-M1-10`, hoàn tất `T-M1-07` & tích hợp Sync Offline $\leftrightarrow$ Online với `M3` để chốt `T-M1-12`.
+
+---
+
+## Phiên 19 — 2026-11-21 11:00 | Thành viên: M2 (3D Blender MCP, Workout, Recovery 3D & Charts) | Task: `T-M2-07` (`[~]` Nhóm 4 Cơ Vai / Shoulders — 3 bài, tổng **12/30** bài `gym.txt`)
 - **Mục tiêu phiên:** Tiếp tục dựng qua **Blender 5.3 MCP** (`execute_blender_code` + `look`), kiểm tra trực quan đa góc/đa khung hình và đồng bộ SHA-256 cho **3 bài Nhóm 4: Cơ Vai (Shoulders)** theo `gym.txt` (`DUMBBELL_SHOULDER_PRESS`, `DUMBBELL_LATERAL_RAISE`, `CABLE_FACE_PULL`) trong phạm vi `[OWNER: M2]`.
 - **Những file đã tạo / chỉnh sửa:**
   - `assets_3d/scripts_blender_mcp/build_sprint2_exercises.py`: Bổ sung trạm cáp dây thừng `_build_cable_rope_station` (`Equip_CableTower_FacePull`, `Equip_RopeHub`, `Equip_Cable_FacePull`, 2 nhánh dây thừng co giãn `Equip_RopeBranch_L/R` & 2 nút chặn `Equip_RopeKnob_L/R`), tái sử dụng ghế nghiêng `80°` (`Equip_Bench_Upright80`) và tạ đơn (`Equip_Dumbbell_L/R`), cài đặt `build_dumbbell_shoulder_press`, `build_dumbbell_lateral_raise`, `build_cable_face_pull` với đủ 2 clip `Anim_GoodForm` & `Anim_BadForm` (`30 FPS`, `100 frames`) và đăng ký vào `EXERCISE_SPECS` + `ordered_specs`.
@@ -189,7 +211,7 @@
 
 ---
 
-## Phiên 17 — 2026-11-20 15:55 | Thành viên: M2 (3D Blender MCP, Workout, Recovery 3D & Charts) | Task: `T-M2-07` (`[~]` Nhóm 3 Cơ Lưng giữa & Lưng dưới — 3 bài, tổng **9/30** bài `gym.txt`)
+## Phiên 18 — 2026-11-20 15:55 | Thành viên: M2 (3D Blender MCP, Workout, Recovery 3D & Charts) | Task: `T-M2-07` (`[~]` Nhóm 3 Cơ Lưng giữa & Lưng dưới — 3 bài, tổng **9/30** bài `gym.txt`)
 - **Mục tiêu phiên:** Tiếp tục dựng qua **Blender 5.3 MCP** (`execute_blender_code` + `look`), kiểm tra trực quan đa góc/đa khung hình và đồng bộ SHA-256 cho **3 bài Nhóm 3: Lưng giữa & Lưng dưới (Mid & Lower Back)** theo `gym.txt` (`BARBELL_BENT_OVER_ROW`, `SEATED_CABLE_ROW`, `BARBELL_DEADLIFT`) trong phạm vi `[OWNER: M2]`.
 - **Những file đã tạo / chỉnh sửa:**
   - `assets_3d/scripts_blender_mcp/build_sprint2_exercises.py`: Bổ sung dụng cụ máy ngồi kéo cáp `_build_seated_row_machine` (`Equip_SeatedRowMachine`, `Equip_VHandle`, dây cáp co giãn `Equip_Cable_Row`), 3 hàm dựng/animation (`build_barbell_bent_over_row`, `build_seated_cable_row`, `build_barbell_deadlift`) với đủ 2 clip `Anim_GoodForm` & `Anim_BadForm` (`30 FPS`, `100 frames`, lỗi `giật thân + gù lưng trên` / `cong lưng dưới + ngả sau` / `hông cao + lưng cong chữ C + tạ trôi xa ống đồng`), và đăng ký vào `EXERCISE_SPECS` + `ordered_specs`.
@@ -213,7 +235,7 @@
 
 ---
 
-## Phiên 16 — 2026-11-20 15:30 | Thành viên: M2 (3D Blender MCP, Workout, Recovery 3D & Charts) | Task: `T-M2-07` (`[~]` Nhóm 2 Cơ Xô / Lats — 3 bài, tổng **6/30** bài `gym.txt`)
+## Phiên 17 — 2026-11-20 15:30 | Thành viên: M2 (3D Blender MCP, Workout, Recovery 3D & Charts) | Task: `T-M2-07` (`[~]` Nhóm 2 Cơ Xô / Lats — 3 bài, tổng **6/30** bài `gym.txt`)
 - **Mục tiêu phiên:** Tiếp tục dựng, kiểm tra trực quan đa góc/đa khung hình và đồng bộ SHA-256 cho **3 bài Nhóm cơ Xô (Lats)** trong `gym.txt` (`WIDE_GRIP_PULLUP`, `LAT_PULLDOWN`, `STRAIGHT_ARM_CABLE_PULLDOWN`) theo phạm vi `[OWNER: M2]`.
 - **Những file đã tạo / chỉnh sửa:**
   - `assets_3d/scripts_blender_mcp/build_sprint2_exercises.py`: Bổ sung 3 bộ dụng cụ rời (`_build_pullup_rack_object`, `_build_lat_pulldown_machine`, `_build_single_cable_tower`), 3 hàm dựng/animation (`build_wide_grip_pullup`, `build_lat_pulldown`, `build_straight_arm_cable_pulldown`) với đủ 2 clip `Anim_GoodForm` & `Anim_BadForm` (`30 FPS`, `100 frames`, chuyển động chuẩn cơ Xô vs lỗi `Kipping swing` / `ngả lưng >44°` / `gập khuỷu >95° thành Tricep Pushdown`), cùng cập nhật `EXERCISE_SPECS` & `ordered_specs`.
@@ -237,7 +259,7 @@
 
 ---
 
-## Phiên 15 — 2026-11-20 15:05 | Thành viên: M2 (3D Blender MCP, Workout, Recovery 3D & Charts) | Task: `T-M2-07` (`[~]` Pilot Ngực 3 bài), `T-M2-08`..`T-M2-11` (`[~]`)
+## Phiên 16 — 2026-11-20 15:05 | Thành viên: M2 (3D Blender MCP, Workout, Recovery 3D & Charts) | Task: `T-M2-07` (`[~]` Pilot Ngực 3 bài), `T-M2-08`..`T-M2-11` (`[~]`)
 - **Mục tiêu phiên:** Triển khai hạ tầng Sprint 2 của Thành viên M2 theo `[OWNER: M2]`, trong đó phần 3D Blender MCP ưu tiên làm trước **3 bài Nhóm cơ Ngực (Chest)** từ `gym.txt` (`BARBELL_BENCH_PRESS`, `INCLINE_DUMBBELL_PRESS`, `CABLE_CHEST_FLY`) sử dụng bộ mesh `D:\human-base-meshes-bundle-v1.4.1\human_base_meshes_bundle.blend` để người dùng kiểm thử trước khi mở rộng 27 bài còn lại.
 - **Những file đã tạo / chỉnh sửa:**
   - **3D Blender MCP (`T-M2-07` Pilot 3 bài Ngực + Mannequin Nam/Nữ):**
@@ -255,6 +277,36 @@
   - Blender 5.3 Headless Verification (`--python-exit-code 1`): Pass 100% (7 `.glb` khớp SHA-256 bit-for-bit giữa `exported_glb/` và `3d_bundled/`, đủ 11 `Mat_Muscle_*`, đủ `Anim_GoodForm`/`Anim_BadForm`, `MOCK_EXERCISES = 39`, `ALL_DART_RELATIVE_IMPORTS_OK`).
 - **Việc cần làm ở phiên kế tiếp:**
   - Người dùng kiểm thử 3 bài Nhóm cơ Ngực (`chest_*.blend` & app 3D); sau khi duyệt, chạy mở rộng `build_sprint2_exercises.py` cho 9 nhóm cơ còn lại (`27+` bài) để chốt `T-M2-07`, chạy `flutter analyze` + `flutter test test/workout/` để chốt `T-M2-08`..`T-M2-11`, và build `.aab` `v1.1.0+2` (`T-M2-12`).
+
+---
+
+## Phiên 15 — 2026-11-20 14:38 | Thành viên: M1 (Mobile Core, Health, Food/Photo UI & CH Play) | Task: `T-M1-08`, `T-M1-09`, `T-M1-10`, `T-M1-11`, `T-M1-12` (`[~]`)
+- **Mục tiêu phiên:** Triển khai đầy đủ 5 tasks Sprint 2 của Thành viên M1 (`T-M1-08` đến `T-M1-12`) theo đúng `[OWNER: M1]`, giữ nguyên 100% file `[LOCKED STUB]` (`pubspec.yaml`, `main.dart`, `app_database.dart`, `app_router.dart`) và chuẩn tuân thủ Google Play Store.
+- **Những file đã tạo / chỉnh sửa:**
+  - **Core Network, DB Models & WorkManager (`T-M1-08`, `T-M1-09`, `T-M1-12`):**
+    - `mobile/lib/core/network/{api_endpoints,dio_client}.dart`: Bổ sung endpoint `/api/v1/health/catalog`, `DELETE /supplements/{id}`, mở rộng `MockApiInterceptor` cho `/api/v1/sync/*`, `/api/v1/ai/food-analyze` và CRUD Health.
+    - `mobile/lib/core/database/health_tables.drift.dart`: Giữ nguyên 4 Drift `Table` (tương thích `schemaVersion = 1`), bổ sung `calculateMovingAverage7Day`, `calculateMacroTargets`, `classifySleepStatus`, `MealLogModel.extractTitleFromDetectedItems` và `toJson`/`copyWith`.
+    - `mobile/lib/core/platform/workmanager_reminder_service.dart`: Nhắc uống nước (`07:00–21:30`, chu kỳ 2h) & Supplement bằng `WorkManager` (`ExistingPeriodicWorkPolicy.update`), `SupplementIntakeStore` lưu trạng thái `"Đã uống"` và tính % tuân thủ 7 ngày.
+    - `mobile/android/app/src/main/kotlin/com/vigorai/app/{MainActivity,SupplementTakenReceiver}.kt` & `AndroidManifest.xml`: Kênh thông báo Android API 26+ với nút hành động **"Đã uống"** xử lý ngầm qua `BroadcastReceiver` (0 quyền cấm CH Play, giữ nguyên khối `[RE-ENABLE IN v1.2.0]`).
+    - `mobile/lib/core/sync/sync_queue_manager.dart`: Push/Pull hai chiều với `M3` (7 bảng Drift, `SyncConflictResolver` LWW theo `updated_at` UTC & `max(steps_count)`, auto-sync khi `connectivity_plus` báo có mạng).
+    - `mobile/lib/features/auth_privacy/data/auth_repository.dart`: Dọn sạch `SupplementIntakeStore` khi xóa tài khoản (`F26`).
+  - **Health Offline-First & 7 Màn hình Sprint 2 (`T-M1-08`..`11`):**
+    - `mobile/lib/features/health/data/health_repository.dart`: Đọc/ghi trực tiếp Drift SQLite cho Cân nặng, Nước bù tập (`+500/+750ml`), Calo/Macro, Giấc ngủ, Supplement & Sync.
+    - `mobile/lib/features/health/biometrics/presentation/biometrics_screen.dart` (`F01`: `fl_chart` Moving Average 7 ngày + 5 vòng đo + WHO Châu Á BMI).
+    - `mobile/lib/features/health/hydration/presentation/hydration_screen.dart` (`F03`: nước nền + bù buổi tập + `WorkManager`).
+    - `mobile/lib/features/health/nutrition/{data/offline_food_catalog,presentation/nutrition_screen}.dart` (`F04`: Mifflin-St Jeor, 4 bữa, từ điển 27+ món offline).
+    - `mobile/lib/features/health/sleep/presentation/sleep_screen.dart` (`F05`: `fl_chart` 7 ngày + nhập tay 2 chạm).
+    - `mobile/lib/features/health/supplements/presentation/supplements_screen.dart` (`F06`: lịch nhắc + `"Đã uống"` + % tuân thủ).
+    - `mobile/lib/features/health/food_scan/{data/food_scan_repository,presentation/food_scan_screen}.dart` (`F19`: Photo Picker + vẽ BBox `CustomPainter` + thanh kéo gram + disclaimer + lưu thẳng vào `MealLogsTable`).
+    - `mobile/lib/features/health/progress_photos/{data/progress_photos_repository,presentation/progress_photos_screen}.dart` (`F24`: lưu 100% cục bộ `progress_photos/`, Slider so sánh Before/After).
+    - `mobile/lib/core/router/health_routes.dart` & `mobile/lib/features/health/presentation/health_dashboard_screen.dart`: Kết nối toàn bộ 7 route mới & nút Sync thật.
+  - **CH Play Checklist, Tests & Tiến độ:**
+    - `docs/chplay_submission_checklist.md`, `mobile/test/health/health_sprint2_test.dart`, `docs/taskboard.md` (`T-M1-08`..`12` đánh dấu `[~]` chờ nghiệm thu trên Flutter SDK & phụ thuộc `M4` / Closed Testing 14 ngày).
+- **Kiểm tra / Kết quả chạy thử:**
+  - Máy hiện tại chưa cài `flutter`/`dart` SDK trong `PATH` nên chưa chạy `flutter analyze` & `flutter test`; đã kiểm tra tĩnh toàn bộ import nội bộ, API gói (`workmanager ^0.10.10`, `connectivity_plus ^6.1.0`, `fl_chart ^0.69.2`) và `AndroidManifest.xml` sạch 0 quyền cấm.
+- **Việc cần làm ở phiên kế tiếp:**
+  - Trên máy có cài Flutter SDK: chạy `cd mobile && dart run build_runner build --delete-conflicting-outputs && flutter analyze --no-fatal-infos && flutter test test/health/` để nghiệm thu đóng `[x]` cho `T-M1-08`, `T-M1-09`, `T-M1-11`.
+  - Theo dõi `T-M4-06` (`M4` deploy Model B thật) để chốt `T-M1-10`, và đủ 14 ngày Closed Testing (`T-M1-07` / `T-M2-06`) để chốt `T-M1-12`.
 
 ---
 

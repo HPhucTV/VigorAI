@@ -17,6 +17,7 @@ final photoPickerServiceProvider = Provider<PhotoPickerService>((ref) {
 class PhotoPickerService {
   static const int maxAllowedBytes = 300 * 1024; // 300 KB
   static const String progressPhotosFolderName = 'progress_photos';
+  static const String mealPhotosFolderName = 'meal_photos';
 
   final ImagePicker _picker = ImagePicker();
 
@@ -55,30 +56,59 @@ class PhotoPickerService {
     return size > 0 && size <= maxAllowedBytes;
   }
 
+  Future<File> _savePrivatePhoto(
+    File sourceFile, {
+    required String folderName,
+    required String fileName,
+  }) async {
+    final appDocDir = await getApplicationDocumentsDirectory();
+    final targetDir = Directory(p.join(appDocDir.path, folderName));
+    if (!await targetDir.exists()) {
+      await targetDir.create(recursive: true);
+    }
+    final destinationPath = p.join(targetDir.path, fileName);
+    return sourceFile.copy(destinationPath);
+  }
+
+  Future<void> _deletePrivateFolder(String folderName) async {
+    final appDocDir = await getApplicationDocumentsDirectory();
+    final targetDir = Directory(p.join(appDocDir.path, folderName));
+    if (await targetDir.exists()) {
+      await targetDir.delete(recursive: true);
+    }
+  }
+
   /// Luu anh tien do co the (F24) vao getApplicationDocumentsDirectory()/progress_photos/
   /// Khong luu vao Gallery cong cong de bao ve quyen rieng tu nguoi dung.
   Future<File> savePrivateProgressPhoto(
     File sourceFile, {
     String poseTag = 'FRONT',
   }) async {
-    final appDocDir = await getApplicationDocumentsDirectory();
-    final targetDir = Directory(p.join(appDocDir.path, progressPhotosFolderName));
-    if (!await targetDir.exists()) {
-      await targetDir.create(recursive: true);
-    }
     final timestamp = DateTime.now().toUtc().millisecondsSinceEpoch;
-    final sanitizedPose = poseTag.toUpperCase().replaceAll(RegExp(r'[^A-Z0-9_]'), '');
-    final fileName = 'progress_${sanitizedPose}_$timestamp.jpg';
-    final destinationPath = p.join(targetDir.path, fileName);
-    return sourceFile.copy(destinationPath);
+    final sanitizedPose =
+        poseTag.toUpperCase().replaceAll(RegExp(r'[^A-Z0-9_]'), '');
+    return _savePrivatePhoto(
+      sourceFile,
+      folderName: progressPhotosFolderName,
+      fileName: 'progress_${sanitizedPose}_$timestamp.jpg',
+    );
+  }
+
+  /// Luu anh mon an (F19) vao thu muc rieng tu getApplicationDocumentsDirectory()/meal_photos/.
+  Future<File> savePrivateMealPhoto(File sourceFile) async {
+    final timestamp = DateTime.now().toUtc().millisecondsSinceEpoch;
+    return _savePrivatePhoto(
+      sourceFile,
+      folderName: mealPhotosFolderName,
+      fileName: 'meal_$timestamp.jpg',
+    );
   }
 
   /// Xoa sach toan bo anh rieng tu khi nguoi dung chon Xoa tai khoan vinh vien (F26).
-  Future<void> deleteAllPrivateProgressPhotos() async {
-    final appDocDir = await getApplicationDocumentsDirectory();
-    final targetDir = Directory(p.join(appDocDir.path, progressPhotosFolderName));
-    if (await targetDir.exists()) {
-      await targetDir.delete(recursive: true);
-    }
-  }
+  Future<void> deleteAllPrivateProgressPhotos() =>
+      _deletePrivateFolder(progressPhotosFolderName);
+
+  /// Xoa sach toan bo anh bua an cuc bo khi nguoi dung chon Xoa tai khoan vinh vien (F26).
+  Future<void> deleteAllPrivateMealPhotos() =>
+      _deletePrivateFolder(mealPhotosFolderName);
 }

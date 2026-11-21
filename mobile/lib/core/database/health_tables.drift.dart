@@ -103,6 +103,46 @@ class BiometricLogModel {
     this.deletedAt,
   });
 
+  BiometricLogModel copyWith({
+    double? weightKg,
+    double? bodyFatPct,
+    double? muscleMassKg,
+    double? bmi,
+    Map<String, double>? circumferencesCm,
+    String? loggedDateIso,
+    String? syncStatus,
+    DateTime? updatedAt,
+    DateTime? deletedAt,
+  }) {
+    return BiometricLogModel(
+      id: id,
+      weightKg: weightKg ?? this.weightKg,
+      bodyFatPct: bodyFatPct ?? this.bodyFatPct,
+      muscleMassKg: muscleMassKg ?? this.muscleMassKg,
+      bmi: bmi ?? this.bmi,
+      circumferencesCm: circumferencesCm ?? this.circumferencesCm,
+      loggedDateIso: loggedDateIso ?? this.loggedDateIso,
+      syncStatus: syncStatus ?? this.syncStatus,
+      updatedAt: updatedAt ?? this.updatedAt,
+      deletedAt: deletedAt ?? this.deletedAt,
+    );
+  }
+
+  /// Duong trung binh truot 7 ngay (7-Day Moving Average) cho danh sach tang dan theo thoi gian (F01)
+  static List<double> calculateMovingAverage7Day(
+    List<BiometricLogModel> chronologicalLogs,
+  ) {
+    final result = <double>[];
+    for (var i = 0; i < chronologicalLogs.length; i++) {
+      final start = math.max(0, i - 6);
+      final window = chronologicalLogs.sublist(start, i + 1);
+      final avg = window.fold<double>(0.0, (s, item) => s + item.weightKg) /
+          window.length;
+      result.add((avg * 100).round() / 100.0);
+    }
+    return result;
+  }
+
   /// Cong thuc BMI = weight_kg / (height_m)^2, lam tron 1 chu so thap phan
   static double calculateBmi(double weightKg, double heightCm) {
     if (heightCm <= 0) return 0.0;
@@ -151,6 +191,20 @@ class BiometricLogModel {
         'updated_at': updatedAt.toUtc().toIso8601String(),
         'deleted_at': deletedAt?.toUtc().toIso8601String(),
       };
+}
+
+class MacroTargets {
+  final double targetCalories;
+  final double proteinG;
+  final double carbsG;
+  final double fatG;
+
+  const MacroTargets({
+    required this.targetCalories,
+    required this.proteinG,
+    required this.carbsG,
+    required this.fatG,
+  });
 }
 
 class DailyHealthModel {
@@ -230,6 +284,33 @@ class DailyHealthModel {
       default:
         return tdee.roundToDouble();
     }
+  }
+
+  /// Phan bo Macro chuan the hinh (F04): Protein 2.0 g/kg, Fat 25% kcal, Carbs phan con lai
+  static MacroTargets calculateMacroTargets({
+    required double weightKg,
+    required double targetCalories,
+  }) {
+    final safeWeight = weightKg > 0 ? weightKg : 70.0;
+    final proteinG = (safeWeight * 2.0).roundToDouble();
+    final fatG = ((targetCalories * 0.25) / 9.0).roundToDouble();
+    final remainingKcal =
+        math.max(0.0, targetCalories - (proteinG * 4.0) - (fatG * 9.0));
+    final carbsG = (remainingKcal / 4.0).roundToDouble();
+    return MacroTargets(
+      targetCalories: targetCalories,
+      proteinG: proteinG,
+      carbsG: carbsG,
+      fatG: fatG,
+    );
+  }
+
+  /// Danh gia trang thai giac ngu (F05): < 6.5h Thieu ngu, 6.5-9h Dat chuan, > 9h Ngu bu
+  static String classifySleepStatus(double sleepHours) {
+    if (sleepHours <= 0) return 'Chưa ghi nhận';
+    if (sleepHours < 6.5) return 'Thiếu ngủ';
+    if (sleepHours <= 9.0) return 'Đạt chuẩn 7–9h';
+    return 'Ngủ bù';
   }
 
   DailyHealthModel copyWith({
@@ -348,6 +429,81 @@ class MealLogModel {
           : null,
     );
   }
+  static String extractTitleFromDetectedItems(
+    String aiDetectedItemsJson, {
+    String fallback = 'Bữa ăn',
+  }) {
+    try {
+      final decoded = jsonDecode(aiDetectedItemsJson);
+      if (decoded is List && decoded.isNotEmpty) {
+        final names = <String>[];
+        for (final item in decoded) {
+          if (item is Map) {
+            final name = item['name_vi'] ?? item['title'] ?? item['class_code'];
+            if (name != null && name.toString().trim().isNotEmpty) {
+              names.add(name.toString().trim());
+            }
+          }
+        }
+        if (names.isNotEmpty) return names.join(' + ');
+      }
+    } catch (_) {}
+    return fallback;
+  }
+
+  MealLogModel copyWith({
+    String? mealType,
+    String? title,
+    String? localImagePath,
+    String? aiDetectedItemsJson,
+    double? totalCalories,
+    double? proteinG,
+    double? carbsG,
+    double? fatG,
+    DateTime? loggedAt,
+    String? syncStatus,
+    DateTime? updatedAt,
+    DateTime? deletedAt,
+  }) {
+    return MealLogModel(
+      id: id,
+      mealType: mealType ?? this.mealType,
+      title: title ?? this.title,
+      localImagePath: localImagePath ?? this.localImagePath,
+      aiDetectedItemsJson: aiDetectedItemsJson ?? this.aiDetectedItemsJson,
+      totalCalories: totalCalories ?? this.totalCalories,
+      proteinG: proteinG ?? this.proteinG,
+      carbsG: carbsG ?? this.carbsG,
+      fatG: fatG ?? this.fatG,
+      loggedAt: loggedAt ?? this.loggedAt,
+      syncStatus: syncStatus ?? this.syncStatus,
+      updatedAt: updatedAt ?? this.updatedAt,
+      deletedAt: deletedAt ?? this.deletedAt,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    List<dynamic> parsedItems = const [];
+    try {
+      final decoded = jsonDecode(aiDetectedItemsJson);
+      if (decoded is List) parsedItems = decoded;
+    } catch (_) {}
+    return {
+      'id': id,
+      'meal_type': mealType,
+      'title': title,
+      'local_image_path': localImagePath,
+      'ai_detected_items': parsedItems,
+      'total_calories': totalCalories,
+      'protein_g': proteinG,
+      'carbs_g': carbsG,
+      'fat_g': fatG,
+      'logged_at': loggedAt.toUtc().toIso8601String(),
+      'sync_status': syncStatus,
+      'updated_at': updatedAt.toUtc().toIso8601String(),
+      'deleted_at': deletedAt?.toUtc().toIso8601String(),
+    };
+  }
 }
 
 class SupplementScheduleModel {
@@ -373,6 +529,29 @@ class SupplementScheduleModel {
     required this.updatedAt,
   });
 
+  SupplementScheduleModel copyWith({
+    String? supplementName,
+    String? dosageLabel,
+    String? reminderTimeHhMm,
+    bool? workoutDaysOnly,
+    bool? isActive,
+    bool? takenToday,
+    String? syncStatus,
+    DateTime? updatedAt,
+  }) {
+    return SupplementScheduleModel(
+      id: id,
+      supplementName: supplementName ?? this.supplementName,
+      dosageLabel: dosageLabel ?? this.dosageLabel,
+      reminderTimeHhMm: reminderTimeHhMm ?? this.reminderTimeHhMm,
+      workoutDaysOnly: workoutDaysOnly ?? this.workoutDaysOnly,
+      isActive: isActive ?? this.isActive,
+      takenToday: takenToday ?? this.takenToday,
+      syncStatus: syncStatus ?? this.syncStatus,
+      updatedAt: updatedAt ?? this.updatedAt,
+    );
+  }
+
   factory SupplementScheduleModel.fromJson(Map<String, dynamic> json) {
     return SupplementScheduleModel(
       id: json['id'] as String,
@@ -388,4 +567,16 @@ class SupplementScheduleModel {
           : DateTime.now().toUtc(),
     );
   }
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'supplement_name': supplementName,
+        'dosage_label': dosageLabel,
+        'reminder_time': reminderTimeHhMm,
+        'workout_days_only': workoutDaysOnly,
+        'is_active': isActive,
+        'taken_today': takenToday,
+        'sync_status': syncStatus,
+        'updated_at': updatedAt.toUtc().toIso8601String(),
+      };
 }
