@@ -29,6 +29,22 @@ CANONICAL_MUSCLE_MATERIALS = {
     "Mat_Muscle_Calves",
 }
 
+# 3 bai tap 3D dong goi san trong APK/AAB (khop 100% assets_3d/exported_glb/assets_manifest.json cua M2)
+BUNDLED_MVP_EXERCISES: dict[str, dict[str, str]] = {
+    "BARBELL_SQUAT": {
+        "model_3d_glb_url": "assets/3d_bundled/barbell_squat.glb",
+        "asset_checksum": "c5285d532b9725449af9a126d042e5ea4b196b7698389b3dbba511ab391ed0e2",
+    },
+    "PUSH_UP": {
+        "model_3d_glb_url": "assets/3d_bundled/push_up.glb",
+        "asset_checksum": "966052fdbadcced4458068b603d2b3b43d6bf1f0bc4816b1d4d7b296274e9c49",
+    },
+    "BARBELL_BENCH_PRESS": {
+        "model_3d_glb_url": "assets/3d_bundled/barbell_bench_press.glb",
+        "asset_checksum": "6cb3cda03d8d0e57783ec5388436be2c2f754638f9faa384e6da8bd79c4272cf",
+    },
+}
+
 FOOD_CATALOG_SEED: list[dict] = [
     # Protein sources
     {"class_code": "GRILLED_CHICKEN_BREAST", "name_vi": "Ức gà áp chảo", "name_en": "Grilled Chicken Breast", "kcal_per_100g": 165.0, "protein_per_100g": 31.0, "carbs_per_100g": 0.0, "fat_per_100g": 3.6, "default_serving_g": 180.0, "source_standard": "USDA_NIN_VN"},
@@ -87,13 +103,18 @@ def _make_exercise(
         if m not in CANONICAL_MUSCLE_MATERIALS:
             raise ValueError(f"Ten material co bap khong hop le: {m}")
     slug = code.lower()
-    checksum = hashlib.sha256(f"vigorai-3d-{slug}-v1".encode("utf-8")).hexdigest()
+    if code in BUNDLED_MVP_EXERCISES:
+        glb_url = BUNDLED_MVP_EXERCISES[code]["model_3d_glb_url"]
+        checksum = BUNDLED_MVP_EXERCISES[code]["asset_checksum"]
+    else:
+        glb_url = f"{settings.S3_PUBLIC_BASE_URL}/exercises/{slug}.glb"
+        checksum = hashlib.sha256(f"vigorai-3d-{slug}-v1".encode("utf-8")).hexdigest()
     return {
         "code": code,
         "name_vi": name_vi,
         "name_en": name_en,
         "equipment_type": equipment_type,
-        "model_3d_glb_url": f"{settings.S3_PUBLIC_BASE_URL}/exercises/{slug}.glb",
+        "model_3d_glb_url": glb_url,
         "asset_checksum": checksum,
         "primary_muscles": primary,
         "secondary_muscles": secondary,
@@ -232,6 +253,12 @@ async def seed_catalog_and_exercises(db: AsyncSession) -> dict[str, int]:
             exercise_id_by_code[ex_data["code"]] = new_ex.id
             exercises_inserted += 1
         else:
+            if (
+                existing_ex.model_3d_glb_url != ex_data["model_3d_glb_url"]
+                or existing_ex.asset_checksum != ex_data["asset_checksum"]
+            ):
+                existing_ex.model_3d_glb_url = ex_data["model_3d_glb_url"]
+                existing_ex.asset_checksum = ex_data["asset_checksum"]
             exercise_id_by_code[ex_data["code"]] = existing_ex.id
 
     await db.flush()

@@ -87,6 +87,10 @@
         </activity-alias>
         -->
 
+        <receiver
+            android:name=".SupplementTakenReceiver"
+            android:exported="false" />
+
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
