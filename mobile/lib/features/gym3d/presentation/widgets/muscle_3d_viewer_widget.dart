@@ -57,6 +57,53 @@ class MuscleMaterialIds {
 
 enum CameraPreset3D { front, side, back, top }
 
+enum BodyAvatarPreset {
+  maleFit(
+    code: 'MALE_FIT',
+    labelVi: 'Nam - Thể hình chuẩn',
+    shortLabelVi: 'Nam Chuẩn',
+    scaleX: 1.0,
+    scaleY: 1.0,
+    scaleZ: 1.0,
+  ),
+  femaleFit(
+    code: 'FEMALE_FIT',
+    labelVi: 'Nữ - Fitness',
+    shortLabelVi: 'Nữ Fitness',
+    scaleX: 0.92,
+    scaleY: 0.96,
+    scaleZ: 0.94,
+  ),
+  maleBulk(
+    code: 'MALE_BULK',
+    labelVi: 'Nam - Cơ bắp cao',
+    shortLabelVi: 'Nam Cơ bắp',
+    scaleX: 1.10,
+    scaleY: 1.02,
+    scaleZ: 1.06,
+  );
+
+  final String code;
+  final String labelVi;
+  final String shortLabelVi;
+  final double scaleX;
+  final double scaleY;
+  final double scaleZ;
+
+  const BodyAvatarPreset({
+    required this.code,
+    required this.labelVi,
+    required this.shortLabelVi,
+    required this.scaleX,
+    required this.scaleY,
+    required this.scaleZ,
+  });
+
+  String get baseMannequinAssetPath => this == BodyAvatarPreset.femaleFit
+      ? 'assets/3d_bundled/base_mannequin_female.glb'
+      : 'assets/3d_bundled/base_mannequin.glb';
+}
+
 /// Giao dien cong khai da duoc khoa de dung chung cho F07-F13 (M2) va F23 (M2/M4 contract).
 class Muscle3DViewerWidget extends StatefulWidget {
   final String glbAssetOrUrl;
@@ -67,6 +114,8 @@ class Muscle3DViewerWidget extends StatefulWidget {
   final ValueChanged<String>? onMuscleTap;
   final bool isPlaying;
   final double height;
+  final double? normalizedProgress;
+  final BodyAvatarPreset avatarPreset;
 
   const Muscle3DViewerWidget({
     super.key,
@@ -78,6 +127,8 @@ class Muscle3DViewerWidget extends StatefulWidget {
     this.onMuscleTap,
     this.isPlaying = true,
     this.height = 340,
+    this.normalizedProgress,
+    this.avatarPreset = BodyAvatarPreset.maleFit,
   });
 
   @override
@@ -162,6 +213,8 @@ class _Muscle3DViewerWidgetState extends State<Muscle3DViewerWidget> {
     final initialAnim = jsonEncode(widget.animationName);
     final initialSpeed = widget.playbackSpeed;
     final initialPlaying = widget.isPlaying;
+    final initialProgress = widget.normalizedProgress;
+    final avatar = widget.avatarPreset;
 
     return '''
 (function() {
@@ -208,6 +261,25 @@ class _Muscle3DViewerWidgetState extends State<Muscle3DViewerWidget> {
     } catch (e) {}
   };
 
+  window.vigorSeekNormalized = function(norm) {
+    try {
+      const mv = getMv();
+      if (!mv) return;
+      const dur = mv.duration || 3.33;
+      const clamped = Math.max(0.0, Math.min(1.0, norm));
+      mv.currentTime = clamped * dur;
+    } catch (e) {}
+  };
+
+  window.vigorSetAvatarPreset = function(sx, sy, sz) {
+    try {
+      const mv = getMv();
+      if (!mv) return;
+      mv.scale = sx + ' ' + sy + ' ' + sz;
+      if (typeof mv.updateFraming === 'function') mv.updateFraming();
+    } catch (e) {}
+  };
+
   function bindViewer() {
     const mv = getMv();
     if (!mv) {
@@ -219,7 +291,9 @@ class _Muscle3DViewerWidgetState extends State<Muscle3DViewerWidget> {
         window.VigorStatusChannel.postMessage('loaded');
       }
       window.vigorApplyColors($initialColors);
+      window.vigorSetAvatarPreset(${avatar.scaleX}, ${avatar.scaleY}, ${avatar.scaleZ});
       window.vigorSetAnim($initialAnim, $initialSpeed, $initialPlaying);
+      ${initialProgress != null ? 'window.vigorSeekNormalized($initialProgress);' : ''}
     };
     if (mv.loaded) onLoaded();
     mv.addEventListener('load', onLoaded);
@@ -293,6 +367,20 @@ class _Muscle3DViewerWidgetState extends State<Muscle3DViewerWidget> {
       final anim = jsonEncode(widget.animationName);
       _runJs(
         'window.vigorSetAnim && window.vigorSetAnim($anim, ${widget.playbackSpeed}, ${widget.isPlaying});',
+      );
+    }
+
+    if (widget.normalizedProgress != null &&
+        oldWidget.normalizedProgress != widget.normalizedProgress) {
+      _runJs(
+        'window.vigorSeekNormalized && window.vigorSeekNormalized(${widget.normalizedProgress});',
+      );
+    }
+
+    if (oldWidget.avatarPreset != widget.avatarPreset) {
+      final av = widget.avatarPreset;
+      _runJs(
+        'window.vigorSetAvatarPreset && window.vigorSetAvatarPreset(${av.scaleX}, ${av.scaleY}, ${av.scaleZ});',
       );
     }
   }

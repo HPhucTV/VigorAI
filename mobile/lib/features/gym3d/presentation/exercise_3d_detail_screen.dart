@@ -1,7 +1,11 @@
-// [OWNER: M2] Man hinh Chi tiet Bai tap 3D: Xoay 360, 4 Goc nhin, Dung/Sai & Ban do co (T-M2-03 / F07-F10)
+// [OWNER: M2] Man hinh Chi tiet Bai tap 3D: Xoay 360, 4 Goc nhin, Dung/Sai, Timeline 3 Pha & Avatar (T-M2-03, T-M2-08 / F07-F13)
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
+import '../../../core/config/feature_flags.dart';
 import '../../../core/database/workout_tables.drift.dart';
 import '../../../core/theme/app_theme.dart';
 import '../data/asset_cache_manager.dart';
@@ -24,9 +28,67 @@ class _Exercise3DDetailScreenState
   bool _showBadForm = false;
   double _playbackSpeed = 1.0;
   bool _isPlaying = true;
+  double _phaseProgress = 0.0;
+  double? _manualSeekProgress;
+  Timer? _phaseTimer;
   String? _tappedMuscleId;
   Future<String>? _resolvedGlbFuture;
   String? _resolvedForCode;
+
+  @override
+  void initState() {
+    super.initState();
+    _phaseTimer = Timer.periodic(const Duration(milliseconds: 100), (_) {
+      if (!mounted || !_isPlaying) return;
+      setState(() {
+        _phaseProgress = (_phaseProgress + 0.03 * _playbackSpeed) % 1.0;
+      });
+    });
+  }
+
+  @override
+  void dispose() {
+    _phaseTimer?.cancel();
+    _phaseTimer = null;
+    super.dispose();
+  }
+
+  ({String label, String breath, Color color, int index}) _activePhaseInfo(
+    ExerciseModel ex,
+    double progress,
+  ) {
+    final kf = ex.phaseKeyframes;
+    if (progress < kf.eccentric.end) {
+      return (
+        label: '1. Hạ tạ (Eccentric)',
+        breath: kf.eccentric.breath,
+        color: AppColors.hydrationBlue,
+        index: 0,
+      );
+    }
+    if (progress < kf.isometric.end) {
+      return (
+        label: '2. Giữ đáy (Isometric)',
+        breath: kf.isometric.breath,
+        color: AppColors.calorieOrange,
+        index: 1,
+      );
+    }
+    return (
+      label: '3. Phát lực (Concentric)',
+      breath: kf.concentric.breath,
+      color: AppColors.muscleRecoveredGreen,
+      index: 2,
+    );
+  }
+
+  void _jumpToPhase(double normalizedTarget) {
+    setState(() {
+      _isPlaying = false;
+      _phaseProgress = normalizedTarget.clamp(0.0, 1.0);
+      _manualSeekProgress = _phaseProgress;
+    });
+  }
 
   Map<String, Color> _buildHeatmapColors(ExerciseModel ex) {
     final map = <String, Color>{};
@@ -65,6 +127,8 @@ class _Exercise3DDetailScreenState
         return 'Khoảng cách đặt tay';
       case 'pulley_height':
         return 'Vị trí ròng rọc';
+      case 'grip':
+        return 'Cách nắm tay';
       default:
         return key;
     }
@@ -73,6 +137,7 @@ class _Exercise3DDetailScreenState
   @override
   Widget build(BuildContext context) {
     final exerciseAsync = ref.watch(exerciseByCodeProvider(widget.exerciseCode));
+    final avatarPreset = ref.watch(bodyAvatarPresetProvider);
 
     return exerciseAsync.when(
       loading: () => Scaffold(
@@ -107,6 +172,7 @@ class _Exercise3DDetailScreenState
         final activeClip = (_showBadForm && exercise.hasBadFormClip)
             ? 'Anim_BadForm'
             : 'Anim_GoodForm';
+        final phaseInfo = _activePhaseInfo(exercise, _phaseProgress);
 
         return Scaffold(
           appBar: AppBar(
@@ -115,7 +181,7 @@ class _Exercise3DDetailScreenState
           body: ListView(
             padding: const EdgeInsets.all(16),
             children: [
-              // 1. 3D Interactive Viewport (F07, F08, F09, F10)
+              // 1. 3D Interactive Viewport + Live Phase/BadForm Overlay (F07-F13)
               FutureBuilder<String>(
                 future: _resolvedGlbFuture,
                 builder: (context, snapshot) {
@@ -158,17 +224,86 @@ class _Exercise3DDetailScreenState
                     );
                   }
                   final src = snapshot.data ?? exercise.model3dGlbUrl;
-                  return Muscle3DViewerWidget(
-                    glbAssetOrUrl: src,
-                    muscleColorsMap: muscleColors,
-                    animationName: activeClip,
-                    playbackSpeed: _playbackSpeed,
-                    cameraPreset: _cameraPreset,
-                    isPlaying: _isPlaying,
-                    height: 340,
-                    onMuscleTap: (matId) {
-                      setState(() => _tappedMuscleId = matId);
-                    },
+                  return Stack(
+                    children: [
+                      Muscle3DViewerWidget(
+                        glbAssetOrUrl: src,
+                        muscleColorsMap: muscleColors,
+                        animationName: activeClip,
+                        playbackSpeed: _playbackSpeed,
+                        cameraPreset: _cameraPreset,
+                        isPlaying: _isPlaying,
+                        normalizedProgress: _manualSeekProgress,
+                        avatarPreset: avatarPreset,
+                        height: 340,
+                        onMuscleTap: (matId) {
+                          setState(() => _tappedMuscleId = matId);
+                        },
+                      ),
+                      Positioned(
+                        top: 10,
+                        left: 10,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 5,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.black.withValues(alpha: 0.68),
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(
+                              color: phaseInfo.color.withValues(alpha: 0.85),
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.air, size: 14, color: phaseInfo.color),
+                              const SizedBox(width: 6),
+                              Text(
+                                '${phaseInfo.label.split(' (').first} · ${phaseInfo.breath}',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      if (_showBadForm)
+                        Positioned(
+                          top: 10,
+                          right: 10,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 5,
+                            ),
+                            decoration: BoxDecoration(
+                              color: AppColors.warningRed.withValues(alpha: 0.92),
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: const Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.warning_amber_rounded,
+                                    size: 14, color: Colors.white),
+                                SizedBox(width: 4),
+                                Text(
+                                  'LỖI SAI CHẤN THƯƠNG',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                    ],
                   );
                 },
               ),
@@ -242,7 +377,14 @@ class _Exercise3DDetailScreenState
                   const SizedBox(width: 8),
                   IconButton.filledTonal(
                     tooltip: _isPlaying ? 'Tạm dừng' : 'Phát',
-                    onPressed: () => setState(() => _isPlaying = !_isPlaying),
+                    onPressed: () {
+                      setState(() {
+                        _isPlaying = !_isPlaying;
+                        if (_isPlaying) {
+                          _manualSeekProgress = null;
+                        }
+                      });
+                    },
                     icon: Icon(_isPlaying ? Icons.pause : Icons.play_arrow),
                   ),
                   const SizedBox(width: 4),
@@ -262,9 +404,143 @@ class _Exercise3DDetailScreenState
                   ),
                 ],
               ),
+              const SizedBox(height: 8),
+
+              // 3b. Timeline Scrubber & 3-Phase Jump Buttons (F11)
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(12, 8, 12, 10),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            'Tua từng pha (${(_phaseProgress * 100).round()}%)',
+                            style: const TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          Text(
+                            '${phaseInfo.label} · ${phaseInfo.breath}',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: phaseInfo.color,
+                            ),
+                          ),
+                        ],
+                      ),
+                      Slider(
+                        value: _phaseProgress.clamp(0.0, 1.0),
+                        onChanged: (val) => _jumpToPhase(val),
+                      ),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: OutlinedButton(
+                              onPressed: () => _jumpToPhase(
+                                (exercise.phaseKeyframes.eccentric.start +
+                                        exercise.phaseKeyframes.eccentric.end) *
+                                    0.5,
+                              ),
+                              style: OutlinedButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(vertical: 6),
+                                side: BorderSide(
+                                  color: phaseInfo.index == 0
+                                      ? AppColors.hydrationBlue
+                                      : Colors.grey.shade400,
+                                ),
+                              ),
+                              child: const Text('1. Hạ tạ',
+                                  style: TextStyle(fontSize: 12)),
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          Expanded(
+                            child: OutlinedButton(
+                              onPressed: () => _jumpToPhase(
+                                (exercise.phaseKeyframes.isometric.start +
+                                        exercise.phaseKeyframes.isometric.end) *
+                                    0.5,
+                              ),
+                              style: OutlinedButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(vertical: 6),
+                                side: BorderSide(
+                                  color: phaseInfo.index == 1
+                                      ? AppColors.calorieOrange
+                                      : Colors.grey.shade400,
+                                ),
+                              ),
+                              child: const Text('2. Giữ đáy',
+                                  style: TextStyle(fontSize: 12)),
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          Expanded(
+                            child: OutlinedButton(
+                              onPressed: () => _jumpToPhase(
+                                (exercise.phaseKeyframes.concentric.start +
+                                        exercise.phaseKeyframes.concentric.end) *
+                                    0.5,
+                              ),
+                              style: OutlinedButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(vertical: 6),
+                                side: BorderSide(
+                                  color: phaseInfo.index == 2
+                                      ? AppColors.muscleRecoveredGreen
+                                      : Colors.grey.shade400,
+                                ),
+                              ),
+                              child: const Text('3. Phát lực',
+                                  style: TextStyle(fontSize: 12)),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 8),
+
+              // 3c. Body Avatar Selector (F13)
+              Row(
+                children: [
+                  const Text(
+                    'Avatar:',
+                    style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Row(
+                        children: BodyAvatarPreset.values.map((preset) {
+                          return Padding(
+                            padding: const EdgeInsets.only(right: 6),
+                            child: ChoiceChip(
+                              label: Text(preset.shortLabelVi),
+                              selected: avatarPreset == preset,
+                              visualDensity: VisualDensity.compact,
+                              onSelected: (_) {
+                                ref
+                                    .read(bodyAvatarPresetProvider.notifier)
+                                    .state = preset;
+                              },
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
               const SizedBox(height: 10),
 
-              // 4. Muscle Tap Feedback + Legend (F09)
+              // 4. Muscle Tap Feedback + Interactive Muscle Chips (F09)
               if (_tappedMuscleId != null)
                 Card(
                   color: const Color(0xFFEDE7F6),
@@ -282,16 +558,49 @@ class _Exercise3DDetailScreenState
                     ),
                   ),
                 ),
-              const Wrap(
-                spacing: 8,
+              Wrap(
+                spacing: 6,
                 runSpacing: 6,
                 children: [
-                  _LegendPill(color: AppColors.musclePrimaryRed, label: 'Cơ chính'),
-                  _LegendPill(
-                      color: AppColors.muscleSecondaryOrange, label: 'Cơ phụ'),
-                  _LegendPill(
-                      color: AppColors.muscleStabilizerYellow,
-                      label: 'Giữ thăng bằng'),
+                  ...exercise.primaryMuscles.map(
+                    (m) => ActionChip(
+                      avatar: const CircleAvatar(
+                        backgroundColor: AppColors.musclePrimaryRed,
+                        radius: 6,
+                      ),
+                      label: Text(
+                        'Chính: ${MuscleMaterialIds.labelVi(m).split(' (').first}',
+                        style: const TextStyle(fontSize: 12),
+                      ),
+                      onPressed: () => setState(() => _tappedMuscleId = m),
+                    ),
+                  ),
+                  ...exercise.secondaryMuscles.map(
+                    (m) => ActionChip(
+                      avatar: const CircleAvatar(
+                        backgroundColor: AppColors.muscleSecondaryOrange,
+                        radius: 6,
+                      ),
+                      label: Text(
+                        'Phụ: ${MuscleMaterialIds.labelVi(m).split(' (').first}',
+                        style: const TextStyle(fontSize: 12),
+                      ),
+                      onPressed: () => setState(() => _tappedMuscleId = m),
+                    ),
+                  ),
+                  ...exercise.stabilizerMuscles.map(
+                    (m) => ActionChip(
+                      avatar: const CircleAvatar(
+                        backgroundColor: AppColors.muscleStabilizerYellow,
+                        radius: 6,
+                      ),
+                      label: Text(
+                        'Giữ: ${MuscleMaterialIds.labelVi(m).split(' (').first}',
+                        style: const TextStyle(fontSize: 12),
+                      ),
+                      onPressed: () => setState(() => _tappedMuscleId = m),
+                    ),
+                  ),
                 ],
               ),
               const SizedBox(height: 12),
@@ -390,6 +699,16 @@ class _Exercise3DDetailScreenState
                     ),
                   ),
                 ),
+
+              if (!FeatureFlags.isMvpClosedTesting) ...[
+                const SizedBox(height: 14),
+                FilledButton.icon(
+                  onPressed: () =>
+                      context.push('/workout/live?exerciseCode=${exercise.code}'),
+                  icon: const Icon(Icons.fitness_center),
+                  label: const Text('Bắt đầu tập bài này ngay'),
+                ),
+              ],
             ],
           ),
         );
@@ -418,29 +737,6 @@ class _CameraChip extends StatelessWidget {
         showCheckmark: false,
         onSelected: (_) => onTap(),
       ),
-    );
-  }
-}
-
-class _LegendPill extends StatelessWidget {
-  final Color color;
-  final String label;
-
-  const _LegendPill({required this.color, required this.label});
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Container(
-          width: 12,
-          height: 12,
-          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-        ),
-        const SizedBox(width: 4),
-        Text(label, style: const TextStyle(fontSize: 12)),
-      ],
     );
   }
 }
