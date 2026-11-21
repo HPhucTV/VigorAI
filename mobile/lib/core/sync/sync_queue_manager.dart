@@ -388,14 +388,26 @@ class SyncQueueManager {
         final id = raw['id']?.toString();
         if (id == null) continue;
         final serverUpdated = _parseUtc(raw['updated_at']);
-        final existing = await (_db.select(_db.biometricLogsTable)
+        final legacyMockId =
+            raw['logged_date'] != null ? 'bio-${raw['logged_date']}' : null;
+        var existing = await (_db.select(_db.biometricLogsTable)
               ..where((t) => t.id.equals(id)))
             .getSingleOrNull();
+        if (existing == null && legacyMockId != null) {
+          existing = await (_db.select(_db.biometricLogsTable)
+                ..where((t) => t.id.equals(legacyMockId)))
+              .getSingleOrNull();
+        }
         if (existing == null ||
             SyncConflictResolver.shouldServerWin(
               localUpdatedAt: existing.updatedAt,
               serverUpdatedAt: serverUpdated,
             )) {
+          if (existing != null && existing.id != id) {
+            await (_db.delete(_db.biometricLogsTable)
+                  ..where((t) => t.id.equals(existing!.id)))
+                .go();
+          }
           await _db.into(_db.biometricLogsTable).insertOnConflictUpdate(
                 BiometricLogsTableCompanion(
                   id: Value(id),
@@ -499,7 +511,11 @@ class SyncQueueManager {
                     ? (raw['sleep_quality_score'] as num?)?.toInt()
                     : existing.sleepQualityScore,
               ),
-              syncStatus: Value(serverWins ? 'SYNCED' : existing.syncStatus),
+              syncStatus: Value(
+                mergedSteps > serverSteps
+                    ? 'PENDING_UPDATE'
+                    : (serverWins ? 'SYNCED' : existing.syncStatus),
+              ),
               updatedAt: Value(serverWins ? serverUpdated : existing.updatedAt),
             ),
           );
@@ -576,6 +592,128 @@ class SyncQueueManager {
                         ? _parseUtc(raw['deleted_at'])
                         : null,
                   ),
+                ),
+              );
+          appliedCount++;
+        }
+      }
+
+      // 5. Workout Routines (LWW)
+      for (final raw in (records['workout_routines'] as List?) ?? const []) {
+        if (raw is! Map<String, dynamic>) continue;
+        final id = raw['id']?.toString();
+        if (id == null) continue;
+        final serverUpdated = _parseUtc(raw['updated_at']);
+        final existing = await (_db.select(_db.workoutRoutinesTable)
+              ..where((t) => t.id.equals(id)))
+            .getSingleOrNull();
+        if (existing == null ||
+            SyncConflictResolver.shouldServerWin(
+              localUpdatedAt: existing.updatedAt,
+              serverUpdatedAt: serverUpdated,
+            )) {
+          await _db.into(_db.workoutRoutinesTable).insertOnConflictUpdate(
+                WorkoutRoutinesTableCompanion(
+                  id: Value(id),
+                  name: Value((raw['name'] as String?) ?? 'Giáo án cá nhân'),
+                  splitType: Value((raw['split_type'] as String?) ?? 'CUSTOM'),
+                  scheduledWeekdaysJson: Value(
+                    jsonEncode(raw['scheduled_weekdays'] ?? const <dynamic>[]),
+                  ),
+                  exercisesJson: Value(
+                    jsonEncode(raw['exercises'] ?? const <dynamic>[]),
+                  ),
+                  isTemplate: Value((raw['is_template'] as bool?) ?? false),
+                  syncStatus: const Value('SYNCED'),
+                  updatedAt: Value(serverUpdated),
+                  deletedAt: Value(
+                    raw['deleted_at'] != null
+                        ? _parseUtc(raw['deleted_at'])
+                        : null,
+                  ),
+                ),
+              );
+          appliedCount++;
+        }
+      }
+
+      // 6. Workout Sessions (LWW)
+      for (final raw in (records['workout_sessions'] as List?) ?? const []) {
+        if (raw is! Map<String, dynamic>) continue;
+        final id = raw['id']?.toString();
+        if (id == null) continue;
+        final serverUpdated = _parseUtc(raw['updated_at']);
+        final existing = await (_db.select(_db.workoutSessionsTable)
+              ..where((t) => t.id.equals(id)))
+            .getSingleOrNull();
+        if (existing == null ||
+            SyncConflictResolver.shouldServerWin(
+              localUpdatedAt: existing.updatedAt,
+              serverUpdatedAt: serverUpdated,
+            )) {
+          await _db.into(_db.workoutSessionsTable).insertOnConflictUpdate(
+                WorkoutSessionsTableCompanion(
+                  id: Value(id),
+                  routineId: Value(raw['routine_id']?.toString()),
+                  sessionTitle:
+                      Value((raw['session_title'] as String?) ?? 'Buổi tập Gym'),
+                  startedAt: Value(_parseUtc(raw['started_at'])),
+                  completedAt: Value(
+                    raw['completed_at'] != null
+                        ? _parseUtc(raw['completed_at'])
+                        : null,
+                  ),
+                  durationSeconds:
+                      Value((raw['duration_seconds'] as num?)?.toInt() ?? 0),
+                  totalVolumeKg:
+                      Value((raw['total_volume_kg'] as num?)?.toDouble() ?? 0.0),
+                  status: Value((raw['status'] as String?) ?? 'COMPLETED'),
+                  syncStatus: const Value('SYNCED'),
+                  updatedAt: Value(serverUpdated),
+                  deletedAt: Value(
+                    raw['deleted_at'] != null
+                        ? _parseUtc(raw['deleted_at'])
+                        : null,
+                  ),
+                ),
+              );
+          appliedCount++;
+        }
+      }
+
+      // 7. Workout Sets (LWW)
+      for (final raw in (records['workout_sets'] as List?) ?? const []) {
+        if (raw is! Map<String, dynamic>) continue;
+        final id = raw['id']?.toString();
+        final sessionId = raw['session_id']?.toString();
+        final exerciseId =
+            raw['exercise_id']?.toString() ?? raw['exercise_code']?.toString();
+        if (id == null || sessionId == null || exerciseId == null) continue;
+        final serverUpdated = _parseUtc(raw['updated_at']);
+        final existing = await (_db.select(_db.workoutSetsTable)
+              ..where((t) => t.id.equals(id)))
+            .getSingleOrNull();
+        if (existing == null ||
+            SyncConflictResolver.shouldServerWin(
+              localUpdatedAt: existing.updatedAt,
+              serverUpdatedAt: serverUpdated,
+            )) {
+          await _db.into(_db.workoutSetsTable).insertOnConflictUpdate(
+                WorkoutSetsTableCompanion(
+                  id: Value(id),
+                  sessionId: Value(sessionId),
+                  exerciseId: Value(exerciseId),
+                  setNumber: Value((raw['set_number'] as num?)?.toInt() ?? 1),
+                  setType: Value((raw['set_type'] as String?) ?? 'NORMAL'),
+                  weightKg: Value((raw['weight_kg'] as num?)?.toDouble() ?? 0.0),
+                  reps: Value((raw['reps'] as num?)?.toInt() ?? 0),
+                  rpe: Value((raw['rpe'] as num?)?.toDouble()),
+                  estimated1rm:
+                      Value((raw['estimated_1rm'] as num?)?.toDouble() ?? 0.0),
+                  isPr: Value((raw['is_pr'] as bool?) ?? false),
+                  completedAt: Value(_parseUtc(raw['completed_at'])),
+                  syncStatus: const Value('SYNCED'),
+                  updatedAt: Value(serverUpdated),
                 ),
               );
           appliedCount++;

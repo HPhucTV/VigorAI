@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../../core/database/health_tables.drift.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../data/health_repository.dart';
 import '../data/offline_food_catalog.dart';

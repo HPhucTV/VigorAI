@@ -10,11 +10,37 @@ import '../../../core/theme/app_theme.dart';
 import '../../auth_privacy/presentation/auth_controller.dart';
 import '../data/health_repository.dart';
 
-class HealthDashboardScreen extends ConsumerWidget {
+class HealthDashboardScreen extends ConsumerStatefulWidget {
   const HealthDashboardScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<HealthDashboardScreen> createState() =>
+      _HealthDashboardScreenState();
+}
+
+class _HealthDashboardScreenState extends ConsumerState<HealthDashboardScreen>
+    with WidgetsBindingObserver {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      ref.read(healthDashboardProvider.notifier).load();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final authState = ref.watch(authControllerProvider);
     final healthState = ref.watch(healthDashboardProvider);
     final controller = ref.read(healthDashboardProvider.notifier);

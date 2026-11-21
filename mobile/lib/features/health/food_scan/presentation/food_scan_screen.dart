@@ -19,6 +19,7 @@ class FoodScanScreen extends ConsumerStatefulWidget {
 
 class _FoodScanScreenState extends ConsumerState<FoodScanScreen> {
   File? _selectedImage;
+  double _imageAspectRatio = 4.0 / 3.0;
   bool _isAnalyzing = false;
   bool _isSaving = false;
   String _mealType = 'LUNCH';
@@ -35,8 +36,20 @@ class _FoodScanScreenState extends ConsumerState<FoodScanScreen> {
         : await picker.pickFromGalleryCompressed();
     if (file == null) return;
 
+    var ratio = 4.0 / 3.0;
+    try {
+      final bytes = await file.readAsBytes();
+      final decoded = await decodeImageFromList(bytes);
+      if (decoded.width > 0 && decoded.height > 0) {
+        ratio = decoded.width / decoded.height;
+      }
+      decoded.dispose();
+    } catch (_) {}
+    if (!mounted) return;
+
     setState(() {
       _selectedImage = file;
+      _imageAspectRatio = ratio;
       _isAnalyzing = true;
       _result = null;
     });
@@ -63,6 +76,13 @@ class _FoodScanScreenState extends ConsumerState<FoodScanScreen> {
     if (res == null || res.detectedItems.isEmpty) return;
     setState(() => _isSaving = true);
     try {
+      String? persistedImagePath;
+      if (_selectedImage != null) {
+        final savedFile = await ref
+            .read(photoPickerServiceProvider)
+            .savePrivateMealPhoto(_selectedImage!);
+        persistedImagePath = savedFile.path;
+      }
       final title = res.detectedItems
           .map((e) => '${e.nameVi} (${e.adjustedGrams.round()}g)')
           .join(' + ');
@@ -73,7 +93,7 @@ class _FoodScanScreenState extends ConsumerState<FoodScanScreen> {
             proteinG: res.totalProteinG,
             carbsG: res.totalCarbsG,
             fatG: res.totalFatG,
-            localImagePath: _selectedImage?.path,
+            localImagePath: persistedImagePath,
             aiDetectedItems: res.detectedItems.map((e) => e.toJson()).toList(),
           );
       if (!mounted) return;
@@ -151,13 +171,12 @@ class _FoodScanScreenState extends ConsumerState<FoodScanScreen> {
           if (_selectedImage != null)
             ClipRRect(
               borderRadius: BorderRadius.circular(14),
-              child: SizedBox(
-                height: 240,
-                width: double.infinity,
+              child: AspectRatio(
+                aspectRatio: _imageAspectRatio,
                 child: Stack(
                   fit: StackFit.expand,
                   children: [
-                    Image.file(_selectedImage!, fit: BoxFit.cover),
+                    Image.file(_selectedImage!, fit: BoxFit.fill),
                     if (res != null && res.detectedItems.isNotEmpty)
                       CustomPaint(
                         painter: _FoodBboxPainter(res.detectedItems),
