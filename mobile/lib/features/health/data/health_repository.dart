@@ -13,6 +13,7 @@ import '../../../core/network/api_endpoints.dart';
 import '../../../core/network/dio_client.dart';
 import '../../../core/platform/workmanager_reminder_service.dart';
 import '../../../core/sync/sync_queue_manager.dart';
+import '../../auth_privacy/data/auth_repository.dart';
 import '../../auth_privacy/presentation/auth_controller.dart';
 
 class HealthDashboardState {
@@ -161,6 +162,7 @@ class HealthRepository {
   Future<HealthDashboardState> loadDashboardData({
     double heightCm = 172.0,
     String gender = 'MALE',
+    int ageYears = 24,
     String activityLevel = 'MODERATE',
     String fitnessGoal = 'BULK',
   }) async {
@@ -225,27 +227,40 @@ class HealthRepository {
       );
     }
 
-    // 3. Tu dong cong bu nuoc neu ngay hom nay co buoi tap Gym trong Drift (F03)
+    // 3. Tu dong cong bu nuoc neu ngay hom nay co buoi tap Gym trong Drift (F03), hoac giu muc bu thu cong da chon
     final currentWeight =
         biometrics.isNotEmpty ? biometrics.first.weightKg : 70.0;
     final workoutHydration =
         await _detectTodayWorkoutHydrationBonus(todayStr);
-    final computedTargetWater = DailyHealthModel.calculateTargetWaterMl(
-      currentWeight,
-      workoutMinutes: workoutHydration.$1,
-      workoutRpe: workoutHydration.$2,
-    );
     final baseWaterOnly = DailyHealthModel.calculateTargetWaterMl(currentWeight);
-    final bonusMl = (computedTargetWater - baseWaterOnly).clamp(0, 1500);
-    if (todayDaily.targetWaterMl != computedTargetWater && bonusMl > 0) {
-      todayDaily = todayDaily.copyWith(targetWaterMl: computedTargetWater);
-      await (_db.update(_db.dailyHealthLogsTable)
-            ..where((t) => t.id.equals(todayDaily!.id)))
-          .write(
-        DailyHealthLogsTableCompanion(
-          targetWaterMl: Value(computedTargetWater),
-        ),
+    var bonusMl = 0;
+    String? bonusReason = workoutHydration.$3;
+    if (workoutHydration.$1 > 0) {
+      final computedTargetWater = DailyHealthModel.calculateTargetWaterMl(
+        currentWeight,
+        workoutMinutes: workoutHydration.$1,
+        workoutRpe: workoutHydration.$2,
       );
+      bonusMl = (computedTargetWater - baseWaterOnly).clamp(0, 1500);
+      if (todayDaily.targetWaterMl != computedTargetWater && bonusMl > 0) {
+        todayDaily = todayDaily.copyWith(
+          targetWaterMl: computedTargetWater,
+          syncStatus: 'PENDING_UPDATE',
+          updatedAt: nowUtc,
+        );
+        await (_db.update(_db.dailyHealthLogsTable)
+              ..where((t) => t.id.equals(todayDaily!.id)))
+            .write(
+          DailyHealthLogsTableCompanion(
+            targetWaterMl: Value(computedTargetWater),
+            syncStatus: const Value('PENDING_UPDATE'),
+            updatedAt: Value(nowUtc),
+          ),
+        );
+      }
+    } else if (todayDaily.targetWaterMl > baseWaterOnly) {
+      bonusMl = (todayDaily.targetWaterMl - baseWaterOnly).clamp(0, 1500);
+      bonusReason = 'Đã cộng bù +$bonusMl ml theo mức vận động hôm nay';
     }
 
     // 4. Loc bua an cua ngay hom nay
@@ -287,7 +302,7 @@ class HealthRepository {
     final bmr = DailyHealthModel.calculateBmrMifflinStJeor(
       weightKg: currentWeight,
       heightCm: heightCm,
-      ageYears: 24,
+      ageYears: ageYears,
       gender: gender,
     );
     final targetKcal = DailyHealthModel.calculateTargetCalories(
@@ -317,7 +332,7 @@ class HealthRepository {
       fitnessGoal: fitnessGoal,
       activityLevel: activityLevel,
       workoutBonusWaterMl: bonusMl,
-      workoutBonusReason: workoutHydration.$3,
+      workoutBonusReason: bonusReason,
       weeklySupplementAdherencePct: adherencePct,
       pendingSyncCount: pendingCount,
     );
@@ -394,9 +409,10 @@ class HealthRepository {
     }
 
     if (payload == null) return;
+    final data = payload;
 
     await _db.transaction(() async {
-      final bioList = (payload!['biometrics'] as List?) ?? const [];
+      final bioList = (data['biometrics'] as List?) ?? const [];
       for (final item in bioList) {
         if (item is! Map<String, dynamic>) continue;
         final model = BiometricLogModel.fromJson(item);
@@ -416,7 +432,7 @@ class HealthRepository {
             );
       }
 
-      final dailyRaw = payload['daily_health'];
+      final dailyRaw = data['daily_health'];
       if (dailyRaw is Map<String, dynamic> && dailyRaw.isNotEmpty) {
         final d = DailyHealthModel.fromJson(dailyRaw);
         final dateIso = ApiEndpoints.useMockApi ? todayStr : d.logDateIso;
@@ -437,7 +453,7 @@ class HealthRepository {
             );
       }
 
-      final mealList = (payload['meals'] as List?) ?? const [];
+      final mealList = (data['meals'] as List?) ?? const [];
       for (final item in mealList) {
         if (item is! Map<String, dynamic>) continue;
         final m = MealLogModel.fromJson(item);
@@ -467,7 +483,7 @@ class HealthRepository {
             );
       }
 
-      final suppList = (payload['supplements'] as List?) ?? const [];
+      final suppList = (data['supplements'] as List?) ?? const [];
       for (final item in suppList) {
         if (item is! Map<String, dynamic>) continue;
         final s = SupplementScheduleModel.fromJson(item);
@@ -768,6 +784,8 @@ class HealthDashboardController extends StateNotifier<HealthDashboardState> {
   final SyncQueueManager _syncManager;
   final WorkmanagerReminderService _reminderService;
   final AuthUserProfile? _userProfile;
+  String? _activityLevelOverride;
+  String? _fitnessGoalOverride;
 
   HealthDashboardController(
     this._repository,
@@ -780,21 +798,30 @@ class HealthDashboardController extends StateNotifier<HealthDashboardState> {
 
   double get _heightCm => _userProfile?.heightCm ?? 172.0;
   String get _gender => _userProfile?.gender ?? 'MALE';
+  int get _ageYears => _userProfile?.calculateAgeYears() ?? 24;
 
   Future<void> load({
     String? activityLevelOverride,
     String? fitnessGoalOverride,
   }) async {
+    if (activityLevelOverride != null) {
+      _activityLevelOverride = activityLevelOverride;
+    }
+    if (fitnessGoalOverride != null) {
+      _fitnessGoalOverride = fitnessGoalOverride;
+    }
     state = state.copyWith(isLoading: true, clearError: true);
     try {
-      final act = activityLevelOverride ??
+      final act = _activityLevelOverride ??
           _userProfile?.activityLevel ??
           state.activityLevel;
-      final goal =
-          fitnessGoalOverride ?? _userProfile?.fitnessGoal ?? state.fitnessGoal;
+      final goal = _fitnessGoalOverride ??
+          _userProfile?.fitnessGoal ??
+          state.fitnessGoal;
       final loaded = await _repository.loadDashboardData(
         heightCm: _heightCm,
         gender: _gender,
+        ageYears: _ageYears,
         activityLevel: act,
         fitnessGoal: goal,
       );

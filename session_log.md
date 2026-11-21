@@ -17,6 +17,28 @@
 
 ---
 
+## Phiên 16 — 2026-11-21 19:16 | Thành viên: M1 (Mobile Core, Health, Food/Photo UI & CH Play) | Task: `T-M1-08`, `T-M1-09`, `T-M1-11` (`[x]`), `T-M1-10`, `T-M1-12` (`[~]`)
+- **Mục tiêu phiên:** Rà soát chéo toàn bộ code Phiên 15 trên Flutter SDK, sửa toàn bộ 4 lỗi biên dịch, 1 warning và các lỗi logic phát hiện được, giữ nguyên 100% `[LOCKED STUB]` và phạm vi `[OWNER: M1]`.
+- **Những file đã tạo / chỉnh sửa:**
+  - `mobile/lib/features/auth_privacy/data/auth_repository.dart`: Bổ sung `birthDateIso` (`birth_date`) + `calculateAgeYears()` (fallback `24`), đồng thời gọi `deleteAllPrivateMealPhotos()` khi xóa tài khoản (`F26`).
+  - `mobile/lib/features/health/data/health_repository.dart`: Sửa lỗi thiếu import `AuthUserProfile` và 3 lỗi `unchecked_use_of_nullable_value` trong `_bootstrapInitialData`; giữ mức bù nước buổi tập (`workoutBonusWaterMl`) qua các lần `load()` và đánh dấu `PENDING_UPDATE` khi tự cộng bù nước; giữ `_fitnessGoalOverride`/`_activityLevelOverride` trong `HealthDashboardController` và truyền `_ageYears` thật vào `calculateBmrMifflinStJeor`.
+  - `mobile/lib/features/health/nutrition/presentation/nutrition_screen.dart`: Xóa unused import `health_tables.drift.dart`.
+  - `mobile/lib/core/sync/sync_queue_manager.dart`: Bổ sung Pull cho 3 bảng `workout_routines`, `workout_sessions`, `workout_sets` (đủ 7 bảng Drift), xử lý `legacyMockId` (`bio-{logged_date}`) tránh nhân đôi khi đổi sang UUID v5, và giữ `PENDING_UPDATE` khi `mergedSteps > serverSteps`.
+  - `mobile/android/app/src/main/kotlin/com/vigorai/app/SupplementTakenReceiver.kt` & `mobile/lib/features/health/presentation/health_dashboard_screen.dart`: Đánh dấu `sync_status = 'PENDING_UPDATE'` khi bấm nút *"Đã uống"* trên notification và lắng nghe `AppLifecycleState.resumed` trên `HealthDashboardScreen` để tự refresh UI.
+  - `mobile/lib/core/platform/photo_picker_service.dart` & `mobile/lib/features/health/food_scan/presentation/food_scan_screen.dart`: Lưu bền vững ảnh món ăn vào thư mục riêng tư `meal_photos/` khi lưu bữa, dùng `decodeImageFromList` + `AspectRatio` + `BoxFit.fill` để khớp 100% tọa độ `_FoodBboxPainter`.
+  - `mobile/test/health/health_sprint2_test.dart`, `docs/taskboard.md` (`T-M1-08`, `T-M1-09`, `T-M1-11` đạt `[x]` $\rightarrow$ `M1: 9 / 17 Done`, `Tổng cộng: 24 / 63 Done (38.1%)`).
+- **Lưu ý kỹ thuật còn mở (từ rà soát Phiên 15):**
+  - `WorkManager` background isolate khi app tắt hẳn chưa có native handler riêng cho `com.vigorai.app/health_reminders` và `kBackgroundSyncTaskName` đang để stub `return true`; cần lưu ý hoặc hoàn thiện thêm nếu test notification chạy ngầm khi app killed.
+  - Dữ liệu mock `meal-*` / `supp-*` nếu đẩy lên backend `M3` (chuyển sang UUID v5) vẫn cần chú ý ở giai đoạn tích hợp Sync thật (`T-M1-12`), trong khi `biometric_logs` đã có xử lý fallback `bio-{logged_date}`.
+- **Kiểm tra / Kết quả chạy thử:**
+  - `flutter analyze --no-fatal-infos`: Exit `0` (**0 errors, 0 warnings**; chỉ còn 18 info deprecation `package:flutter/material.dart` trên Flutter 3.50.0).
+  - `flutter test test/health/health_sprint2_test.dart`: **Pass 11 / 11**.
+  - `flutter test test/workout/`: **Pass 5 / 5**.
+- **Việc cần làm ở phiên kế tiếp:**
+  - Theo dõi `T-M4-06` (`M4` deploy Model B thật) để chốt `T-M1-10`, hoàn tất `T-M1-07` & tích hợp Sync Offline $\leftrightarrow$ Online với `M3` để chốt `T-M1-12`.
+
+---
+
 ## Phiên 15 — 2026-11-20 14:38 | Thành viên: M1 (Mobile Core, Health, Food/Photo UI & CH Play) | Task: `T-M1-08`, `T-M1-09`, `T-M1-10`, `T-M1-11`, `T-M1-12` (`[~]`)
 - **Mục tiêu phiên:** Triển khai đầy đủ 5 tasks Sprint 2 của Thành viên M1 (`T-M1-08` đến `T-M1-12`) theo đúng `[OWNER: M1]`, giữ nguyên 100% file `[LOCKED STUB]` (`pubspec.yaml`, `main.dart`, `app_database.dart`, `app_router.dart`) và chuẩn tuân thủ Google Play Store.
 - **Những file đã tạo / chỉnh sửa:**

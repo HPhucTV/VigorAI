@@ -76,6 +76,7 @@ class SupplementTakenReceiver : BroadcastReceiver() {
             db = SQLiteDatabase.openDatabase(dbFile.absolutePath, null, SQLiteDatabase.OPEN_READWRITE)
             val values = ContentValues().apply {
                 put("updated_at", System.currentTimeMillis() / 1000L)
+                put("sync_status", "PENDING_UPDATE")
             }
             db.update(
                 "supplement_schedules_table",

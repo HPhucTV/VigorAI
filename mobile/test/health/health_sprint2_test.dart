@@ -4,8 +4,10 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:vigorai_app/core/database/health_tables.drift.dart';
+import 'package:vigorai_app/core/database/workout_tables.drift.dart';
 import 'package:vigorai_app/core/platform/workmanager_reminder_service.dart';
 import 'package:vigorai_app/core/sync/sync_queue_manager.dart';
+import 'package:vigorai_app/features/auth_privacy/data/auth_repository.dart';
 import 'package:vigorai_app/features/health/food_scan/data/food_scan_repository.dart';
 
 void main() {
@@ -216,6 +218,115 @@ void main() {
         ),
         9200,
       );
+    });
+
+    test('calculates user age from birth_date with safe fallbacks', () {
+      final refDate = DateTime(2026, 11, 21);
+
+      const birthdayPassed = AuthUserProfile(
+        id: 'u-1',
+        email: 'demo@vigorai.app',
+        fullName: 'Nguyen Van An',
+        birthDateIso: '2002-05-14',
+      );
+      expect(birthdayPassed.calculateAgeYears(referenceDate: refDate), 24);
+
+      const birthdayNotPassed = AuthUserProfile(
+        id: 'u-2',
+        email: 'u2@vigorai.app',
+        fullName: 'User 2',
+        birthDateIso: '2002-12-01',
+      );
+      expect(birthdayNotPassed.calculateAgeYears(referenceDate: refDate), 23);
+
+      const missingDob = AuthUserProfile(
+        id: 'u-3',
+        email: 'u3@vigorai.app',
+        fullName: 'User 3',
+      );
+      expect(missingDob.calculateAgeYears(referenceDate: refDate), 24);
+
+      const invalidDob = AuthUserProfile(
+        id: 'u-4',
+        email: 'u4@vigorai.app',
+        fullName: 'User 4',
+        birthDateIso: 'not-a-date',
+      );
+      expect(invalidDob.calculateAgeYears(referenceDate: refDate), 24);
+
+      const outOfRangeDob = AuthUserProfile(
+        id: 'u-5',
+        email: 'u5@vigorai.app',
+        fullName: 'User 5',
+        birthDateIso: '2022-01-01',
+      );
+      expect(outOfRangeDob.calculateAgeYears(referenceDate: refDate), 24);
+    });
+
+    test('parses backend JSON compatibility for AuthUserProfile and Sync models', () {
+      final profile = AuthUserProfile.fromJson({
+        'id': '11111111-1111-4111-8111-111111111111',
+        'email': 'demo@vigorai.app',
+        'full_name': 'Nguyễn Văn An',
+        'gender': 'MALE',
+        'birth_date': '2002-05-14',
+        'height_cm': 172.0,
+        'activity_level': 'MODERATE',
+        'fitness_goal': 'BULK',
+        'medical_disclaimer_accepted': true,
+      });
+      expect(profile.birthDateIso, '2002-05-14');
+      expect(profile.toJson()['birth_date'], '2002-05-14');
+
+      final routine = WorkoutRoutineModel.fromJson({
+        'id': 'r-1',
+        'name': 'Push Pull Legs',
+        'split_type': 'PPL',
+        'scheduled_weekdays': [1, 3, 5],
+        'exercises': [
+          {
+            'exercise_code': 'BARBELL_BENCH_PRESS',
+            'order_index': 0,
+            'target_sets': 4,
+            'target_rep_min': 6,
+            'target_rep_max': 8,
+            'default_rest_seconds': 120,
+          },
+        ],
+        'is_template': false,
+        'updated_at': '2026-11-20T10:00:00Z',
+      });
+      expect(routine.exercises.single.exerciseCode, 'BARBELL_BENCH_PRESS');
+
+      final session = WorkoutSessionModel.fromJson({
+        'id': 's-1',
+        'routine_id': 'r-1',
+        'session_title': 'Push Day',
+        'started_at': '2026-11-20T09:00:00Z',
+        'completed_at': '2026-11-20T10:00:00Z',
+        'duration_seconds': 3600,
+        'total_volume_kg': 4200.0,
+        'status': 'COMPLETED',
+        'updated_at': '2026-11-20T10:00:00Z',
+      });
+      expect(session.durationSeconds, 3600);
+
+      final wset = WorkoutSetModel.fromJson({
+        'id': 'set-1',
+        'session_id': 's-1',
+        'exercise_id': 'ex-1',
+        'set_number': 1,
+        'set_type': 'NORMAL',
+        'weight_kg': 80.0,
+        'reps': 8,
+        'rpe': 8.0,
+        'estimated_1rm': 101.33,
+        'is_pr': true,
+        'completed_at': '2026-11-20T09:15:00Z',
+        'updated_at': '2026-11-20T09:15:00Z',
+      });
+      expect(wset.isPr, isTrue);
+      expect(wset.estimated1rm, 101.33);
     });
   });
 }
