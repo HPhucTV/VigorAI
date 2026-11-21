@@ -112,6 +112,7 @@ class Muscle3DViewerWidget extends StatefulWidget {
   final double playbackSpeed;
   final CameraPreset3D cameraPreset;
   final ValueChanged<String>? onMuscleTap;
+  final VoidCallback? onModelLoaded;
   final bool isPlaying;
   final double height;
   final double? normalizedProgress;
@@ -125,11 +126,24 @@ class Muscle3DViewerWidget extends StatefulWidget {
     this.playbackSpeed = 1.0,
     this.cameraPreset = CameraPreset3D.front,
     this.onMuscleTap,
+    this.onModelLoaded,
     this.isPlaying = true,
     this.height = 340,
     this.normalizedProgress,
     this.avatarPreset = BodyAvatarPreset.maleFit,
   });
+
+  /// Tranh nhan doi ty le thu nho khi dang tai san mesh nu 1.66m (`base_mannequin_female.glb`).
+  static ({double x, double y, double z}) effectiveScaleFor(
+    BodyAvatarPreset preset,
+    String glbAssetOrUrl,
+  ) {
+    if (preset == BodyAvatarPreset.femaleFit &&
+        glbAssetOrUrl.contains('base_mannequin_female')) {
+      return (x: 1.0, y: 1.0, z: 1.0);
+    }
+    return (x: preset.scaleX, y: preset.scaleY, z: preset.scaleZ);
+  }
 
   @override
   State<Muscle3DViewerWidget> createState() => _Muscle3DViewerWidgetState();
@@ -214,7 +228,10 @@ class _Muscle3DViewerWidgetState extends State<Muscle3DViewerWidget> {
     final initialSpeed = widget.playbackSpeed;
     final initialPlaying = widget.isPlaying;
     final initialProgress = widget.normalizedProgress;
-    final avatar = widget.avatarPreset;
+    final scale = Muscle3DViewerWidget.effectiveScaleFor(
+      widget.avatarPreset,
+      widget.glbAssetOrUrl,
+    );
 
     return '''
 (function() {
@@ -291,7 +308,7 @@ class _Muscle3DViewerWidgetState extends State<Muscle3DViewerWidget> {
         window.VigorStatusChannel.postMessage('loaded');
       }
       window.vigorApplyColors($initialColors);
-      window.vigorSetAvatarPreset(${avatar.scaleX}, ${avatar.scaleY}, ${avatar.scaleZ});
+      window.vigorSetAvatarPreset(${scale.x}, ${scale.y}, ${scale.z});
       window.vigorSetAnim($initialAnim, $initialSpeed, $initialPlaying);
       ${initialProgress != null ? 'window.vigorSeekNormalized($initialProgress);' : ''}
     };
@@ -378,9 +395,12 @@ class _Muscle3DViewerWidgetState extends State<Muscle3DViewerWidget> {
     }
 
     if (oldWidget.avatarPreset != widget.avatarPreset) {
-      final av = widget.avatarPreset;
+      final scale = Muscle3DViewerWidget.effectiveScaleFor(
+        widget.avatarPreset,
+        widget.glbAssetOrUrl,
+      );
       _runJs(
-        'window.vigorSetAvatarPreset && window.vigorSetAvatarPreset(${av.scaleX}, ${av.scaleY}, ${av.scaleZ});',
+        'window.vigorSetAvatarPreset && window.vigorSetAvatarPreset(${scale.x}, ${scale.y}, ${scale.z});',
       );
     }
   }
@@ -448,6 +468,7 @@ class _Muscle3DViewerWidgetState extends State<Muscle3DViewerWidget> {
                       _isModelLoaded = true;
                       _errorMessage = null;
                     });
+                    widget.onModelLoaded?.call();
                   } else if (message.message.startsWith('error')) {
                     _loadTimeoutTimer?.cancel();
                     setState(() {

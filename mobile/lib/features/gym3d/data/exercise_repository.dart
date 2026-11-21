@@ -15,37 +15,22 @@ import '../presentation/widgets/muscle_3d_viewer_widget.dart';
 class ExerciseRepository {
   static const Map<String, String> _localBundledGlbs = {
     'BARBELL_BENCH_PRESS': 'assets/3d_bundled/barbell_bench_press.glb',
-    'INCLINE_DUMBBELL_PRESS': 'assets/3d_bundled/incline_dumbbell_press.glb',
-    'CABLE_CHEST_FLY': 'assets/3d_bundled/cable_chest_fly.glb',
-    'WIDE_GRIP_PULLUP': 'assets/3d_bundled/wide_grip_pullup.glb',
-    'LAT_PULLDOWN': 'assets/3d_bundled/lat_pulldown.glb',
-    'STRAIGHT_ARM_CABLE_PULLDOWN': 'assets/3d_bundled/straight_arm_cable_pulldown.glb',
-    'BARBELL_BENT_OVER_ROW': 'assets/3d_bundled/barbell_bent_over_row.glb',
-    'SEATED_CABLE_ROW': 'assets/3d_bundled/seated_cable_row.glb',
-    'BARBELL_DEADLIFT': 'assets/3d_bundled/barbell_deadlift.glb',
-    'DUMBBELL_SHOULDER_PRESS': 'assets/3d_bundled/dumbbell_shoulder_press.glb',
-    'DUMBBELL_LATERAL_RAISE': 'assets/3d_bundled/dumbbell_lateral_raise.glb',
-    'CABLE_FACE_PULL': 'assets/3d_bundled/cable_face_pull.glb',
-    'BARBELL_BICEP_CURL': 'assets/3d_bundled/barbell_bicep_curl.glb',
-    'DUMBBELL_HAMMER_CURL': 'assets/3d_bundled/dumbbell_hammer_curl.glb',
-    'INCLINE_DUMBBELL_CURL': 'assets/3d_bundled/incline_dumbbell_curl.glb',
-    'CABLE_TRICEP_PUSHDOWN': 'assets/3d_bundled/cable_tricep_pushdown.glb',
-    'SKULL_CRUSHER': 'assets/3d_bundled/skull_crusher.glb',
-    'OVERHEAD_DUMBBELL_TRICEP_EXT': 'assets/3d_bundled/overhead_dumbbell_tricep_ext.glb',
     'BARBELL_SQUAT': 'assets/3d_bundled/barbell_squat.glb',
-    'LEG_PRESS': 'assets/3d_bundled/leg_press.glb',
-    'LEG_EXTENSION': 'assets/3d_bundled/leg_extension.glb',
-    'ROMANIAN_DEADLIFT': 'assets/3d_bundled/romanian_deadlift.glb',
-    'LEG_CURL_MACHINE': 'assets/3d_bundled/leg_curl_machine.glb',
-    'SEATED_LEG_CURL': 'assets/3d_bundled/seated_leg_curl.glb',
-    'BARBELL_HIP_THRUST': 'assets/3d_bundled/barbell_hip_thrust.glb',
-    'WALKING_LUNGE': 'assets/3d_bundled/walking_lunge.glb',
-    'CABLE_GLUTE_KICKBACK': 'assets/3d_bundled/cable_glute_kickback.glb',
-    'HANGING_LEG_RAISE': 'assets/3d_bundled/hanging_leg_raise.glb',
-    'CABLE_CRUNCH': 'assets/3d_bundled/cable_crunch.glb',
-    'PLANK': 'assets/3d_bundled/plank.glb',
     'PUSH_UP': 'assets/3d_bundled/push_up.glb',
   };
+
+  static bool _hasStaleUrl(String code, String url) {
+    if (url.startsWith('http://localhost:9000') ||
+        url.startsWith('https://cdn.vigorai.app')) {
+      return true;
+    }
+    if (url.startsWith('assets/3d_bundled/') &&
+        !_localBundledGlbs.containsKey(code.toUpperCase()) &&
+        url != 'assets/3d_bundled/base_mannequin.glb') {
+      return true;
+    }
+    return false;
+  }
 
   final AppDatabase _db;
   final Dio _dio;
@@ -58,24 +43,51 @@ class ExerciseRepository {
   ) {
     final upper = model.code.toUpperCase();
     final localPath = _localBundledGlbs[upper];
-    if (localPath == null) return model;
     final mockMeta = mockByCode[upper];
+    if (localPath != null) {
+      return ExerciseModel(
+        id: model.id,
+        code: model.code,
+        nameVi: mockMeta?.nameVi ?? model.nameVi,
+        nameEn: mockMeta?.nameEn ?? model.nameEn,
+        equipmentType: model.equipmentType,
+        model3dGlbUrl: localPath,
+        assetChecksum: mockMeta?.assetChecksum ?? model.assetChecksum,
+        primaryMuscles: model.primaryMuscles,
+        secondaryMuscles: model.secondaryMuscles,
+        stabilizerMuscles: model.stabilizerMuscles,
+        phaseKeyframes: model.phaseKeyframes,
+        badFormWarnings: model.badFormWarnings,
+        setupGuide: model.setupGuide,
+        isBundled: true,
+        clips: const ['Anim_GoodForm', 'Anim_BadForm'],
+      );
+    }
+
+    final staleUrl = _hasStaleUrl(upper, model.model3dGlbUrl);
+    final resolvedUrl =
+        (staleUrl && mockMeta != null) ? mockMeta.model3dGlbUrl : model.model3dGlbUrl;
+    final resolvedChecksum =
+        (staleUrl && mockMeta != null) ? mockMeta.assetChecksum : model.assetChecksum;
+    final resolvedClips =
+        model.clips.length >= 2 ? model.clips : (mockMeta?.clips ?? model.clips);
+
     return ExerciseModel(
       id: model.id,
       code: model.code,
-      nameVi: mockMeta?.nameVi ?? model.nameVi,
-      nameEn: mockMeta?.nameEn ?? model.nameEn,
+      nameVi: model.nameVi,
+      nameEn: model.nameEn,
       equipmentType: model.equipmentType,
-      model3dGlbUrl: localPath,
-      assetChecksum: mockMeta?.assetChecksum ?? model.assetChecksum,
+      model3dGlbUrl: resolvedUrl,
+      assetChecksum: resolvedChecksum,
       primaryMuscles: model.primaryMuscles,
       secondaryMuscles: model.secondaryMuscles,
       stabilizerMuscles: model.stabilizerMuscles,
       phaseKeyframes: model.phaseKeyframes,
       badFormWarnings: model.badFormWarnings,
       setupGuide: model.setupGuide,
-      isBundled: true,
-      clips: const ['Anim_GoodForm', 'Anim_BadForm'],
+      isBundled: false,
+      clips: resolvedClips,
     );
   }
 
@@ -87,13 +99,26 @@ class ExerciseRepository {
     };
 
     if (ApiEndpoints.useMockApi) {
-      if (existingRows.length != mockList.length) {
+      final existingByCode = {
+        for (final r in existingRows) r.code.toUpperCase(): r,
+      };
+      final stale = existingRows.length != mockList.length ||
+          mockList.any((m) {
+            final row = existingByCode[m.code.toUpperCase()];
+            return row == null ||
+                row.assetChecksum != m.assetChecksum ||
+                row.model3dGlbUrl != m.model3dGlbUrl ||
+                row.nameVi != m.nameVi;
+          });
+      if (stale) {
         await _upsertExercises(mockList);
       }
       return mockList;
     }
 
-    if (!forceRefresh && existingRows.length >= mockList.length) {
+    final hasStaleCache =
+        existingRows.any((r) => _hasStaleUrl(r.code, r.model3dGlbUrl));
+    if (!forceRefresh && !hasStaleCache && existingRows.length >= mockList.length) {
       return existingRows
           .map(_rowToModel)
           .map((e) => _applyBundledOverrides(e, mockByCode))
@@ -137,7 +162,11 @@ class ExerciseRepository {
           ..where((t) => t.code.equals(normalized)))
         .getSingleOrNull();
     if (row != null) {
-      return _rowToModel(row);
+      final mockList = await _loadFromMockAsset();
+      final mockByCode = <String, ExerciseModel>{
+        for (final m in mockList) m.code.toUpperCase(): m,
+      };
+      return _applyBundledOverrides(_rowToModel(row), mockByCode);
     }
     final all = await loadExercises();
     for (final ex in all) {
@@ -183,8 +212,9 @@ class ExerciseRepository {
   }
 
   ExerciseModel _rowToModel(ExercisesTableData row) {
-    final glbUrl = _localBundledGlbs[row.code.toUpperCase()] ?? row.model3dGlbUrl;
-    final bundled = glbUrl.startsWith('assets/');
+    final upper = row.code.toUpperCase();
+    final bundled = _localBundledGlbs.containsKey(upper);
+    final glbUrl = _localBundledGlbs[upper] ?? row.model3dGlbUrl;
     return ExerciseModel(
       id: row.id,
       code: row.code,

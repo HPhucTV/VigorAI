@@ -10,6 +10,7 @@ from app.core.config import settings
 from app.db.seed_catalog_and_exercises import seed_catalog_and_exercises
 from app.db.seed_demo_history import seed_demo_history
 from app.db.session import AsyncSessionLocal, engine
+from app.services.storage_service import StorageService
 
 logging.basicConfig(
     level=logging.INFO,
@@ -67,16 +68,25 @@ def _run_migrations_with_retry() -> bool:
     return False
 
 
-async def _run_seed() -> None:
-    """Nap du lieu chuan (food catalog + 30 bai tap + 4 giao an mau + user demo) mot cach idempotent."""
+async def _run_startup_tasks() -> None:
+    """Nap du lieu chuan & dong bo .glb len Object Storage mot cach idempotent."""
+    if settings.RUN_SEED_ON_STARTUP:
+        try:
+            async with AsyncSessionLocal() as db:
+                stats = await seed_catalog_and_exercises(db)
+                logger.info("Idempotent seed hoan tat: %s", stats)
+                demo_stats = await seed_demo_history(db)
+                logger.info("Idempotent demo history seed hoan tat: %s", demo_stats)
+        finally:
+            await engine.dispose()
+    else:
+        logger.info("Bo qua seed luc khoi dong (RUN_SEED_ON_STARTUP=false).")
+
     try:
-        async with AsyncSessionLocal() as db:
-            stats = await seed_catalog_and_exercises(db)
-            logger.info("Idempotent seed hoan tat: %s", stats)
-            demo_stats = await seed_demo_history(db)
-            logger.info("Idempotent demo history seed hoan tat: %s", demo_stats)
-    finally:
-        await engine.dispose()
+        s3_stats = await StorageService().sync_local_glb_assets_to_s3()
+        logger.info("Dong bo 3D .glb len S3/MinIO: %s", s3_stats)
+    except Exception as exc:
+        logger.warning("Bo qua dong bo 3D .glb len S3 luc khoi dong: %s", exc)
 
 
 def main() -> int:
@@ -86,10 +96,7 @@ def main() -> int:
     else:
         logger.info("Bo qua Alembic migration luc khoi dong (RUN_MIGRATIONS_ON_STARTUP=false).")
 
-    if settings.RUN_SEED_ON_STARTUP:
-        asyncio.run(_run_seed())
-    else:
-        logger.info("Bo qua seed luc khoi dong (RUN_SEED_ON_STARTUP=false).")
+    asyncio.run(_run_startup_tasks())
 
     return 0
 

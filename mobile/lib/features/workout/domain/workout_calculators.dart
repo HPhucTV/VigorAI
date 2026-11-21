@@ -188,6 +188,22 @@ class WorkoutCalculators {
     return _round1(total);
   }
 
+  /// Tinh muc bu nuoc sau buoi tap (F03): >=60p hoac RPE TB >=7.0 -> +750ml, con lai -> +500ml.
+  /// Khi khong co hiep nao ghi RPE, avgRpe mac dinh 0.0 thay vi 7.0 de tranh cong nham +750ml.
+  static int calculateWorkoutHydrationBonusMl({
+    required int durationSeconds,
+    required List<WorkoutSetModel> sets,
+  }) {
+    final workingSets =
+        sets.where((s) => s.setType.toUpperCase() != 'WARMUP').toList();
+    final rpes =
+        workingSets.where((s) => s.rpe != null).map((s) => s.rpe!).toList();
+    final avgRpe =
+        rpes.isEmpty ? 0.0 : rpes.reduce((a, b) => a + b) / rpes.length;
+    final durationMinutes = durationSeconds / 60.0;
+    return (durationMinutes >= 60.0 || avgRpe >= 7.0) ? 750 : 500;
+  }
+
   /// Quy doi kg <-> lbs tien loi khi nhap lieu o phong Gym (F15).
   static double lbsToKg(double lbs) => _round1(lbs * 0.45359237);
   static double kgToLbs(double kg) => _round1(kg / 0.45359237);

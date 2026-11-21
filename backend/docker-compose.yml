@@ -47,6 +47,7 @@ services:
       S3_PUBLIC_BASE_URL: http://localhost:9000/gym3d-assets
     volumes:
       - .:/app
+      - ../assets_3d/exported_glb:/app/assets_3d_glb:ro
     depends_on:
       postgres:
         condition: service_healthy

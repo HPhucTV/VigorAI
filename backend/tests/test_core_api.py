@@ -58,7 +58,7 @@ async def async_client() -> AsyncGenerator[AsyncClient, None]:
 
 def test_seed_catalog_and_30_exercises_contracts() -> None:
     assert len(FOOD_CATALOG_SEED) >= 35
-    assert len(EXERCISES_SEED) == 30
+    assert len(EXERCISES_SEED) == 39
     assert len(CANONICAL_MUSCLE_MATERIALS) == 11
     for ex in EXERCISES_SEED:
         all_muscles = (
@@ -270,14 +270,25 @@ async def test_sprint2_health_exercises_routines_workouts_sync_analytics(
     assert reg.status_code == 201
     headers = {"Authorization": f"Bearer {reg.json()['access_token']}"}
 
-    # 1. T-M3-09: Exercises & Alternatives (3 bundled MVP exercises + top 5 chest alternatives)
+    # 1. T-M3-09: Exercises & Alternatives (3 bundled MVP + 28 CDN .glb + 8 fallback = 39)
     ex_res = await async_client.get("/api/v1/exercises")
     assert ex_res.status_code == 200
     exercises = ex_res.json()["items"]
-    assert len(exercises) == 30
+    assert len(exercises) == 39
     bench = next(e for e in exercises if e["code"] == "BARBELL_BENCH_PRESS")
     assert bench["bundled"] is True
     assert bench["model_3d_glb_url"] == "assets/3d_bundled/barbell_bench_press.glb"
+
+    lat = next(e for e in exercises if e["code"] == "LAT_PULLDOWN")
+    assert lat["bundled"] is False
+    assert lat["clips"] == ["Anim_GoodForm", "Anim_BadForm"]
+    assert lat["model_3d_glb_url"].endswith("/api/v1/exercises/LAT_PULLDOWN/glb")
+
+    glb_res = await async_client.get("/api/v1/exercises/LAT_PULLDOWN/glb")
+    assert glb_res.status_code in {200, 307}
+    if glb_res.status_code == 200:
+        assert len(glb_res.content) > 100_000
+        assert glb_res.headers.get("x-asset-sha256") == lat["asset_checksum"]
 
     alt_res = await async_client.get("/api/v1/exercises/BARBELL_BENCH_PRESS/alternatives")
     assert alt_res.status_code == 200

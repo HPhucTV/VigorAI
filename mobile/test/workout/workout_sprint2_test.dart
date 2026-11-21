@@ -190,5 +190,220 @@ void main() {
       expect(summary.personalRecords, isNotEmpty);
       expect(summary.streakDays, greaterThan(0));
     });
+
+    test('computes workout hydration bonus accurately when RPE is omitted or >= 7.0', () {
+      final now = DateTime.utc(2026, 11, 21, 10, 0);
+      final noRpeSets = [
+        WorkoutSetModel(
+          id: 's1',
+          sessionId: 'sess-1',
+          exerciseId: 'BARBELL_BENCH_PRESS',
+          setNumber: 1,
+          setType: 'NORMAL',
+          weightKg: 80.0,
+          reps: 8,
+          rpe: null,
+          completedAt: now,
+          updatedAt: now,
+        ),
+      ];
+      final highRpeSets = [
+        WorkoutSetModel(
+          id: 's2',
+          sessionId: 'sess-2',
+          exerciseId: 'BARBELL_BENCH_PRESS',
+          setNumber: 1,
+          setType: 'NORMAL',
+          weightKg: 80.0,
+          reps: 8,
+          rpe: 7.5,
+          completedAt: now,
+          updatedAt: now,
+        ),
+      ];
+
+      expect(
+        WorkoutCalculators.calculateWorkoutHydrationBonusMl(
+          durationSeconds: 30 * 60,
+          sets: noRpeSets,
+        ),
+        500,
+      );
+      expect(
+        WorkoutCalculators.calculateWorkoutHydrationBonusMl(
+          durationSeconds: 30 * 60,
+          sets: highRpeSets,
+        ),
+        750,
+      );
+      expect(
+        WorkoutCalculators.calculateWorkoutHydrationBonusMl(
+          durationSeconds: 60 * 60,
+          sets: noRpeSets,
+        ),
+        750,
+      );
+    });
+
+    test('excludes ABANDONED/deleted sessions, handles empty & pull-only ratio, and separates multi-year weeks', () {
+      final now = DateTime.utc(2026, 11, 21, 12, 0);
+      final exercises = {
+        'LAT_PULLDOWN': const ExerciseModel(
+          id: 'ex-lat',
+          code: 'LAT_PULLDOWN',
+          nameVi: 'Kéo xô',
+          equipmentType: 'CABLE',
+          model3dGlbUrl: 'assets/3d_bundled/lat_pulldown.glb',
+          assetChecksum: 'abc',
+          primaryMuscles: [MuscleMaterialIds.backLats],
+        ),
+      };
+
+      // 1. Empty state -> pullPushRatio == 0.0
+      final emptySummary = AiAnalyticsRepository.aggregateAnalyticsFromData(
+        sessions: const [],
+        sets: const [],
+        exerciseByIdOrCode: exercises,
+        now: now,
+      );
+      expect(emptySummary.pullPushRatio, 0.0);
+
+      // 2. Two sessions from 2025-11-22 (364d ago, Monday 17/11/25) & 2026-11-16 (Monday 16/11/26), plus ABANDONED & soft-deleted sessions
+      final d2025 = DateTime.utc(2025, 11, 22, 10, 0);
+      final d2026 = DateTime.utc(2026, 11, 16, 10, 0);
+      final sessions = [
+        WorkoutSessionModel(
+          id: 'sess-2025',
+          sessionTitle: 'Old Back Day',
+          startedAt: d2025,
+          completedAt: d2025.add(const Duration(minutes: 45)),
+          durationSeconds: 2700,
+          totalVolumeKg: 1000.0,
+          status: 'COMPLETED',
+          updatedAt: d2025,
+        ),
+        WorkoutSessionModel(
+          id: 'sess-2026',
+          sessionTitle: 'Recent Back Day',
+          startedAt: d2026,
+          completedAt: d2026.add(const Duration(minutes: 45)),
+          durationSeconds: 2700,
+          totalVolumeKg: 1200.0,
+          status: 'COMPLETED',
+          updatedAt: d2026,
+        ),
+        WorkoutSessionModel(
+          id: 'sess-abandoned',
+          sessionTitle: 'Abandoned Day',
+          startedAt: now,
+          totalVolumeKg: 5000.0,
+          status: 'ABANDONED',
+          updatedAt: now,
+        ),
+        WorkoutSessionModel(
+          id: 'sess-deleted',
+          sessionTitle: 'Deleted Day',
+          startedAt: now,
+          totalVolumeKg: 5000.0,
+          status: 'COMPLETED',
+          updatedAt: now,
+          deletedAt: now,
+        ),
+      ];
+
+      final sets = [
+        WorkoutSetModel(
+          id: 'set-valid-1',
+          sessionId: 'sess-2025',
+          exerciseId: 'LAT_PULLDOWN',
+          setNumber: 1,
+          setType: 'NORMAL',
+          weightKg: 60.0,
+          reps: 10,
+          rpe: 8.0,
+          estimated1rm: 80.0,
+          completedAt: d2025,
+          updatedAt: d2025,
+        ),
+        WorkoutSetModel(
+          id: 'set-valid-2',
+          sessionId: 'sess-2026',
+          exerciseId: 'LAT_PULLDOWN',
+          setNumber: 1,
+          setType: 'NORMAL',
+          weightKg: 70.0,
+          reps: 8,
+          rpe: 8.0,
+          estimated1rm: 88.0,
+          completedAt: d2026,
+          updatedAt: d2026,
+        ),
+        WorkoutSetModel(
+          id: 'set-abandoned',
+          sessionId: 'sess-abandoned',
+          exerciseId: 'LAT_PULLDOWN',
+          setNumber: 1,
+          setType: 'NORMAL',
+          weightKg: 200.0,
+          reps: 10,
+          rpe: 9.0,
+          estimated1rm: 266.0,
+          completedAt: now,
+          updatedAt: now,
+        ),
+        WorkoutSetModel(
+          id: 'set-deleted',
+          sessionId: 'sess-deleted',
+          exerciseId: 'LAT_PULLDOWN',
+          setNumber: 1,
+          setType: 'NORMAL',
+          weightKg: 220.0,
+          reps: 10,
+          rpe: 9.0,
+          estimated1rm: 293.0,
+          completedAt: now,
+          updatedAt: now,
+        ),
+      ];
+
+      final summary = AiAnalyticsRepository.aggregateAnalyticsFromData(
+        sessions: sessions,
+        sets: sets,
+        exerciseByIdOrCode: exercises,
+        periodDays: 365,
+        now: now,
+      );
+
+      expect(summary.totalVolumeKg, 2200.0);
+      expect(summary.totalWorkingSets, 2);
+      expect(summary.weeklyVolume.length, 2);
+      expect(
+        summary.weeklyVolume.first.weekLabel,
+        isNot(equals(summary.weeklyVolume.last.weekLabel)),
+      );
+      expect(summary.personalRecords.length, 1);
+      expect(summary.personalRecords.first.best1rmKg, 88.0);
+      expect(summary.pullPushRatio, greaterThan(0.0));
+      // ABANDONED & deleted sessions at `now` must not count toward streak (most recent COMPLETED is 5 days ago)
+      expect(summary.streakDays, 0);
+    });
+
+    test('prevents double scaling on base_mannequin_female.glb', () {
+      final femaleBase = Muscle3DViewerWidget.effectiveScaleFor(
+        BodyAvatarPreset.femaleFit,
+        'assets/3d_bundled/base_mannequin_female.glb',
+      );
+      expect(femaleBase.x, 1.0);
+      expect(femaleBase.y, 1.0);
+      expect(femaleBase.z, 1.0);
+
+      final femaleExercise = Muscle3DViewerWidget.effectiveScaleFor(
+        BodyAvatarPreset.femaleFit,
+        'assets/3d_bundled/barbell_bench_press.glb',
+      );
+      expect(femaleExercise.x, BodyAvatarPreset.femaleFit.scaleX);
+      expect(femaleExercise.y, BodyAvatarPreset.femaleFit.scaleY);
+      expect(femaleExercise.z, BodyAvatarPreset.femaleFit.scaleZ);
+    });
   });
 }

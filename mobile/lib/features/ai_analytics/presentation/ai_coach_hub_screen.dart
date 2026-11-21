@@ -24,8 +24,9 @@ class AiCoachHubScreen extends ConsumerWidget {
               icon: const Icon(Icons.refresh),
               onPressed: () {
                 ref.invalidate(aiReadinessProvider);
-                ref.invalidate(analyticsSummaryProvider(90));
-                ref.invalidate(analyticsSummaryProvider(30));
+                for (final days in const [7, 30, 90, 365]) {
+                  ref.invalidate(analyticsSummaryProvider(days));
+                }
               },
             ),
             IconButton(

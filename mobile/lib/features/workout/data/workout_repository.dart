@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../../core/database/app_database.dart';
+import '../../../core/database/health_tables.drift.dart';
 import '../../../core/database/workout_tables.drift.dart';
 import '../../../core/network/api_endpoints.dart';
 import '../../../core/network/dio_client.dart';
@@ -60,6 +61,13 @@ class WorkoutRepository {
   final Uuid _uuid = const Uuid();
 
   WorkoutRepository(this._db, this._dio, this._exerciseRepo);
+
+  static String localDateIso([DateTime? now]) {
+    final dt = (now ?? DateTime.now()).toLocal();
+    final m = dt.month.toString().padLeft(2, '0');
+    final d = dt.day.toString().padLeft(2, '0');
+    return '${dt.year}-$m-$d';
+  }
 
   static List<WorkoutRoutineModel> _defaultTemplateRoutines() {
     final now = DateTime.now().toUtc();
@@ -524,14 +532,10 @@ class WorkoutRepository {
     final volume = WorkoutCalculators.calculateSessionVolumeKg(sets);
     final workingSets =
         sets.where((s) => s.setType.toUpperCase() != 'WARMUP').toList();
-    final rpes =
-        workingSets.where((s) => s.rpe != null).map((s) => s.rpe!).toList();
-    final avgRpe = rpes.isEmpty
-        ? 7.0
-        : rpes.reduce((a, b) => a + b) / rpes.length;
-    final durationMinutes = durationSeconds / 60.0;
-    final bonusMl =
-        (durationMinutes >= 60.0 || avgRpe >= 7.0) ? 750 : 500;
+    final bonusMl = WorkoutCalculators.calculateWorkoutHydrationBonusMl(
+      durationSeconds: durationSeconds,
+      sets: sets,
+    );
 
     var completed = WorkoutSessionModel(
       id: session.id,
@@ -597,6 +601,21 @@ class WorkoutRepository {
           updatedAt: completed.updatedAt,
         );
         await _upsertSessionRow(completed);
+
+        final syncedSetIds =
+            sets.map((s) => s.id).where((id) => id.isNotEmpty).toList();
+        if (syncedSetIds.isNotEmpty) {
+          await (_db.update(_db.workoutSetsTable)
+                ..where((t) =>
+                    t.sessionId.equals(completed.id) &
+                    t.id.isIn(syncedSetIds)))
+              .write(
+            WorkoutSetsTableCompanion(
+              syncStatus: const Value('SYNCED'),
+              updatedAt: Value(now),
+            ),
+          );
+        }
       } catch (_) {
         synced = false;
       }
@@ -613,22 +632,31 @@ class WorkoutRepository {
   }
 
   Future<void> _applyHydrationWorkoutBonus(int bonusMl) async {
-    final now = DateTime.now().toUtc();
-    final todayIso = now.toIso8601String().split('T').first;
+    final nowUtc = DateTime.now().toUtc();
+    final todayIso = localDateIso();
     final row = await (_db.select(_db.dailyHealthLogsTable)
           ..where((t) => t.logDateIso.equals(todayIso)))
         .getSingleOrNull();
-    const baseTarget = 2450;
+    final latestBio = await (_db.select(_db.biometricLogsTable)
+          ..where((t) => t.deletedAt.isNull())
+          ..orderBy([
+            (t) => OrderingTerm.desc(t.loggedDate),
+            (t) => OrderingTerm.desc(t.updatedAt),
+          ])
+          ..limit(1))
+        .getSingleOrNull();
+    final baseTarget =
+        DailyHealthModel.calculateTargetWaterMl(latestBio?.weightKg ?? 70.0);
     final desiredTarget = baseTarget + bonusMl;
 
     if (row == null) {
       await _db.into(_db.dailyHealthLogsTable).insertOnConflictUpdate(
             DailyHealthLogsTableCompanion.insert(
-              id: _uuid.v4(),
+              id: 'daily-$todayIso',
               logDateIso: todayIso,
               targetWaterMl: Value(desiredTarget),
               syncStatus: const Value('PENDING_CREATE'),
-              updatedAt: now,
+              updatedAt: nowUtc,
             ),
           );
     } else if (row.targetWaterMl < desiredTarget) {
@@ -638,19 +666,32 @@ class WorkoutRepository {
         DailyHealthLogsTableCompanion(
           targetWaterMl: Value(desiredTarget),
           syncStatus: const Value('PENDING_UPDATE'),
-          updatedAt: Value(now),
+          updatedAt: Value(nowUtc),
         ),
       );
     }
+  }
+
+  Future<List<String>> _loadValidSessionIds() async {
+    final rows = await (_db.select(_db.workoutSessionsTable)
+          ..where((t) =>
+              t.deletedAt.isNull() &
+              t.status.isNotIn(const ['ABANDONED', 'CANCELLED'])))
+        .get();
+    return rows.map((r) => r.id).toList();
   }
 
   Future<double> getHistoricalBest1Rm(
     String exerciseIdOrCode, {
     String? excludeSetId,
   }) async {
+    final validSessionIds = await _loadValidSessionIds();
+    if (validSessionIds.isEmpty) return 0.0;
+
     final normalized = exerciseIdOrCode.toUpperCase();
     final rows = await (_db.select(_db.workoutSetsTable)
           ..where((t) =>
+              t.sessionId.isIn(validSessionIds) &
               t.exerciseId.equals(normalized) &
               t.setType.isNotIn(const ['WARMUP'])))
         .get();
@@ -665,9 +706,13 @@ class WorkoutRepository {
   /// Pre-fill muc ta & so rep cua buoi tap gan nhat (F15).
   Future<({double weightKg, int reps, double? rpe})?>
       getLastPerformanceForExercise(String exerciseCode) async {
+    final validSessionIds = await _loadValidSessionIds();
+    if (validSessionIds.isEmpty) return null;
+
     final normalized = exerciseCode.toUpperCase();
     final rows = await (_db.select(_db.workoutSetsTable)
           ..where((t) =>
+              t.sessionId.isIn(validSessionIds) &
               t.exerciseId.equals(normalized) &
               t.setType.isNotIn(const ['WARMUP']))
           ..orderBy([(t) => OrderingTerm.desc(t.completedAt)])

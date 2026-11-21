@@ -16,6 +16,10 @@ import 'widgets/exercise_swapper_sheet.dart';
 import 'widgets/plate_calculator_sheet.dart';
 
 class _DraftSetRow {
+  static int _nextRowId = 0;
+
+  final String rowKey;
+  int inputVersion = 0;
   String? persistedSetId;
   int setNumber;
   String setType; // WARMUP | NORMAL | DROPSET | SUPERSET | FAILURE
@@ -25,6 +29,8 @@ class _DraftSetRow {
   bool isCompleted;
   double estimated1rm;
   bool isPr;
+  String? lockedExerciseCode;
+  String? lockedExerciseNameVi;
 
   _DraftSetRow({
     this.persistedSetId,
@@ -36,7 +42,9 @@ class _DraftSetRow {
     this.isCompleted = false,
     this.estimated1rm = 0.0,
     this.isPr = false,
-  });
+    this.lockedExerciseCode,
+    this.lockedExerciseNameVi,
+  }) : rowKey = 'row-${_nextRowId++}';
 }
 
 class _WorkoutExerciseBlock {
@@ -146,40 +154,112 @@ class _LiveWorkoutLoggerScreenState
       for (final s in activeSnapshot.sets) {
         grouped.putIfAbsent(s.exerciseId.toUpperCase(), () => []).add(s);
       }
+      for (final list in grouped.values) {
+        list.sort((a, b) => a.setNumber.compareTo(b.setNumber));
+      }
 
-      if (grouped.isEmpty && activeSnapshot.session.routineId != null) {
+      if (activeSnapshot.session.routineId != null) {
         final routine =
             await repo.getRoutineById(activeSnapshot.session.routineId!);
         if (routine != null) {
-          await _populateBlocksFromRoutine(routine, exByCode, repo);
-        }
-      } else {
-        for (final entry in grouped.entries) {
-          final ex = exByCode[entry.key];
-          if (ex == null) continue;
-          _blocks.add(
-            _WorkoutExerciseBlock(
-              exercise: ex,
-              defaultRestSeconds:
-                  ex.equipmentType == 'BARBELL' ? 150 : 90,
-              rows: entry.value
-                  .map(
-                    (s) => _DraftSetRow(
-                      persistedSetId: s.id,
-                      setNumber: s.setNumber,
-                      setType: s.setType,
-                      weightKg: s.weightKg,
-                      reps: s.reps,
-                      rpe: s.rpe ?? 7.5,
-                      isCompleted: true,
-                      estimated1rm: s.estimated1rm,
-                      isPr: s.isPr,
+          for (final item in routine.exercises) {
+            final codeUpper = item.exerciseCode.toUpperCase();
+            final ex = exByCode[codeUpper];
+            if (ex == null) continue;
+
+            final savedForEx =
+                grouped.remove(codeUpper) ?? const <WorkoutSetModel>[];
+            final rows = <_DraftSetRow>[
+              for (final s in savedForEx)
+                _DraftSetRow(
+                  persistedSetId: s.id,
+                  setNumber: s.setNumber,
+                  setType: s.setType,
+                  weightKg: s.weightKg,
+                  reps: s.reps,
+                  rpe: s.rpe ?? 7.5,
+                  isCompleted: true,
+                  estimated1rm: s.estimated1rm,
+                  isPr: s.isPr,
+                  lockedExerciseCode: s.exerciseId.toUpperCase(),
+                  lockedExerciseNameVi: ex.nameVi,
+                ),
+            ];
+
+            if (rows.length < item.targetSets) {
+              final lastSaved = savedForEx.isNotEmpty ? savedForEx.last : null;
+              final lastPerf = lastSaved == null
+                  ? await repo.getLastPerformanceForExercise(ex.code)
+                  : null;
+              final aiRec = _aiRecByCode[codeUpper];
+              final startWeight = lastSaved?.weightKg ??
+                  lastPerf?.weightKg ??
+                  aiRec?.recommendedWeightKg ??
+                  _defaultStartWeight(ex);
+              final startReps =
+                  lastSaved?.reps ?? lastPerf?.reps ?? item.targetRepMin;
+              final startRpe = lastSaved?.rpe ?? lastPerf?.rpe ?? 7.5;
+              var nextSetNum = rows.isEmpty
+                  ? 1
+                  : rows
+                          .map((r) => r.setNumber)
+                          .reduce((a, b) => a > b ? a : b) +
+                      1;
+              while (rows.length < item.targetSets) {
+                rows.add(
+                  _DraftSetRow(
+                    setNumber: nextSetNum++,
+                    setType: 'NORMAL',
+                    weightKg: startWeight,
+                    reps: startReps,
+                    rpe: startRpe,
+                    estimated1rm: WorkoutCalculators.calculateEstimated1Rm(
+                      startWeight,
+                      startReps,
                     ),
-                  )
-                  .toList(),
-            ),
-          );
+                  ),
+                );
+              }
+            }
+
+            _blocks.add(
+              _WorkoutExerciseBlock(
+                exercise: ex,
+                defaultRestSeconds: item.defaultRestSeconds,
+                supersetGroupId: item.supersetGroupId,
+                rows: rows,
+              ),
+            );
+          }
         }
+      }
+
+      for (final entry in grouped.entries) {
+        final ex = exByCode[entry.key];
+        if (ex == null) continue;
+        _blocks.add(
+          _WorkoutExerciseBlock(
+            exercise: ex,
+            defaultRestSeconds: ex.equipmentType == 'BARBELL' ? 150 : 90,
+            rows: entry.value
+                .map(
+                  (s) => _DraftSetRow(
+                    persistedSetId: s.id,
+                    setNumber: s.setNumber,
+                    setType: s.setType,
+                    weightKg: s.weightKg,
+                    reps: s.reps,
+                    rpe: s.rpe ?? 7.5,
+                    isCompleted: true,
+                    estimated1rm: s.estimated1rm,
+                    isPr: s.isPr,
+                    lockedExerciseCode: s.exerciseId.toUpperCase(),
+                    lockedExerciseNameVi: ex.nameVi,
+                  ),
+                )
+                .toList(),
+          ),
+        );
       }
 
       if (_blocks.isEmpty && allExercises.isNotEmpty) {
@@ -340,6 +420,8 @@ class _LiveWorkoutLoggerScreenState
         row.isCompleted = false;
         row.persistedSetId = null;
         row.isPr = false;
+        row.lockedExerciseCode = null;
+        row.lockedExerciseNameVi = null;
       });
       return;
     }
@@ -360,6 +442,8 @@ class _LiveWorkoutLoggerScreenState
       row.isCompleted = true;
       row.estimated1rm = saved.estimated1rm;
       row.isPr = saved.isPr;
+      row.lockedExerciseCode = block.exercise.code.toUpperCase();
+      row.lockedExerciseNameVi = block.exercise.nameVi;
     });
 
     if (row.setType != 'WARMUP') {
@@ -398,6 +482,7 @@ class _LiveWorkoutLoggerScreenState
           r.reps = last?.reps ?? r.reps;
           r.estimated1rm =
               WorkoutCalculators.calculateEstimated1Rm(r.weightKg, r.reps);
+          r.inputVersion++;
         }
       }
     });
@@ -457,7 +542,8 @@ class _LiveWorkoutLoggerScreenState
           WorkoutSetModel(
             id: row.persistedSetId ?? '',
             sessionId: sessId,
-            exerciseId: block.exercise.code,
+            exerciseId: (row.lockedExerciseCode ?? block.exercise.code)
+                .toUpperCase(),
             setNumber: row.setNumber,
             setType: row.setType,
             weightKg: row.weightKg,
@@ -516,7 +602,9 @@ class _LiveWorkoutLoggerScreenState
           durationSeconds: _elapsedSeconds,
         );
     ref.invalidate(aiReadinessProvider);
-    ref.invalidate(analyticsSummaryProvider(90));
+    for (final days in const [7, 30, 90, 365]) {
+      ref.invalidate(analyticsSummaryProvider(days));
+    }
     if (!mounted) return;
     setState(() => _isFinishing = false);
 
@@ -856,7 +944,15 @@ class _LiveWorkoutLoggerScreenState
                       if (chosen != null) {
                         setState(() {
                           for (final r in block.rows) {
-                            if (!r.isCompleted) r.weightKg = chosen;
+                            if (!r.isCompleted) {
+                              r.weightKg = chosen;
+                              r.estimated1rm =
+                                  WorkoutCalculators.calculateEstimated1Rm(
+                                r.weightKg,
+                                r.reps,
+                              );
+                              r.inputVersion++;
+                            }
                           }
                         });
                       }
@@ -875,6 +971,9 @@ class _LiveWorkoutLoggerScreenState
   Widget _buildSetRow(_WorkoutExerciseBlock block, _DraftSetRow row) {
     final displayWeight =
         _useLbs ? WorkoutCalculators.kgToLbs(row.weightKg) : row.weightKg;
+    final showLockedOrigin = row.isCompleted &&
+        row.lockedExerciseCode != null &&
+        row.lockedExerciseCode != block.exercise.code.toUpperCase();
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
@@ -896,6 +995,7 @@ class _LiveWorkoutLoggerScreenState
           Row(
             children: [
               PopupMenuButton<String>(
+                enabled: !row.isCompleted,
                 tooltip: 'Loại hiệp',
                 initialValue: row.setType,
                 onSelected: (t) => setState(() => row.setType = t),
@@ -925,7 +1025,8 @@ class _LiveWorkoutLoggerScreenState
               Expanded(
                 flex: 3,
                 child: TextFormField(
-                  key: ValueKey('w-${block.exercise.code}-${row.setNumber}-$_useLbs-${row.weightKg}'),
+                  key: ValueKey('w-${row.rowKey}-$_useLbs-${row.inputVersion}'),
+                  enabled: !row.isCompleted,
                   initialValue: displayWeight.toStringAsFixed(1),
                   keyboardType:
                       const TextInputType.numberWithOptions(decimal: true),
@@ -954,7 +1055,8 @@ class _LiveWorkoutLoggerScreenState
               Expanded(
                 flex: 2,
                 child: TextFormField(
-                  key: ValueKey('r-${block.exercise.code}-${row.setNumber}-${row.reps}'),
+                  key: ValueKey('r-${row.rowKey}-${row.inputVersion}'),
+                  enabled: !row.isCompleted,
                   initialValue: '${row.reps}',
                   keyboardType: TextInputType.number,
                   decoration: const InputDecoration(
@@ -988,9 +1090,11 @@ class _LiveWorkoutLoggerScreenState
                       ),
                     )
                     .toList(),
-                onChanged: (v) {
-                  if (v != null) setState(() => row.rpe = v);
-                },
+                onChanged: row.isCompleted
+                    ? null
+                    : (v) {
+                        if (v != null) setState(() => row.rpe = v);
+                      },
               ),
               IconButton(
                 tooltip: row.isCompleted ? 'Bỏ tick hiệp' : 'Hoàn thành hiệp',
@@ -1007,9 +1111,14 @@ class _LiveWorkoutLoggerScreenState
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                '1RM ước tính (Epley/Brzycki): ${row.estimated1rm.toStringAsFixed(1)} kg',
-                style: const TextStyle(fontSize: 11, color: Colors.black54),
+              Expanded(
+                child: Text(
+                  showLockedOrigin
+                      ? '1RM ước tính: ${row.estimated1rm.toStringAsFixed(1)} kg · ${row.lockedExerciseNameVi ?? row.lockedExerciseCode}'
+                      : '1RM ước tính (Epley/Brzycki): ${row.estimated1rm.toStringAsFixed(1)} kg',
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(fontSize: 11, color: Colors.black54),
+                ),
               ),
               if (row.isPr)
                 const Text(

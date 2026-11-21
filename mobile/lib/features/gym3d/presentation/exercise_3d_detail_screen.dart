@@ -28,6 +28,7 @@ class _Exercise3DDetailScreenState
   bool _showBadForm = false;
   double _playbackSpeed = 1.0;
   bool _isPlaying = true;
+  bool _isViewerLoaded = false;
   double _phaseProgress = 0.0;
   double? _manualSeekProgress;
   Timer? _phaseTimer;
@@ -39,7 +40,7 @@ class _Exercise3DDetailScreenState
   void initState() {
     super.initState();
     _phaseTimer = Timer.periodic(const Duration(milliseconds: 100), (_) {
-      if (!mounted || !_isPlaying) return;
+      if (!mounted || !_isPlaying || !_isViewerLoaded) return;
       setState(() {
         _phaseProgress = (_phaseProgress + 0.03 * _playbackSpeed) % 1.0;
       });
@@ -160,6 +161,8 @@ class _Exercise3DDetailScreenState
 
         if (_resolvedForCode != exercise.code) {
           _resolvedForCode = exercise.code;
+          _isViewerLoaded = false;
+          _phaseProgress = 0.0;
           _resolvedGlbFuture =
               ref.read(assetCacheManagerProvider).getOrDownloadGlb(
                     exerciseCode: exercise.code,
@@ -236,6 +239,14 @@ class _Exercise3DDetailScreenState
                         normalizedProgress: _manualSeekProgress,
                         avatarPreset: avatarPreset,
                         height: 340,
+                        onModelLoaded: () {
+                          if (mounted && !_isViewerLoaded) {
+                            setState(() {
+                              _isViewerLoaded = true;
+                              _phaseProgress = 0.0;
+                            });
+                          }
+                        },
                         onMuscleTap: (matId) {
                           setState(() => _tappedMuscleId = matId);
                         },

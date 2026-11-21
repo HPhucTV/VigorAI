@@ -280,6 +280,13 @@ class _RoutineCard extends StatelessWidget {
   }
 }
 
+class _EditableRoutineItem {
+  final int uid;
+  RoutineExerciseItem item;
+
+  _EditableRoutineItem(this.uid, this.item);
+}
+
 class _RoutineBuilderSheet extends StatefulWidget {
   final WorkoutRoutineModel? initial;
   final List<ExerciseModel> allExercises;
@@ -297,7 +304,8 @@ class _RoutineBuilderSheetState extends State<_RoutineBuilderSheet> {
   late TextEditingController _nameCtrl;
   late String _splitType;
   late Set<int> _weekdays;
-  late List<RoutineExerciseItem> _items;
+  late List<_EditableRoutineItem> _entries;
+  int _nextUid = 0;
 
   static const _splits = ['PUSH_PULL_LEGS', 'UPPER_LOWER', 'FULL_BODY', 'BRO_SPLIT', 'CUSTOM'];
 
@@ -309,25 +317,65 @@ class _RoutineBuilderSheetState extends State<_RoutineBuilderSheet> {
     );
     _splitType = widget.initial?.splitType ?? 'PUSH_PULL_LEGS';
     _weekdays = Set<int>.from(widget.initial?.scheduledWeekdays ?? const [1, 4]);
-    _items = List<RoutineExerciseItem>.from(
-      widget.initial?.exercises ??
-          const [
-            RoutineExerciseItem(
-              exerciseCode: 'BARBELL_BENCH_PRESS',
-              orderIndex: 0,
-              targetSets: 4,
-              targetRepMin: 6,
-              targetRepMax: 8,
-              defaultRestSeconds: 150,
-            ),
-          ],
-    );
+    final sourceItems = widget.initial?.exercises ??
+        const [
+          RoutineExerciseItem(
+            exerciseCode: 'BARBELL_BENCH_PRESS',
+            orderIndex: 0,
+            targetSets: 4,
+            targetRepMin: 6,
+            targetRepMax: 8,
+            defaultRestSeconds: 150,
+          ),
+        ];
+    _entries = sourceItems
+        .map((e) => _EditableRoutineItem(_nextUid++, e))
+        .toList();
+    _normalizeEntries();
   }
 
   @override
   void dispose() {
     _nameCtrl.dispose();
     super.dispose();
+  }
+
+  void _normalizeEntries() {
+    final counts = <int, int>{};
+    for (final entry in _entries) {
+      final gid = entry.item.supersetGroupId;
+      if (gid != null) {
+        counts[gid] = (counts[gid] ?? 0) + 1;
+      }
+    }
+    for (var i = 0; i < _entries.length; i++) {
+      final cur = _entries[i].item;
+      final gid = cur.supersetGroupId;
+      final validGid = (gid != null && (counts[gid] ?? 0) >= 2) ? gid : null;
+      _entries[i].item = RoutineExerciseItem(
+        exerciseCode: cur.exerciseCode,
+        orderIndex: i,
+        supersetGroupId: validGid,
+        targetSets: cur.targetSets,
+        targetRepMin: cur.targetRepMin,
+        targetRepMax: cur.targetRepMax,
+        defaultRestSeconds: cur.defaultRestSeconds,
+      );
+    }
+  }
+
+  int _nextAvailableSupersetGroupId() {
+    final used = <int>{};
+    for (final entry in _entries) {
+      if (entry.item.supersetGroupId != null) {
+        used.add(entry.item.supersetGroupId!);
+      }
+    }
+    var candidate = 1;
+    while (used.contains(candidate)) {
+      candidate++;
+    }
+    return candidate;
   }
 
   String _nameForCode(String code) {
@@ -338,7 +386,7 @@ class _RoutineBuilderSheetState extends State<_RoutineBuilderSheet> {
   }
 
   Future<void> _pickExerciseToAdd() async {
-    if (_items.length >= 15) {
+    if (_entries.length >= 15) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Tối đa 15 bài tập trong 1 giáo án.')),
       );
@@ -360,29 +408,37 @@ class _RoutineBuilderSheetState extends State<_RoutineBuilderSheet> {
     );
     if (picked == null) return;
     setState(() {
-      _items.add(
-        RoutineExerciseItem(
-          exerciseCode: picked.code,
-          orderIndex: _items.length,
-          targetSets: 3,
-          targetRepMin: 8,
-          targetRepMax: 12,
-          defaultRestSeconds:
-              picked.equipmentType == 'BARBELL' ? 150 : 90,
+      _entries.add(
+        _EditableRoutineItem(
+          _nextUid++,
+          RoutineExerciseItem(
+            exerciseCode: picked.code,
+            orderIndex: _entries.length,
+            targetSets: 3,
+            targetRepMin: 8,
+            targetRepMax: 12,
+            defaultRestSeconds:
+                picked.equipmentType == 'BARBELL' ? 150 : 90,
+          ),
         ),
       );
+      _normalizeEntries();
     });
   }
 
   void _toggleSupersetWithNext(int index) {
-    if (index + 1 >= _items.length) return;
+    if (index + 1 >= _entries.length) return;
     setState(() {
-      final current = _items[index];
-      final next = _items[index + 1];
+      final current = _entries[index].item;
+      final next = _entries[index + 1].item;
       final clearGroup = current.supersetGroupId != null &&
           current.supersetGroupId == next.supersetGroupId;
-      final groupId = clearGroup ? null : (index + 1);
-      _items[index] = RoutineExerciseItem(
+      final int? groupId = clearGroup
+          ? null
+          : (current.supersetGroupId ??
+              next.supersetGroupId ??
+              _nextAvailableSupersetGroupId());
+      _entries[index].item = RoutineExerciseItem(
         exerciseCode: current.exerciseCode,
         orderIndex: index,
         supersetGroupId: groupId,
@@ -391,7 +447,7 @@ class _RoutineBuilderSheetState extends State<_RoutineBuilderSheet> {
         targetRepMax: current.targetRepMax,
         defaultRestSeconds: current.defaultRestSeconds,
       );
-      _items[index + 1] = RoutineExerciseItem(
+      _entries[index + 1].item = RoutineExerciseItem(
         exerciseCode: next.exerciseCode,
         orderIndex: index + 1,
         supersetGroupId: groupId,
@@ -400,6 +456,7 @@ class _RoutineBuilderSheetState extends State<_RoutineBuilderSheet> {
         targetRepMax: next.targetRepMax,
         defaultRestSeconds: next.defaultRestSeconds,
       );
+      _normalizeEntries();
     });
   }
 
@@ -478,7 +535,7 @@ class _RoutineBuilderSheetState extends State<_RoutineBuilderSheet> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  'Danh sách bài tập (${_items.length}/15)',
+                  'Danh sách bài tập (${_entries.length}/15)',
                   style: const TextStyle(fontWeight: FontWeight.bold),
                 ),
                 TextButton.icon(
@@ -490,33 +547,19 @@ class _RoutineBuilderSheetState extends State<_RoutineBuilderSheet> {
             ),
             Expanded(
               child: ReorderableListView.builder(
-                itemCount: _items.length,
-                onReorder: (oldIndex, newIndex) {
+                itemCount: _entries.length,
+                onReorderItem: (oldIndex, newIndex) {
                   setState(() {
-                    if (newIndex > oldIndex) newIndex -= 1;
-                    final moved = _items.removeAt(oldIndex);
-                    _items.insert(newIndex, moved);
-                    _items = _items
-                        .asMap()
-                        .entries
-                        .map(
-                          (e) => RoutineExerciseItem(
-                            exerciseCode: e.value.exerciseCode,
-                            orderIndex: e.key,
-                            supersetGroupId: e.value.supersetGroupId,
-                            targetSets: e.value.targetSets,
-                            targetRepMin: e.value.targetRepMin,
-                            targetRepMax: e.value.targetRepMax,
-                            defaultRestSeconds: e.value.defaultRestSeconds,
-                          ),
-                        )
-                        .toList();
+                    final moved = _entries.removeAt(oldIndex);
+                    _entries.insert(newIndex, moved);
+                    _normalizeEntries();
                   });
                 },
                 itemBuilder: (context, index) {
-                  final item = _items[index];
+                  final entry = _entries[index];
+                  final item = entry.item;
                   return Card(
-                    key: ValueKey('${item.exerciseCode}-$index'),
+                    key: ValueKey('routine-item-${entry.uid}'),
                     child: ListTile(
                       dense: true,
                       leading: const Icon(Icons.drag_handle),
@@ -528,7 +571,7 @@ class _RoutineBuilderSheetState extends State<_RoutineBuilderSheet> {
                       trailing: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          if (index + 1 < _items.length)
+                          if (index + 1 < _entries.length)
                             IconButton(
                               tooltip: 'Ghép/Hủy Superset với bài kế tiếp',
                               icon: Icon(
@@ -542,7 +585,10 @@ class _RoutineBuilderSheetState extends State<_RoutineBuilderSheet> {
                           IconButton(
                             icon: const Icon(Icons.close, size: 18),
                             onPressed: () {
-                              setState(() => _items.removeAt(index));
+                              setState(() {
+                                _entries.removeAt(index);
+                                _normalizeEntries();
+                              });
                             },
                           ),
                         ],
@@ -555,7 +601,8 @@ class _RoutineBuilderSheetState extends State<_RoutineBuilderSheet> {
             const SizedBox(height: 8),
             FilledButton.icon(
               onPressed: () {
-                if (_items.isEmpty) return;
+                if (_entries.isEmpty) return;
+                _normalizeEntries();
                 final model = WorkoutRoutineModel(
                   id: widget.initial?.id ?? '',
                   name: _nameCtrl.text.trim().isEmpty
@@ -563,7 +610,7 @@ class _RoutineBuilderSheetState extends State<_RoutineBuilderSheet> {
                       : _nameCtrl.text.trim(),
                   splitType: _splitType,
                   scheduledWeekdays: _weekdays.toList()..sort(),
-                  exercises: _items,
+                  exercises: _entries.map((e) => e.item).toList(),
                   isTemplate: false,
                   updatedAt: DateTime.now().toUtc(),
                 );
