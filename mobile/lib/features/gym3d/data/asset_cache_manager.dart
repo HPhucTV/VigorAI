@@ -7,7 +7,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 
-import '../../../core/network/dio_client.dart';
 import 'sha256_util.dart';
 
 typedef GlbDownloadFn = Future<void> Function(String remoteUrl, String savePath);
@@ -275,6 +274,13 @@ class AssetCacheManager {
 }
 
 final assetCacheManagerProvider = Provider<AssetCacheManager>((ref) {
-  final dio = ref.watch(dioProvider);
-  return AssetCacheManager(dio: dio);
+  final cdnDio = Dio(
+    BaseOptions(
+      connectTimeout: const Duration(seconds: 15),
+      receiveTimeout: const Duration(seconds: 60),
+      followRedirects: true,
+      maxRedirects: 5,
+    ),
+  );
+  return AssetCacheManager(dio: cdnDio);
 });

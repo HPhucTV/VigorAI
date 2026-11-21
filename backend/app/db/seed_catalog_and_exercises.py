@@ -1,7 +1,8 @@
-# [OWNER: M3] Seed du lieu chuan VNFood/USDA (36 mon) + 30 Bai tap 3D + 4 Giao an mau (T-M3-02)
+# [OWNER: M3] Seed du lieu chuan VNFood/USDA (36 mon) + 39 Bai tap 3D + 4 Giao an mau (T-M3-02, T-M3-09)
 import asyncio
-import hashlib
+import json
 import uuid
+from pathlib import Path
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -33,7 +34,7 @@ CANONICAL_MUSCLE_MATERIALS = {
 BUNDLED_MVP_EXERCISES: dict[str, dict[str, str]] = {
     "BARBELL_SQUAT": {
         "model_3d_glb_url": "assets/3d_bundled/barbell_squat.glb",
-        "asset_checksum": "c5285d532b9725449af9a126d042e5ea4b196b7698389b3dbba511ab391ed0e2",
+        "asset_checksum": "6933137d1885fd8a36a31610f461cd05b5387c9b55c196bb99dcd2757abf017f",
     },
     "PUSH_UP": {
         "model_3d_glb_url": "assets/3d_bundled/push_up.glb",
@@ -41,9 +42,55 @@ BUNDLED_MVP_EXERCISES: dict[str, dict[str, str]] = {
     },
     "BARBELL_BENCH_PRESS": {
         "model_3d_glb_url": "assets/3d_bundled/barbell_bench_press.glb",
-        "asset_checksum": "6cb3cda03d8d0e57783ec5388436be2c2f754638f9faa384e6da8bd79c4272cf",
+        "asset_checksum": "5faa03e3a10459c6d702c56a0a3f0613bb5e59573730a7b7bd3a5aaf63b308bb",
     },
 }
+
+BASE_MANNEQUIN_FALLBACK: dict[str, str] = {
+    "model_3d_glb_url": "assets/3d_bundled/base_mannequin.glb",
+    "asset_checksum": "f8c76723747aba8167fa734434b9ad4870e3c42be220fa712edadb716480a9ae",
+}
+
+
+def resolve_local_glb_dir() -> Path | None:
+    """Tim thu muc chua assets_manifest.json & file .glb o local monorepo hoac container Docker."""
+    candidates: list[Path] = []
+    if settings.LOCAL_GLB_ASSETS_DIR.strip():
+        candidates.append(Path(settings.LOCAL_GLB_ASSETS_DIR.strip()))
+    candidates.append(Path("/app/assets_3d_glb"))
+    here = Path(__file__).resolve()
+    for idx in (2, 3, 4):
+        if len(here.parents) > idx:
+            candidates.append(here.parents[idx] / "assets_3d" / "exported_glb")
+    for candidate in candidates:
+        if (candidate / "assets_manifest.json").is_file():
+            return candidate
+    for candidate in candidates:
+        if candidate.is_dir():
+            return candidate
+    return None
+
+
+def load_manifest_assets() -> dict[str, dict]:
+    """Nap metadata & SHA-256 that tu assets_manifest.json."""
+    glb_dir = resolve_local_glb_dir()
+    if glb_dir is None:
+        return {}
+    manifest_file = glb_dir / "assets_manifest.json"
+    if not manifest_file.is_file():
+        return {}
+    try:
+        payload = json.loads(manifest_file.read_text(encoding="utf-8"))
+        return {
+            str(item["code"]).upper(): item
+            for item in payload.get("assets", [])
+            if item.get("code")
+        }
+    except Exception:
+        return {}
+
+
+MANIFEST_ASSETS: dict[str, dict] = load_manifest_assets()
 
 FOOD_CATALOG_SEED: list[dict] = [
     # Protein sources
@@ -102,15 +149,24 @@ def _make_exercise(
     for m in primary + secondary + stabilizer:
         if m not in CANONICAL_MUSCLE_MATERIALS:
             raise ValueError(f"Ten material co bap khong hop le: {m}")
-    slug = code.lower()
-    if code in BUNDLED_MVP_EXERCISES:
-        glb_url = BUNDLED_MVP_EXERCISES[code]["model_3d_glb_url"]
-        checksum = BUNDLED_MVP_EXERCISES[code]["asset_checksum"]
+    upper_code = code.upper()
+    slug = upper_code.lower()
+    if upper_code in BUNDLED_MVP_EXERCISES:
+        glb_url = BUNDLED_MVP_EXERCISES[upper_code]["model_3d_glb_url"]
+        checksum = BUNDLED_MVP_EXERCISES[upper_code]["asset_checksum"]
+    elif upper_code in MANIFEST_ASSETS:
+        checksum = MANIFEST_ASSETS[upper_code]["sha256"]
+        api_base = settings.resolved_api_public_base_url
+        glb_url = (
+            f"{api_base}/api/v1/exercises/{upper_code}/glb"
+            if api_base
+            else f"{settings.S3_PUBLIC_BASE_URL}/exercises/{slug}.glb"
+        )
     else:
-        glb_url = f"{settings.S3_PUBLIC_BASE_URL}/exercises/{slug}.glb"
-        checksum = hashlib.sha256(f"vigorai-3d-{slug}-v1".encode("utf-8")).hexdigest()
+        glb_url = BASE_MANNEQUIN_FALLBACK["model_3d_glb_url"]
+        checksum = BASE_MANNEQUIN_FALLBACK["asset_checksum"]
     return {
-        "code": code,
+        "code": upper_code,
         "name_vi": name_vi,
         "name_en": name_en,
         "equipment_type": equipment_type,
@@ -137,10 +193,12 @@ EXERCISES_SEED: list[dict] = [
     _make_exercise("CABLE_CHEST_FLY", "Ép ngực cáp đứng", "Cable Chest Fly", "CABLE", ["Mat_Muscle_Chest"], ["Mat_Muscle_Shoulders"], ["Mat_Muscle_Abs_Core", "Mat_Muscle_Biceps"], ["Gập khuỷu tay quá sâu biến thành động tác đẩy", "Dùng đà lưng kéo cáp"], {"pulley_height": "Ngang vai"}),
     _make_exercise("MACHINE_CHEST_PRESS", "Đẩy ngực máy ngồi", "Machine Chest Press", "MACHINE", ["Mat_Muscle_Chest"], ["Mat_Muscle_Triceps", "Mat_Muscle_Shoulders"], [], ["Nhô vai về trước mất khóa xương bả vai"], {"seat_height": "Tay cầm ngang giữa ngực"}),
 
-    # Back (5)
+    # Back (7)
     _make_exercise("BARBELL_DEADLIFT", "Deadlift đòn tạ", "Barbell Deadlift", "BARBELL", ["Mat_Muscle_Back_Lats", "Mat_Muscle_Hamstrings", "Mat_Muscle_Glutes"], ["Mat_Muscle_Traps", "Mat_Muscle_Abs_Core"], ["Mat_Muscle_Quads"], ["Cong lưng dưới khi kéo thanh đòn rời sàn", "Thanh đòn trôi xa ống đồng"], {"bar_position": "Giữa bàn chân", "grip": "Double overhand / Mixed"}),
     _make_exercise("BARBELL_BENT_OVER_ROW", "Kéo lưng đòn tạ", "Barbell Bent-Over Row", "BARBELL", ["Mat_Muscle_Back_Lats", "Mat_Muscle_Traps"], ["Mat_Muscle_Biceps", "Mat_Muscle_Shoulders"], ["Mat_Muscle_Abs_Core", "Mat_Muscle_Hamstrings"], ["Giật thân người quá mức để lấy đà", "Gù lưng trên"], {"torso_angle_deg": 45}),
+    _make_exercise("WIDE_GRIP_PULLUP", "Hít xà đơn rộng tay", "Wide-Grip Pull-up", "BODYWEIGHT", ["Mat_Muscle_Back_Lats"], ["Mat_Muscle_Biceps", "Mat_Muscle_Traps"], ["Mat_Muscle_Abs_Core"], ["Đạp chân vung người lấy đà (Kipping) làm giảm lực vào cơ Xô"], {"grip_width": "Rộng hơn vai 1.5x"}),
     _make_exercise("LAT_PULLDOWN", "Kéo xô cáp rộng tay", "Lat Pulldown", "CABLE", ["Mat_Muscle_Back_Lats"], ["Mat_Muscle_Biceps", "Mat_Muscle_Traps"], ["Mat_Muscle_Abs_Core"], ["Ngả người ra sau quá sâu (>30 độ)", "Kéo thanh đòn ra sau gáy gây hại khớp vai"], {"thigh_pad": "Khóa chặt đùi"}),
+    _make_exercise("STRAIGHT_ARM_CABLE_PULLDOWN", "Kéo xô tay thẳng với dây cáp", "Straight-Arm Cable Pulldown", "CABLE", ["Mat_Muscle_Back_Lats"], ["Mat_Muscle_Triceps"], ["Mat_Muscle_Abs_Core"], ["Gập khuỷu tay biến thành đẩy tay sau thay vì cô lập cơ Xô"], {"pulley_height": "Cao nhất"}),
     _make_exercise("SEATED_CABLE_ROW", "Ngồi kéo cáp ngang", "Seated Cable Row", "CABLE", ["Mat_Muscle_Back_Lats", "Mat_Muscle_Traps"], ["Mat_Muscle_Biceps", "Mat_Muscle_Shoulders"], ["Mat_Muscle_Abs_Core"], ["Gập tròn lưng dưới khi duỗi tay về trước"], {"foot_plate": "Gối hơi chùng 10 độ"}),
     _make_exercise("ONE_ARM_DUMBBELL_ROW", "Kéo lưng một tay tạ đơn", "One-Arm Dumbbell Row", "DUMBBELL", ["Mat_Muscle_Back_Lats"], ["Mat_Muscle_Traps", "Mat_Muscle_Biceps"], ["Mat_Muscle_Abs_Core"], ["Xoay vặn cột sống quá mức ở đỉnh động tác"], {"bench_angle_deg": 0}),
 
@@ -150,25 +208,32 @@ EXERCISES_SEED: list[dict] = [
     _make_exercise("CABLE_FACE_PULL", "Kéo dây thừng về mặt", "Cable Face Pull", "CABLE", ["Mat_Muscle_Shoulders", "Mat_Muscle_Traps"], ["Mat_Muscle_Back_Lats"], ["Mat_Muscle_Abs_Core"], ["Kéo khuỷu tay thấp hơn cổ tay"], {"pulley_height": "Ngang trán"}),
     _make_exercise("DUMBBELL_SHOULDER_PRESS", "Ngồi đẩy vai tạ đơn", "Seated Dumbbell Shoulder Press", "DUMBBELL", ["Mat_Muscle_Shoulders"], ["Mat_Muscle_Triceps"], ["Mat_Muscle_Abs_Core"], ["Hạ tạ quá sâu làm đau khớp vai trước"], {"bench_angle_deg": 80}),
 
-    # Biceps & Triceps (6)
+    # Biceps & Triceps (8)
     _make_exercise("BARBELL_BICEP_CURL", "Cuốn tay trước đòn tạ", "Barbell Bicep Curl", "BARBELL", ["Mat_Muscle_Biceps"], [], ["Mat_Muscle_Abs_Core", "Mat_Muscle_Shoulders"], ["Đưa khuỷu tay ra trước quá sớm hoặc lắc lưng"], {"grip_width": "Ngang vai"}),
     _make_exercise("DUMBBELL_HAMMER_CURL", "Cuốn búa tạ đơn", "Dumbbell Hammer Curl", "DUMBBELL", ["Mat_Muscle_Biceps"], [], ["Mat_Muscle_Abs_Core"], ["Thả rơi tạ tự do ở pha hạ tạ"], {"grip": "Trung tính (lòng bàn tay hướng vào nhau)"}),
+    _make_exercise("INCLINE_DUMBBELL_CURL", "Cuốn tạ đơn trên ghế nghiêng", "Incline Dumbbell Curl", "DUMBBELL", ["Mat_Muscle_Biceps"], [], ["Mat_Muscle_Shoulders"], ["Đưa khuỷu tay lao về phía trước làm mất độ căng đầu dài tay trước"], {"bench_angle_deg": 45}),
     _make_exercise("CABLE_BICEP_CURL", "Cuốn tay trước dây cáp", "Cable Bicep Curl", "CABLE", ["Mat_Muscle_Biceps"], [], ["Mat_Muscle_Abs_Core"], ["Nhấc vai theo nhịp kéo cáp"], {"pulley_height": "Thấp nhất"}),
     _make_exercise("CABLE_TRICEP_PUSHDOWN", "Đẩy tay sau cáp", "Cable Tricep Pushdown", "CABLE", ["Mat_Muscle_Triceps"], [], ["Mat_Muscle_Abs_Core"], ["Mở khuỷu tay rời khỏi sườn"], {"pulley_height": "Cao nhất"}),
+    _make_exercise("SKULL_CRUSHER", "Nằm hạ tạ đòn qua trán", "Skull Crusher", "BARBELL", ["Mat_Muscle_Triceps"], [], ["Mat_Muscle_Shoulders", "Mat_Muscle_Abs_Core"], ["Xòe hai khuỷu tay sang ngang quá rộng gây áp lực khớp khuỷu"], {"bench_angle_deg": 0}),
     _make_exercise("OVERHEAD_DUMBBELL_TRICEP_EXT", "Duỗi tay sau qua đầu tạ đơn", "Overhead Dumbbell Tricep Extension", "DUMBBELL", ["Mat_Muscle_Triceps"], [], ["Mat_Muscle_Abs_Core"], ["Xòe hai khuỷu tay sang ngang quá rộng"], {"elbow_position": "Khép sát đầu"}),
     _make_exercise("CLOSE_GRIP_BENCH_PRESS", "Đẩy tạ hẹp tay", "Close-Grip Bench Press", "BARBELL", ["Mat_Muscle_Triceps", "Mat_Muscle_Chest"], ["Mat_Muscle_Shoulders"], ["Mat_Muscle_Abs_Core"], ["Nắm tay quá sát nhau gây xoắn cổ tay"], {"grip_width": "Ngang vai"}),
 
-    # Legs & Glutes (7)
+    # Legs & Glutes (11)
     _make_exercise("BARBELL_SQUAT", "Squat gánh đòn tạ", "Barbell Back Squat", "BARBELL", ["Mat_Muscle_Quads", "Mat_Muscle_Glutes"], ["Mat_Muscle_Hamstrings"], ["Mat_Muscle_Abs_Core", "Mat_Muscle_Back_Lats"], ["Đầu gối chụm vào trong (Knee Valgus) khi đứng lên", "Nhấc gót chân khỏi sàn"], {"rack_height": "Ngang giữa ngực"}),
     _make_exercise("GOBLET_SQUAT", "Squat ôm tạ đơn", "Goblet Squat", "DUMBBELL", ["Mat_Muscle_Quads", "Mat_Muscle_Glutes"], ["Mat_Muscle_Abs_Core"], ["Mat_Muscle_Back_Lats"], ["Gù lưng trên khi giữ tạ trước ngực"], {"stance": "Rộng hơn vai nhẹ"}),
     _make_exercise("ROMANIAN_DEADLIFT", "Deadlift kiểu Romania (RDL)", "Romanian Deadlift", "BARBELL", ["Mat_Muscle_Hamstrings", "Mat_Muscle_Glutes"], ["Mat_Muscle_Back_Lats"], ["Mat_Muscle_Abs_Core"], ["Gập gối quá sâu biến thành Squat", "Cong lưng dưới khi hạ tạ"], {"knee_bend": "Chùng nhẹ 15 độ"}),
     _make_exercise("LEG_PRESS", "Đạp đùi máy", "Machine Leg Press", "MACHINE", ["Mat_Muscle_Quads", "Mat_Muscle_Glutes"], ["Mat_Muscle_Hamstrings"], [], ["Khóa cứng khớp gối ở đỉnh động tác", "Nhấc xương cụt khỏi đệm ghế khi hạ sâu"], {"foot_placement": "Giữa bàn đạp, rộng bằng vai"}),
+    _make_exercise("LEG_EXTENSION", "Ngồi đá đùi trước với máy", "Leg Extension", "MACHINE", ["Mat_Muscle_Quads"], [], ["Mat_Muscle_Abs_Core"], ["Giật người nhấc mông khỏi ghế khi đá tạ nặng"], {"pad_position": "Ngay trên mu cổ chân"}),
     _make_exercise("WALKING_LUNGE", "Chùng chân bước tới tạ đơn", "Dumbbell Walking Lunge", "DUMBBELL", ["Mat_Muscle_Quads", "Mat_Muscle_Glutes"], ["Mat_Muscle_Hamstrings"], ["Mat_Muscle_Abs_Core", "Mat_Muscle_Calves"], ["Đầu gối trước lao quá mũi chân mất thăng bằng"], {"step_length": "Góc gối 90-90 độ"}),
     _make_exercise("LEG_CURL_MACHINE", "Cuốn đùi sau máy", "Seated/Lying Leg Curl", "MACHINE", ["Mat_Muscle_Hamstrings"], ["Mat_Muscle_Calves"], [], ["Nhấc hông khỏi đệm khi co đùi"], {"pad_position": "Ngay trên gót Achilles"}),
+    _make_exercise("SEATED_LEG_CURL", "Ngồi móc đùi sau với máy", "Seated Leg Curl", "MACHINE", ["Mat_Muscle_Hamstrings"], ["Mat_Muscle_Calves"], [], ["Nhổm lưng khỏi đệm ghế dùng đà"], {"thigh_pad": "Khóa chặt trên đầu gối"}),
+    _make_exercise("BARBELL_HIP_THRUST", "Đẩy hông với tạ đòn", "Barbell Hip Thrust", "BARBELL", ["Mat_Muscle_Glutes"], ["Mat_Muscle_Hamstrings", "Mat_Muscle_Quads"], ["Mat_Muscle_Abs_Core"], ["Ưỡn quá mức thắt lưng khi đẩy đỉnh hông"], {"bench_position": "Ngay dưới xương bả vai"}),
+    _make_exercise("CABLE_GLUTE_KICKBACK", "Đá chân ra sau với dây cáp", "Cable Glute Kickback", "CABLE", ["Mat_Muscle_Glutes"], ["Mat_Muscle_Hamstrings"], ["Mat_Muscle_Abs_Core"], ["Võng lưng dưới để vung chân cao quá mức"], {"pulley_height": "Thấp nhất"}),
     _make_exercise("STANDING_CALF_RAISE", "Nhón bắp chân đứng", "Standing Calf Raise", "MACHINE", ["Mat_Muscle_Calves"], [], ["Mat_Muscle_Abs_Core"], ["Nhún quá nhanh không giữ 1 giây ở điểm căng nhất"], {"range_of_motion": "Duỗi hết biên độ gót chân"}),
 
-    # Core & Kettlebell (3)
+    # Core & Kettlebell (4)
     _make_exercise("PLANK", "Plank giữ lõi", "Forearm Plank", "BODYWEIGHT", ["Mat_Muscle_Abs_Core"], ["Mat_Muscle_Shoulders", "Mat_Muscle_Glutes"], [], ["Võng thắt lưng hoặc đẩy mông lên quá cao"], {"elbow_position": "Thẳng dưới vai"}),
+    _make_exercise("CABLE_CRUNCH", "Quỳ gối gập bụng với dây cáp", "Cable Crunch", "CABLE", ["Mat_Muscle_Abs_Core"], [], ["Mat_Muscle_Shoulders"], ["Gập hông hạ mông thay vì cuộn đốt sống ngực bằng cơ bụng"], {"pulley_height": "Cao nhất (dây thừng)"}),
     _make_exercise("HANGING_LEG_RAISE", "Treo người nâng chân", "Hanging Leg Raise", "BODYWEIGHT", ["Mat_Muscle_Abs_Core"], ["Mat_Muscle_Back_Lats"], ["Mat_Muscle_Quads"], ["Đung đưa thân người dùng đà thay vì cuộn xương chậu"], {"grip": "Nắm chắc xà ngang vai"}),
     _make_exercise("KETTLEBELL_SWING", "Vung tạ ấm Kettlebell", "Kettlebell Swing", "KETTLEBELL", ["Mat_Muscle_Glutes", "Mat_Muscle_Hamstrings"], ["Mat_Muscle_Abs_Core", "Mat_Muscle_Shoulders"], ["Mat_Muscle_Back_Lats"], ["Dùng tay nâng tạ thay vì phát lực từ khớp hông (Hip Hinge)"], {"stance": "Rộng hơn vai"}),
 ]
@@ -253,12 +318,20 @@ async def seed_catalog_and_exercises(db: AsyncSession) -> dict[str, int]:
             exercise_id_by_code[ex_data["code"]] = new_ex.id
             exercises_inserted += 1
         else:
-            if (
-                existing_ex.model_3d_glb_url != ex_data["model_3d_glb_url"]
-                or existing_ex.asset_checksum != ex_data["asset_checksum"]
+            for field in (
+                "name_vi",
+                "name_en",
+                "equipment_type",
+                "model_3d_glb_url",
+                "asset_checksum",
+                "primary_muscles",
+                "secondary_muscles",
+                "stabilizer_muscles",
+                "bad_form_warnings",
+                "setup_guide",
             ):
-                existing_ex.model_3d_glb_url = ex_data["model_3d_glb_url"]
-                existing_ex.asset_checksum = ex_data["asset_checksum"]
+                if getattr(existing_ex, field) != ex_data[field]:
+                    setattr(existing_ex, field, ex_data[field])
             exercise_id_by_code[ex_data["code"]] = existing_ex.id
 
     await db.flush()

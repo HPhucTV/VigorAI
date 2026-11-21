@@ -21,6 +21,7 @@ RUN if [ "$INSTALL_AI_DEPS" = "true" ]; then \
     fi
 
 COPY backend/ .
+COPY assets_3d/exported_glb/ ./assets_3d_glb/
 
 EXPOSE 8000
 

@@ -136,8 +136,15 @@ class AiAnalyticsRepository {
     return colors;
   }
 
+  static String _localDateIso([DateTime? now]) {
+    final dt = (now ?? DateTime.now()).toLocal();
+    final m = dt.month.toString().padLeft(2, '0');
+    final d = dt.day.toString().padLeft(2, '0');
+    return '${dt.year}-$m-$d';
+  }
+
   static AiReadinessSnapshotModel newUserFallbackSnapshot() {
-    final todayIso = DateTime.now().toUtc().toIso8601String().split('T').first;
+    final todayIso = _localDateIso();
     return AiReadinessSnapshotModel(
       targetDateIso: todayIso,
       modelVersion: 'banister-fallback-new-user',
@@ -159,7 +166,7 @@ class AiAnalyticsRepository {
   Future<AiReadinessSnapshotModel> fetchReadinessAndOverload({
     bool forceRefresh = false,
   }) async {
-    final todayIso = DateTime.now().toUtc().toIso8601String().split('T').first;
+    final todayIso = _localDateIso();
 
     if (!ApiEndpoints.useMockApi) {
       try {
@@ -168,10 +175,10 @@ class AiAnalyticsRepository {
         if (res.data != null) {
           final model = AiReadinessSnapshotModel.fromJson(res.data!);
           await _cacheReadiness(model);
-          return _overlayLocal72hFatigue(model);
+          return await _overlayLocal72hFatigue(model, unsyncedOnly: true);
         }
       } catch (_) {
-        // Offline or unreachable -> fallback to cache / mock
+        // Offline or unreachable -> fallback to cache / offline baseline
       }
     }
 
@@ -181,26 +188,43 @@ class AiAnalyticsRepository {
           .getSingleOrNull();
       if (cachedRow != null) {
         final cachedModel = _cacheRowToModel(cachedRow);
-        return _overlayLocal72hFatigue(cachedModel);
+        return await _overlayLocal72hFatigue(
+          cachedModel,
+          unsyncedOnly: !ApiEndpoints.useMockApi,
+        );
       }
     }
 
     if (ApiEndpoints.useMockApi) {
       final mockModel = await _loadReadinessMock();
       await _cacheReadiness(mockModel);
-      return _overlayLocal72hFatigue(mockModel);
+      return await _overlayLocal72hFatigue(mockModel);
     }
 
-    final baseModel = await _loadReadinessMock();
-    final hasAnyLocalSession = (await (_db.select(_db.workoutSessionsTable)
-              ..where((t) => t.deletedAt.isNull())
-              ..limit(1))
-            .get())
-        .isNotEmpty;
-    if (!hasAnyLocalSession) {
+    final hasCompletedLocalSession =
+        (await (_db.select(_db.workoutSessionsTable)
+                  ..where((t) =>
+                      t.deletedAt.isNull() & t.status.equals('COMPLETED'))
+                  ..limit(1))
+                .get())
+            .isNotEmpty;
+    if (!hasCompletedLocalSession) {
       return newUserFallbackSnapshot();
     }
-    return _overlayLocal72hFatigue(baseModel);
+    final baseFallback = newUserFallbackSnapshot();
+    final offlineBase = AiReadinessSnapshotModel(
+      targetDateIso: todayIso,
+      modelVersion: 'offline-local-72h',
+      readinessScore: baseFallback.readinessScore,
+      readinessLevel: baseFallback.readinessLevel,
+      insights: const [
+        'Đang ở chế độ offline — bản đồ phục hồi được ước tính từ lịch sử tập 72 giờ gần nhất trên máy.',
+      ],
+      muscleFatigueMap: baseFallback.muscleFatigueMap,
+      weightRecommendations: const [],
+      disclaimer: baseFallback.disclaimer,
+    );
+    return await _overlayLocal72hFatigue(offlineBase);
   }
 
   Future<AiReadinessSnapshotModel> _loadReadinessMock() async {
@@ -208,19 +232,35 @@ class AiAnalyticsRepository {
     final decoded = jsonDecode(raw) as Map<String, dynamic>;
     final readinessMap =
         (decoded['readiness_mock'] as Map<String, dynamic>?) ?? decoded;
-    return AiReadinessSnapshotModel.fromJson(readinessMap);
+    final parsed = AiReadinessSnapshotModel.fromJson(readinessMap);
+    return AiReadinessSnapshotModel(
+      targetDateIso: _localDateIso(),
+      modelVersion: parsed.modelVersion,
+      readinessScore: parsed.readinessScore,
+      readinessLevel: parsed.readinessLevel,
+      insights: parsed.insights,
+      muscleFatigueMap: parsed.muscleFatigueMap,
+      weightRecommendations: parsed.weightRecommendations,
+      disclaimer: parsed.disclaimer,
+    );
   }
 
   Future<AiReadinessSnapshotModel> _overlayLocal72hFatigue(
-    AiReadinessSnapshotModel base,
-  ) async {
+    AiReadinessSnapshotModel base, {
+    bool unsyncedOnly = false,
+  }) async {
     final now = DateTime.now().toUtc();
     final cutoff = now.subtract(const Duration(hours: 72));
     final recentSessions = await (_db.select(_db.workoutSessionsTable)
-          ..where((t) =>
-              t.deletedAt.isNull() &
-              t.status.equals('COMPLETED') &
-              t.startedAt.isBiggerOrEqualValue(cutoff)))
+          ..where((t) {
+            var expr = t.deletedAt.isNull() &
+                t.status.equals('COMPLETED') &
+                t.startedAt.isBiggerOrEqualValue(cutoff);
+            if (unsyncedOnly) {
+              expr = expr & t.syncStatus.isNotIn(const ['SYNCED']);
+            }
+            return expr;
+          }))
         .get();
 
     if (recentSessions.isEmpty) return base;
@@ -334,7 +374,12 @@ class AiAnalyticsRepository {
           ..orderBy([(t) => OrderingTerm.asc(t.startedAt)]))
         .get();
 
-    final setRows = await _db.select(_db.workoutSetsTable).get();
+    final completedIds = sessionRows.map((r) => r.id).toList();
+    final setRows = completedIds.isEmpty
+        ? const <WorkoutSetsTableData>[]
+        : await (_db.select(_db.workoutSetsTable)
+              ..where((t) => t.sessionId.isIn(completedIds)))
+            .get();
 
     final sessions = sessionRows
         .map(
@@ -394,8 +439,13 @@ class AiAnalyticsRepository {
     final cutoff = currentUtc.subtract(Duration(days: periodDays));
     final radarCutoff = currentUtc.subtract(const Duration(days: 30));
 
-    final filteredSessions = sessions
-        .where((s) => s.deletedAt == null && !s.startedAt.isBefore(cutoff))
+    final completedSessions = sessions
+        .where(
+            (s) => s.deletedAt == null && s.status.toUpperCase() == 'COMPLETED')
+        .toList();
+    final completedSessionIds = {for (final s in completedSessions) s.id};
+    final filteredSessions = completedSessions
+        .where((s) => !s.startedAt.isBefore(cutoff))
         .toList()
       ..sort((a, b) => a.startedAt.compareTo(b.startedAt));
 
@@ -403,18 +453,24 @@ class AiAnalyticsRepository {
       for (final s in filteredSessions) s.id: s.startedAt,
     };
 
-    final weeklyMap = <String, ({double vol, int count, DateTime sortDate})>{};
+    final weeklyMap = <String,
+        ({double vol, int count, DateTime sortDate, String label})>{};
     var totalVolume = 0.0;
 
     for (final s in filteredSessions) {
       final d = s.startedAt.toUtc();
       final monday = DateTime.utc(d.year, d.month, d.day - (d.weekday - 1));
-      final label = '${monday.day}/${monday.month}';
-      final prev = weeklyMap[label];
-      weeklyMap[label] = (
+      final bucketKey =
+          '${monday.year}-${monday.month.toString().padLeft(2, '0')}-${monday.day.toString().padLeft(2, '0')}';
+      final label = periodDays > 180
+          ? '${monday.day}/${monday.month}/${monday.year % 100}'
+          : '${monday.day}/${monday.month}';
+      final prev = weeklyMap[bucketKey];
+      weeklyMap[bucketKey] = (
         vol: (prev?.vol ?? 0.0) + s.totalVolumeKg,
         count: (prev?.count ?? 0) + 1,
         sortDate: prev?.sortDate ?? monday,
+        label: prev?.label ?? label,
       );
       totalVolume += s.totalVolumeKg;
     }
@@ -424,7 +480,7 @@ class AiAnalyticsRepository {
     final weeklyVolume = weeklyEntries
         .map(
           (e) => WeeklyVolumePoint(
-            weekLabel: e.key,
+            weekLabel: e.value.label,
             totalVolumeKg: (e.value.vol * 10).round() / 10.0,
             sessionsCount: e.value.count,
           ),
@@ -452,6 +508,7 @@ class AiAnalyticsRepository {
     var workingSetsCount = 0;
 
     for (final wset in sets) {
+      if (!completedSessionIds.contains(wset.sessionId)) continue;
       if (wset.setType.toUpperCase() == 'WARMUP') continue;
       final ex = exerciseByIdOrCode[wset.exerciseId.toUpperCase()] ??
           exerciseByIdOrCode[wset.exerciseId];
@@ -501,8 +558,14 @@ class AiAnalyticsRepository {
 
     final pushSets = radarCounts['chest']! + radarCounts['shoulders']!;
     final pullSets = radarCounts['back']!;
-    final ratio =
-        pushSets > 0 ? (pullSets / pushSets) : (pullSets > 0 ? 1.0 : 1.0);
+    final double ratio;
+    if (pushSets == 0 && pullSets == 0) {
+      ratio = 0.0;
+    } else if (pushSets == 0) {
+      ratio = pullSets.toDouble();
+    } else {
+      ratio = pullSets / pushSets;
+    }
 
     return AnalyticsSummaryModel(
       periodDays: periodDays,
@@ -512,7 +575,7 @@ class AiAnalyticsRepository {
       pullPushRatio: (ratio * 100).round() / 100.0,
       personalRecords: prs.take(15).toList(),
       streakDays: WorkoutCalculators.computeWorkoutStreakDays(
-        sessions.where((s) => s.deletedAt == null).map((s) => s.startedAt),
+        completedSessions.map((s) => s.startedAt),
         now: currentUtc,
       ),
       totalVolumeKg: (totalVolume * 10).round() / 10.0,

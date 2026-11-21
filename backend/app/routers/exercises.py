@@ -1,11 +1,13 @@
 # [OWNER: M3] 3D Exercises, Alternatives & CDN Metadata Router (T-M3-09: F07-F12, F25)
 from typing import Annotated, Any
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
+from fastapi.responses import FileResponse, RedirectResponse
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.db.seed_catalog_and_exercises import seed_catalog_and_exercises
+from app.core.config import settings
+from app.db.seed_catalog_and_exercises import EXERCISES_SEED, seed_catalog_and_exercises
 from app.db.session import get_db
 from app.models.entities import Exercise
 from app.services.storage_service import StorageService
@@ -14,11 +16,22 @@ router = APIRouter()
 storage_service = StorageService()
 
 
-def _serialize_exercise(ex: Exercise) -> dict[str, Any]:
+def _resolve_api_base(request: Request) -> str:
+    if settings.resolved_api_public_base_url:
+        return settings.resolved_api_public_base_url
+    base = str(request.base_url).rstrip("/")
+    fwd_proto = request.headers.get("x-forwarded-proto", "").split(",")[0].strip().lower()
+    if fwd_proto == "https" and base.startswith("http://"):
+        base = "https://" + base[len("http://") :]
+    return base
+
+
+def _serialize_exercise(ex: Exercise, api_base_url: str | None = None) -> dict[str, Any]:
     glb_meta = storage_service.resolve_exercise_glb_metadata(
         code=ex.code,
         db_url=ex.model_3d_glb_url,
         db_checksum=ex.asset_checksum,
+        api_base_url=api_base_url,
     )
     return {
         "id": str(ex.id),
@@ -43,7 +56,7 @@ async def _ensure_exercises_loaded(db: AsyncSession) -> list[Exercise]:
     rows = (
         await db.execute(select(Exercise).order_by(Exercise.code))
     ).scalars().all()
-    if not rows:
+    if len(rows) < len(EXERCISES_SEED):
         await seed_catalog_and_exercises(db)
         rows = (
             await db.execute(select(Exercise).order_by(Exercise.code))
@@ -53,6 +66,7 @@ async def _ensure_exercises_loaded(db: AsyncSession) -> list[Exercise]:
 
 @router.get("", summary="Lay danh sach kho bai tap 3D kem SHA-256 & 11 Mat_Muscle_* (F07-F12)")
 async def list_exercises(
+    request: Request,
     db: Annotated[AsyncSession, Depends(get_db)],
     muscle: Annotated[
         str | None,
@@ -65,6 +79,7 @@ async def list_exercises(
     q: Annotated[str | None, Query(description="Tu khoa tim kiem")] = None,
 ) -> dict[str, Any]:
     rows = await _ensure_exercises_loaded(db)
+    api_base = _resolve_api_base(request)
 
     if muscle:
         target_muscle = muscle.strip()
@@ -87,12 +102,46 @@ async def list_exercises(
             or q_low in e.code.lower()
         ]
 
-    return {"items": [_serialize_exercise(e) for e in rows]}
+    return {"items": [_serialize_exercise(e, api_base_url=api_base) for e in rows]}
+
+
+@router.get(
+    "/{code}/glb",
+    summary="Tai file 3D .glb cho bai tap (S3 Presigned Redirect hoac HTTPS FileResponse)",
+)
+async def download_exercise_glb(code: str) -> Any:
+    code_upper = code.strip().upper()
+    presigned = await storage_service.get_presigned_glb_url(code_upper)
+    if presigned:
+        return RedirectResponse(
+            url=presigned,
+            status_code=status.HTTP_307_TEMPORARY_REDIRECT,
+            headers={"Cache-Control": "public, max-age=300"},
+        )
+
+    local_path = storage_service.get_local_glb_path(code_upper)
+    if local_path is not None:
+        sha = storage_service.get_manifest_sha256(code_upper)
+        headers = {"Cache-Control": "public, max-age=86400"}
+        if sha:
+            headers["X-Asset-Sha256"] = sha
+        return FileResponse(
+            path=str(local_path),
+            media_type="model/gltf-binary",
+            filename=f"{code_upper.lower()}.glb",
+            headers=headers,
+        )
+
+    raise HTTPException(
+        status_code=status.HTTP_404_NOT_FOUND,
+        detail=f"Khong tim thay file 3D .glb cho bai tap '{code}'.",
+    )
 
 
 @router.get("/{code}", summary="Lay chi tiet 1 bai tap 3D theo ma code (F07)")
 async def get_exercise_detail(
     code: str,
+    request: Request,
     db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict[str, Any]:
     await _ensure_exercises_loaded(db)
@@ -106,7 +155,7 @@ async def get_exercise_detail(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Khong tim thay bai tap 3D voi ma '{code}'.",
         )
-    return _serialize_exercise(ex)
+    return _serialize_exercise(ex, api_base_url=_resolve_api_base(request))
 
 
 @router.get(
@@ -115,9 +164,11 @@ async def get_exercise_detail(
 )
 async def get_exercise_alternatives(
     code: str,
+    request: Request,
     db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict[str, Any]:
     all_exercises = await _ensure_exercises_loaded(db)
+    api_base = _resolve_api_base(request)
     code_upper = code.strip().upper()
     target = next((e for e in all_exercises if e.code == code_upper), None)
     if target is None:
@@ -150,7 +201,7 @@ async def get_exercise_alternatives(
             1 if diff_equipment else 0,
             float(secondary_overlap),
         )
-        serialized = _serialize_exercise(cand)
+        serialized = _serialize_exercise(cand, api_base_url=api_base)
         serialized["overlap_ratio"] = overlap_ratio
         serialized["shared_primary_muscles"] = shared_primary
         serialized["different_equipment"] = diff_equipment

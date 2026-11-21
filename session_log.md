@@ -17,6 +17,50 @@
 
 ---
 
+## Phiên 28 — 2026-11-21 22:34 | Thành viên: M3 + M2 (CDN 3D Cloud Offload & Release APK Test) | Task: `T-M3-09` (`[x]` Hoàn tất) & Gỡ 28 `.glb` mở rộng khỏi Bundle Mobile
+- **Mục tiêu phiên:** Hoàn tất `T-M3-09` (tách 28/31 bài tập `.glb` mở rộng lên Cloud/Railway S3 Bucket + FastAPI CDN endpoint), thu gọn `mobile/assets/3d_bundled/` từ `44.38 MB` xuống `6.53 MiB` (`6.85 MB`), deploy live lên Railway và build file `app-release.apk` trỏ thẳng Server Production để test máy thật.
+- **Những thay đổi đã thực hiện:**
+  - **Backend (`[OWNER: M3]`):**
+    - `backend/app/core/config.py`: Bổ sung `API_PUBLIC_BASE_URL`, `LOCAL_GLB_ASSETS_DIR`, `S3_ADDRESSING_STYLE` và property `resolved_api_public_base_url`.
+    - `backend/app/db/seed_catalog_and_exercises.py`: Nâng danh mục từ `30` lên đủ **`39` bài tập** (bổ sung 9 bài Sprint 2 còn thiếu từ `mock_m2_exercises.json`), cập nhật SHA-256 chuẩn từ `assets_manifest.json` cho 3 bài bundled + 28 bài CDN và fallback `base_mannequin.glb` cho 8 bài chưa có `.glb` riêng.
+    - `backend/app/services/storage_service.py`: Nạp `assets_manifest.json`, bổ sung `sync_local_glb_assets_to_s3()` (upload idempotent toàn bộ `.glb` lên Railway Storage Bucket `gym3d-assets` dùng virtual-host addressing style), `get_presigned_glb_url()`, `get_local_glb_path()`.
+    - `backend/app/routers/exercises.py`: Mở endpoint `GET /api/v1/exercises/{code}/glb` (trả `307` presigned S3 URL hoặc fallback `FileResponse` HTTPS kèm header `X-Asset-Sha256`) và trả full URL HTTPS thực tế theo `request` / `API_PUBLIC_BASE_URL`.
+    - `backend/Dockerfile.railway`, `railway.json`, `backend/docker-compose.yml`, `backend/app/db/startup.py`, `backend/tests/test_core_api.py`: Đóng gói `assets_3d/exported_glb/` vào image Railway (`/app/assets_3d_glb`), đồng bộ `.glb` lên S3 lúc khởi động và cập nhật test contract `39` bài + tải `.glb`.
+  - **Mobile (`[OWNER: M2]`):**
+    - Giữ nguyên **33 file `.glb`** gốc tại `assets_3d/exported_glb/`; xóa **28 file `.glb` mở rộng** khỏi `mobile/assets/3d_bundled/` (chỉ giữ 5 file lõi: `base_mannequin.glb`, `base_mannequin_female.glb`, `barbell_squat.glb`, `push_up.glb`, `barbell_bench_press.glb` = `6,849,660 B` ≈ `6.53 MiB`).
+    - Cập nhật `assets_3d/exported_glb/assets_manifest.json` & `mobile/assets/mock_json/mock_m2_exercises.json` đồng bộ `bundled: false` và URL HTTPS `/api/v1/exercises/{CODE}/glb` + SHA-256 thật cho 28 bài CDN.
+    - `mobile/lib/features/gym3d/data/asset_cache_manager.dart`: Dùng `Dio` sạch độc lập cho `AssetCacheManager` (không gắn `AuthInterceptor` tránh lỗi `400` khi redirect presigned URL S3, tăng `receiveTimeout = 60s`).
+    - `mobile/lib/features/gym3d/data/exercise_repository.dart`: Thu gọn `_localBundledGlbs` về 3 bài MVP, tự làm mới URL cũ (`localhost:9000`/`cdn.vigorai.app`/`assets/3d_bundled/` cũ) khi sync offline/SQLite và phân biệt chính xác `isBundled` vs 8 bài fallback.
+    - `mobile/lib/features/gym3d/presentation/gym3d_library_screen.dart`: Gắn nhãn chip `Cloud 3D` cho 28 bài tải lười từ Server CDN.
+  - **Tiến độ:** `docs/taskboard.md` đóng `[x]` **`T-M3-09`** (`M3: 11/15 Done`, `Tổng: 30/63 Done`).
+- **Kiểm tra & Triển khai:**
+  - `python -m py_compile` 6 file Python sửa: Exit `0`.
+  - `flutter analyze --no-fatal-infos`: Exit `0` (**0 errors · 0 warnings**).
+  - `flutter test test/workout/ test/health/`: **27 / 27 PASS**.
+  - Railway Storage Bucket `gym3d-assets` (`sjc`, virtual-host) + Deployment + Release APK: xem chi tiết xác minh bên dưới sau khi hoàn tất đẩy nhánh & build APK.
+
+---
+
+## Phiên 27 — 2026-11-21 22:18 | Thành viên: M2 (Rà soát & Nghiệm thu Sprint 2) | Task: `T-M2-08`, `T-M2-09`, `T-M2-10`, `T-M2-11` (`[x]` Đóng hoàn tất)
+- **Mục tiêu phiên:** Sau khi merge PR #11 (`1458ab3`), chạy `flutter analyze` & `flutter test`, rà soát và sửa triệt để toàn bộ cảnh báo biên dịch và lỗi logic trên 4 tasks Sprint 2 của M2 (`T-M2-08`–`T-M2-11`), tuân thủ chặt `[OWNER: M2]` và không chạm `[LOCKED STUB]`.
+- **Những file đã sửa (`[OWNER: M2]`):**
+  - `mobile/lib/features/workout/domain/workout_calculators.dart`: Bổ sung hàm thuần Dart `calculateWorkoutHydrationBonusMl` mặc định `avgRpe = 0.0` khi không có set ghi RPE (tránh cộng nhầm `+750ml` cho buổi tập ngắn chưa nhập RPE).
+  - `mobile/lib/features/workout/data/workout_repository.dart`: Sửa `_applyHydrationWorkoutBonus` dùng ngày **Local** (`localDateIso()`), ID `'daily-$todayIso'` đồng nhất với M1 và đọc cân nặng mới nhất từ `biometricLogsTable` (`35ml × kg`); cập nhật `syncStatus = 'SYNCED'` cho cả `workout_sets` sau khi `POST /workouts/sessions` thành công; bổ sung `_loadValidSessionIds()` lọc bỏ buổi `ABANDONED`/`CANCELLED` hoặc đã xóa mềm khỏi `getHistoricalBest1Rm` & `getLastPerformanceForExercise`.
+  - `mobile/lib/features/workout/presentation/live_workout_logger_screen.dart`: Tách `ValueKey` ô Tạ/Reps sang `rowKey` + `inputVersion` cố định để hết lỗi mất focus/reset mỗi 1s do timer buổi tập; khóa sửa các hiệp đã tick hoàn thành; lưu `lockedExerciseCode`/`lockedExerciseNameVi` tránh `_swapExercise` ghi đè mã bài của hiệp cũ; sửa khôi phục Crash-safe `IN_PROGRESS` giữ nguyên phần còn lại của giáo án trong `routineId`; invalidate đủ `analyticsSummaryProvider(7, 30, 90, 365)` sau khi kết thúc buổi tập.
+  - `mobile/lib/features/workout/presentation/routines_screen.dart`: Thay key theo `$index` bằng `_EditableRoutineItem(uid)` bền vững, chuẩn hóa `orderIndex` và dọn `supersetGroupId` mồ côi khi xóa/ghép bài, chuyển `onReorder` sang `onReorderItem`.
+  - `mobile/lib/features/ai_analytics/data/ai_analytics_repository.dart`: Thêm `await` trước `_overlayLocal72hFatigue` ở `fetchReadinessAndOverload` (diệt warning `unawaited_return_in_try_block`), bật `unsyncedOnly: true` tránh cộng đôi mỏi cơ 72h từ các buổi đã sync với Server, đồng bộ ngày mock/local date cho cache offline, loại bỏ fallback sang `mock_m4_ai.json` trong build production offline; ở `aggregateAnalyticsFromData` lọc buổi `COMPLETED` hợp lệ trước khi tính PR/streak/volume/radar, dùng key tuần đủ năm `YYYY-MM-DD`, và sửa `pullPushRatio` (`0.0` khi rỗng, `pullSets.toDouble()` khi chưa có đẩy).
+  - `mobile/lib/features/ai_analytics/muscle_balance/muscle_radar_view.dart` & `mobile/lib/features/ai_analytics/presentation/ai_coach_hub_screen.dart`: Cập nhật thông báo khi Radar trống hoặc chỉ có bài Kéo, và invalidate đủ 4 mốc (`7, 30, 90, 365`) khi làm mới.
+  - `mobile/lib/features/gym3d/presentation/widgets/muscle_3d_viewer_widget.dart`, `exercise_3d_detail_screen.dart`, `gym3d_library_screen.dart`, `exercise_repository.dart`: Bổ sung `effectiveScaleFor` chống thu nhỏ 2 lần trên `base_mannequin_female.glb`, đồng bộ `_phaseTimer` chỉ chạy sau khi `onModelLoaded`, cập nhật text banner thư viện 3D (`đủ 10 nhóm cơ`), và làm mới cache metadata bài tập khi mock JSON cập nhật checksum/URL.
+  - `mobile/test/workout/workout_sprint2_test.dart`, `docs/taskboard.md`: Bổ sung 3 unit test hồi quy mới và đóng `[x]` cho `T-M2-08`, `T-M2-09`, `T-M2-10`, `T-M2-11` (`M2: 10/17 Done`, `Tổng: 29/63 Done`).
+- **Kiểm tra / Kết quả chạy thử:**
+  - `flutter analyze --no-fatal-infos`: Exit `0` (**0 errors · 0 warnings**; hết warning `unawaited_return_in_try_block` và hết info `onReorder`).
+  - `flutter test test/workout/ test/health/`: **27 / 27 PASS** (`asset_cache_manager_test.dart` `5/5`, `workout_sprint2_test.dart` `11/11` gồm benchmark 1.000 hiệp `< 300ms`, `health_sprint2_test.dart` `11/11`).
+  - `git status -s`: Chỉ chạm các file thuộc `[OWNER: M2]` + `docs/taskboard.md` + `session_log.md`; `0` file `[LOCKED STUB]` bị sửa.
+- **Việc cần làm ở phiên kế tiếp:**
+  - Trước mốc đóng gói `T-M2-12` (`.aab` `v1.1.0 < 40 MB`), phối hợp `M3` (`T-M3-09`) upload 27–30 file `.glb` mở rộng lên MinIO/CDN để tách khỏi `mobile/assets/3d_bundled/` (hiện tại `34` file = `44.38 MB`), chỉ giữ gói lõi trong APK/AAB.
+
+---
+
 ## Phiên 26 — 2026-11-21 21:42 | Thành viên: M2 (3D Blender MCP, Workout, Recovery 3D & Charts) | Task: `T-M2-07` (`[x]` Hoàn tất 100% — Nhóm 10 Bụng & Lõi / Abs & Core — 3 bài, tổng **30/30** bài `gym.txt`)
 - **Phạm vi thực hiện (Strict `[OWNER: M2]`):**
   - Hoàn thiện **3 bài Nhóm 10 Cơ Bụng & Lõi (`Abs & Core`)** trong `gym.txt` qua Blender 5.3 headless script (`build_sprint2_exercises.py`), nâng tổng tiến độ `T-M2-07` lên **30/30 bài (100%)** và tổng asset `.glb` đồng bộ lên **33/33 file** (gồm 2 Mannequin Nam/Nữ + `PUSH_UP` MVP + 30/30 bài `gym.txt`):

@@ -56,6 +56,10 @@ class MuscleRadarView extends ConsumerWidget {
             weakest = a;
           }
         }
+        final totalRadarSets = counts.values.fold<int>(0, (a, b) => a + b);
+        final pushSets = (counts['chest'] ?? 0) + (counts['shoulders'] ?? 0);
+        final pullSets = counts['back'] ?? 0;
+        final hasPushPull = pushSets + pullSets > 0;
 
         return RefreshIndicator(
           onRefresh: () async => ref.invalidate(analyticsSummaryProvider(30)),
@@ -145,16 +149,24 @@ class MuscleRadarView extends ConsumerWidget {
                     child: Icon(Icons.balance, color: Colors.white),
                   ),
                   title: Text(
-                    'Tỷ lệ Kéo / Đẩy (Pull : Push) = ${summary.pullPushRatio.toStringAsFixed(2)} : 1',
+                    !hasPushPull
+                        ? 'Tỷ lệ Kéo / Đẩy (Pull : Push) — Chưa đủ dữ liệu'
+                        : pushSets == 0
+                            ? 'Tỷ lệ Kéo / Đẩy: Chỉ có bài Kéo ($pullSets hiệp)'
+                            : 'Tỷ lệ Kéo / Đẩy (Pull : Push) = ${summary.pullPushRatio.toStringAsFixed(2)} : 1',
                     style: const TextStyle(fontWeight: FontWeight.bold),
                   ),
                   subtitle: Text(
-                    summary.pullPushRatio >= 0.85 &&
-                            summary.pullPushRatio <= 1.25
-                        ? 'Cân bằng Kéo/Đẩy tốt (khuyến nghị ~1:1 bảo vệ khớp vai).'
-                        : summary.pullPushRatio < 0.85
-                            ? 'Khối lượng Đẩy đang nhiều hơn Kéo — nên bổ sung bài Lưng/Xô.'
-                            : 'Khối lượng Kéo đang cao hơn Đẩy — có thể tăng thêm bài Ngực/Vai.',
+                    !hasPushPull
+                        ? 'Hoàn thành buổi tập Ngực/Vai/Lưng (RPE ≥ 6.0) để đánh giá cân bằng Kéo/Đẩy.'
+                        : pushSets == 0
+                            ? 'Khối lượng Kéo đang cao hơn Đẩy — nên bổ sung thêm bài Ngực/Vai.'
+                            : (summary.pullPushRatio >= 0.85 &&
+                                    summary.pullPushRatio <= 1.25
+                                ? 'Cân bằng Kéo/Đẩy tốt (khuyến nghị ~1:1 bảo vệ khớp vai).'
+                                : summary.pullPushRatio < 0.85
+                                    ? 'Khối lượng Đẩy đang nhiều hơn Kéo — nên bổ sung bài Lưng/Xô.'
+                                    : 'Khối lượng Kéo đang cao hơn Đẩy — có thể tăng thêm bài Ngực/Vai.'),
                   ),
                 ),
               ),
@@ -167,11 +179,15 @@ class MuscleRadarView extends ConsumerWidget {
                     color: AppColors.calorieOrange,
                   ),
                   title: Text(
-                    'Nhóm cơ cần ưu tiên bổ sung: ${weakest.label}',
+                    totalRadarSets == 0
+                        ? 'Chưa có dữ liệu nhóm cơ trong 30 ngày qua'
+                        : 'Nhóm cơ cần ưu tiên bổ sung: ${weakest.label}',
                     style: const TextStyle(fontWeight: FontWeight.bold),
                   ),
                   subtitle: Text(
-                    '30 ngày qua mới ghi nhận $minCount hiệp hiệu dụng cho nhóm ${weakest.label}.',
+                    totalRadarSets == 0
+                        ? 'Hãy hoàn thành buổi tập đầu tiên để Radar tự động phân tích cân bằng cơ bắp.'
+                        : '30 ngày qua mới ghi nhận $minCount hiệp hiệu dụng cho nhóm ${weakest.label}.',
                   ),
                 ),
               ),

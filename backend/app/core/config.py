@@ -1,5 +1,6 @@
 # [OWNER: M3] Cau hinh ung dung FastAPI
 import json
+import os
 from typing import Any
 from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
@@ -22,11 +23,27 @@ class Settings(BaseSettings):
     S3_BUCKET_NAME: str = "gym3d-assets"
     S3_REGION: str = "us-east-1"
     S3_PUBLIC_BASE_URL: str = "http://localhost:9000/gym3d-assets"
+    S3_ADDRESSING_STYLE: str = ""
+    API_PUBLIC_BASE_URL: str = ""
+    LOCAL_GLB_ASSETS_DIR: str = ""
     CORS_ORIGINS: Any = ["*"]
     RUN_MIGRATIONS_ON_STARTUP: bool = True
     RUN_SEED_ON_STARTUP: bool = True
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
+
+    @property
+    def resolved_api_public_base_url(self) -> str:
+        """Tra ve HTTPS base URL cong khai cua API neu da cau hinh hoac dang chay tren Railway."""
+        explicit = (self.API_PUBLIC_BASE_URL or "").strip().rstrip("/")
+        if explicit:
+            return explicit
+        railway_domain = os.environ.get("RAILWAY_PUBLIC_DOMAIN", "").strip()
+        if railway_domain:
+            if railway_domain.startswith(("http://", "https://")):
+                return railway_domain.rstrip("/")
+            return f"https://{railway_domain}"
+        return ""
 
     @field_validator("DATABASE_URL", mode="before")
     @classmethod

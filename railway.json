@@ -5,6 +5,7 @@
     "dockerfilePath": "backend/Dockerfile.railway",
     "watchPatterns": [
       "backend/**",
+      "assets_3d/exported_glb/**",
       "railway.json"
     ]
   },
