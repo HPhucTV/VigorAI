@@ -1,6 +1,7 @@
 .git
 mobile
-assets_3d
+assets_3d/source_blend
+assets_3d/scripts_blender_mcp
 ai_research
 docs
 **/__pycache__

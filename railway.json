@@ -6,6 +6,7 @@
     "watchPatterns": [
       "backend/**",
       "assets_3d/exported_glb/**",
+      ".dockerignore",
       "railway.json"
     ]
   },
