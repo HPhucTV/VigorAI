@@ -2,11 +2,11 @@
   "exercises": [
     {
       "code": "BARBELL_BENCH_PRESS",
-      "name_vi": "Đẩy ngực ngang đòn tạ",
+      "name_vi": "Đẩy ngực ngang với tạ đòn",
       "name_en": "Barbell Bench Press",
       "equipment_type": "BARBELL",
       "model_3d_glb_url": "assets/3d_bundled/barbell_bench_press.glb",
-      "asset_checksum": "6cb3cda03d8d0e57783ec5388436be2c2f754638f9faa384e6da8bd79c4272cf",
+      "asset_checksum": "5faa03e3a10459c6d702c56a0a3f0613bb5e59573730a7b7bd3a5aaf63b308bb",
       "primary_muscles": [
         "Mat_Muscle_Chest"
       ],
@@ -63,11 +63,11 @@
     },
     {
       "code": "INCLINE_DUMBBELL_PRESS",
-      "name_vi": "Đẩy ngực trên tạ đơn",
+      "name_vi": "Đẩy ngực trên với tạ đơn",
       "name_en": "Incline Dumbbell Press",
       "equipment_type": "DUMBBELL",
-      "model_3d_glb_url": "https://cdn.vigorai.app/exercises/incline_dumbbell_press.glb",
-      "asset_checksum": "8ee2a33372a76853e1eb5f5fdec473a3d6eb255253d996050e98734504f9948f",
+      "model_3d_glb_url": "assets/3d_bundled/incline_dumbbell_press.glb",
+      "asset_checksum": "5d75828bbde53b18059a1a59599d2a3526e880d2dbed849093c46f5e09c2a41c",
       "primary_muscles": [
         "Mat_Muscle_Chest"
       ],
@@ -103,9 +103,10 @@
         "grip": "Trung tính / xoay nhẹ"
       },
       "id": "ex-incline_dumbbell_press",
-      "bundled": false,
+      "bundled": true,
       "clips": [
-        "Anim_GoodForm"
+        "Anim_GoodForm",
+        "Anim_BadForm"
       ]
     },
     {
@@ -170,11 +171,11 @@
     },
     {
       "code": "CABLE_CHEST_FLY",
-      "name_vi": "Ép ngực cáp đứng",
-      "name_en": "Cable Chest Fly",
+      "name_vi": "Ép ngực với máy hoặc dây cáp",
+      "name_en": "Pec Deck Fly / Cable Crossover",
       "equipment_type": "CABLE",
-      "model_3d_glb_url": "https://cdn.vigorai.app/exercises/cable_chest_fly.glb",
-      "asset_checksum": "ebeb0e187d5901e9426d0822e6d2e1ab9e216e9451f8de77c281de8d08c90245",
+      "model_3d_glb_url": "assets/3d_bundled/cable_chest_fly.glb",
+      "asset_checksum": "ba9d58938fcec56db989d576a6cd2559aa1fff3901e25d9fb3829407cda6b0f0",
       "primary_muscles": [
         "Mat_Muscle_Chest"
       ],
@@ -210,9 +211,10 @@
         "pulley_height": "Ngang vai"
       },
       "id": "ex-cable_chest_fly",
-      "bundled": false,
+      "bundled": true,
       "clips": [
-        "Anim_GoodForm"
+        "Anim_GoodForm",
+        "Anim_BadForm"
       ]
     },
     {
@@ -261,11 +263,11 @@
     },
     {
       "code": "BARBELL_DEADLIFT",
-      "name_vi": "Deadlift đòn tạ",
+      "name_vi": "Kéo tạ đòn từ sàn",
       "name_en": "Barbell Deadlift",
       "equipment_type": "BARBELL",
-      "model_3d_glb_url": "https://cdn.vigorai.app/exercises/barbell_deadlift.glb",
-      "asset_checksum": "165d8314815ff590e26d1b138c413c1fa911db417628a6f88ae81c0c54415c20",
+      "model_3d_glb_url": "assets/3d_bundled/barbell_deadlift.glb",
+      "asset_checksum": "b4fa80771a34a442b78d3295e8dfd39e1995ff7a0e78382a12f59bd546ed98f2",
       "primary_muscles": [
         "Mat_Muscle_Back_Lats",
         "Mat_Muscle_Hamstrings",
@@ -304,18 +306,19 @@
         "grip": "Double overhand / Mixed"
       },
       "id": "ex-barbell_deadlift",
-      "bundled": false,
+      "bundled": true,
       "clips": [
-        "Anim_GoodForm"
+        "Anim_GoodForm",
+        "Anim_BadForm"
       ]
     },
     {
       "code": "BARBELL_BENT_OVER_ROW",
-      "name_vi": "Kéo lưng đòn tạ",
+      "name_vi": "Gập người kéo tạ đòn",
       "name_en": "Barbell Bent-Over Row",
       "equipment_type": "BARBELL",
-      "model_3d_glb_url": "https://cdn.vigorai.app/exercises/barbell_bent_over_row.glb",
-      "asset_checksum": "8a3d0ab48bbace7f24ea9e5a8de7f8cf1ea48370a45ee323abaf9c4e5431016f",
+      "model_3d_glb_url": "assets/3d_bundled/barbell_bent_over_row.glb",
+      "asset_checksum": "1415727e5ae46f929463ea00373123025c408af1364bbd8421225bfd0d4a66c3",
       "primary_muscles": [
         "Mat_Muscle_Back_Lats",
         "Mat_Muscle_Traps"
@@ -353,18 +356,19 @@
         "torso_angle_deg": 45
       },
       "id": "ex-barbell_bent_over_row",
-      "bundled": false,
+      "bundled": true,
       "clips": [
-        "Anim_GoodForm"
+        "Anim_GoodForm",
+        "Anim_BadForm"
       ]
     },
     {
       "code": "LAT_PULLDOWN",
-      "name_vi": "Kéo xô cáp rộng tay",
+      "name_vi": "Kéo xô trước ngực với máy cáp",
       "name_en": "Lat Pulldown",
       "equipment_type": "CABLE",
-      "model_3d_glb_url": "https://cdn.vigorai.app/exercises/lat_pulldown.glb",
-      "asset_checksum": "63d78a30f8a977f68d9f420806e7ceb25378c728e825ca16edccc12ce1e462e1",
+      "model_3d_glb_url": "assets/3d_bundled/lat_pulldown.glb",
+      "asset_checksum": "5fe27fe31087abc1ac1c6c681731c1451183773a5a63497dbbc9ee237e9e1acf",
       "primary_muscles": [
         "Mat_Muscle_Back_Lats"
       ],
@@ -400,18 +404,19 @@
         "thigh_pad": "Khóa chặt đùi"
       },
       "id": "ex-lat_pulldown",
-      "bundled": false,
+      "bundled": true,
       "clips": [
-        "Anim_GoodForm"
+        "Anim_GoodForm",
+        "Anim_BadForm"
       ]
     },
     {
       "code": "SEATED_CABLE_ROW",
-      "name_vi": "Ngồi kéo cáp ngang",
+      "name_vi": "Ngồi kéo cáp hẹp tay",
       "name_en": "Seated Cable Row",
       "equipment_type": "CABLE",
-      "model_3d_glb_url": "https://cdn.vigorai.app/exercises/seated_cable_row.glb",
-      "asset_checksum": "cfeb6926c6e31e5cbe965ec17f4025c0fdaac64d894f33efcafd325380914a9c",
+      "model_3d_glb_url": "assets/3d_bundled/seated_cable_row.glb",
+      "asset_checksum": "c434576897e3b5937ed81759bbd066d438dbd14090f8a0f80505b05a3733926e",
       "primary_muscles": [
         "Mat_Muscle_Back_Lats",
         "Mat_Muscle_Traps"
@@ -447,9 +452,10 @@
         "foot_plate": "Gối hơi chùng 10 độ"
       },
       "id": "ex-seated_cable_row",
-      "bundled": false,
+      "bundled": true,
       "clips": [
-        "Anim_GoodForm"
+        "Anim_GoodForm",
+        "Anim_BadForm"
       ]
     },
     {
@@ -547,11 +553,11 @@
     },
     {
       "code": "DUMBBELL_LATERAL_RAISE",
-      "name_vi": "Dang vai ngang tạ đơn",
+      "name_vi": "Dang tạ đơn sang ngang cho vai giữa",
       "name_en": "Dumbbell Lateral Raise",
       "equipment_type": "DUMBBELL",
-      "model_3d_glb_url": "https://cdn.vigorai.app/exercises/dumbbell_lateral_raise.glb",
-      "asset_checksum": "b075f2575ba4800b2161b5750a78a1ea9aa289b845a37ebad59391bdcb4b56bf",
+      "model_3d_glb_url": "assets/3d_bundled/dumbbell_lateral_raise.glb",
+      "asset_checksum": "f52e2a0f7a81eac5f19effabd813326783b492b7259755f8cca43c3de857621e",
       "primary_muscles": [
         "Mat_Muscle_Shoulders"
       ],
@@ -586,18 +592,19 @@
         "arm_angle": "Hơi gập khuỷu 15 độ"
       },
       "id": "ex-dumbbell_lateral_raise",
-      "bundled": false,
+      "bundled": true,
       "clips": [
-        "Anim_GoodForm"
+        "Anim_GoodForm",
+        "Anim_BadForm"
       ]
     },
     {
       "code": "CABLE_FACE_PULL",
-      "name_vi": "Kéo dây thừng về mặt",
+      "name_vi": "Kéo cáp hướng mặt cho vai sau",
       "name_en": "Cable Face Pull",
       "equipment_type": "CABLE",
-      "model_3d_glb_url": "https://cdn.vigorai.app/exercises/cable_face_pull.glb",
-      "asset_checksum": "b329d52380b353f039ec0bd896ed5c6451823cf2b4bc85d06b9b979ed278fc58",
+      "model_3d_glb_url": "assets/3d_bundled/cable_face_pull.glb",
+      "asset_checksum": "958111166abff5809b7cda450f8fca1b695e8ab000f6b47e5b714e467140be8e",
       "primary_muscles": [
         "Mat_Muscle_Shoulders",
         "Mat_Muscle_Traps"
@@ -632,18 +639,19 @@
         "pulley_height": "Ngang trán"
       },
       "id": "ex-cable_face_pull",
-      "bundled": false,
+      "bundled": true,
       "clips": [
-        "Anim_GoodForm"
+        "Anim_GoodForm",
+        "Anim_BadForm"
       ]
     },
     {
       "code": "DUMBBELL_SHOULDER_PRESS",
-      "name_vi": "Ngồi đẩy vai tạ đơn",
+      "name_vi": "Ngồi đẩy vai qua đầu với tạ đơn",
       "name_en": "Seated Dumbbell Shoulder Press",
       "equipment_type": "DUMBBELL",
-      "model_3d_glb_url": "https://cdn.vigorai.app/exercises/dumbbell_shoulder_press.glb",
-      "asset_checksum": "dc542aec6c6a6ac4f9e7b2b5dba05c226e2c3b5ed19ae1c121d787e9372767e2",
+      "model_3d_glb_url": "assets/3d_bundled/dumbbell_shoulder_press.glb",
+      "asset_checksum": "a70b92aadae50fc5928b0ce9e23a0a7bbdd89f77d1d04a4c39c8f8fe9127d8ee",
       "primary_muscles": [
         "Mat_Muscle_Shoulders"
       ],
@@ -677,18 +685,19 @@
         "bench_angle_deg": 80
       },
       "id": "ex-dumbbell_shoulder_press",
-      "bundled": false,
+      "bundled": true,
       "clips": [
-        "Anim_GoodForm"
+        "Anim_GoodForm",
+        "Anim_BadForm"
       ]
     },
     {
       "code": "BARBELL_BICEP_CURL",
-      "name_vi": "Cuốn tay trước đòn tạ",
+      "name_vi": "Đứng cuốn tạ đòn",
       "name_en": "Barbell Bicep Curl",
       "equipment_type": "BARBELL",
-      "model_3d_glb_url": "https://cdn.vigorai.app/exercises/barbell_bicep_curl.glb",
-      "asset_checksum": "13d3de09d9055e1d76a3719e1b2b74d24206759092326f7b8595a850a60b797f",
+      "model_3d_glb_url": "assets/3d_bundled/barbell_bicep_curl.glb",
+      "asset_checksum": "b8f14393fb4b707f985b5994b3701fec76e3bf86e08e2d462475d0c404c65367",
       "primary_muscles": [
         "Mat_Muscle_Biceps"
       ],
@@ -721,18 +730,19 @@
         "grip_width": "Ngang vai"
       },
       "id": "ex-barbell_bicep_curl",
-      "bundled": false,
+      "bundled": true,
       "clips": [
-        "Anim_GoodForm"
+        "Anim_GoodForm",
+        "Anim_BadForm"
       ]
     },
     {
       "code": "DUMBBELL_HAMMER_CURL",
-      "name_vi": "Cuốn búa tạ đơn",
+      "name_vi": "Cuốn tạ đơn kiểu búa",
       "name_en": "Dumbbell Hammer Curl",
       "equipment_type": "DUMBBELL",
-      "model_3d_glb_url": "https://cdn.vigorai.app/exercises/dumbbell_hammer_curl.glb",
-      "asset_checksum": "02f91e051454e5a95114d3fa54bd6460b4bc073d487cb4582379b6d1565a191a",
+      "model_3d_glb_url": "assets/3d_bundled/dumbbell_hammer_curl.glb",
+      "asset_checksum": "01ff7c521e655a4fa9f90012996479310a37372a4e47bd9cded1e7402e18fb50",
       "primary_muscles": [
         "Mat_Muscle_Biceps"
       ],
@@ -764,9 +774,10 @@
         "grip": "Trung tính (lòng bàn tay hướng vào nhau)"
       },
       "id": "ex-dumbbell_hammer_curl",
-      "bundled": false,
+      "bundled": true,
       "clips": [
-        "Anim_GoodForm"
+        "Anim_GoodForm",
+        "Anim_BadForm"
       ]
     },
     {
@@ -814,11 +825,11 @@
     },
     {
       "code": "CABLE_TRICEP_PUSHDOWN",
-      "name_vi": "Đẩy tay sau cáp",
+      "name_vi": "Đẩy cáp dây thừng xuống",
       "name_en": "Cable Tricep Pushdown",
       "equipment_type": "CABLE",
-      "model_3d_glb_url": "https://cdn.vigorai.app/exercises/cable_tricep_pushdown.glb",
-      "asset_checksum": "89cb9022acdbe161c199b2f663314f37878a06d161d9d5fbc302a4f4156cc6c5",
+      "model_3d_glb_url": "assets/3d_bundled/cable_tricep_pushdown.glb",
+      "asset_checksum": "ea04f1897288ee7cb3f30f26d3334597dea411213ff2d9e4a63aa6f84aa28a0b",
       "primary_muscles": [
         "Mat_Muscle_Triceps"
       ],
@@ -850,18 +861,19 @@
         "pulley_height": "Cao nhất"
       },
       "id": "ex-cable_tricep_pushdown",
-      "bundled": false,
+      "bundled": true,
       "clips": [
-        "Anim_GoodForm"
+        "Anim_GoodForm",
+        "Anim_BadForm"
       ]
     },
     {
       "code": "OVERHEAD_DUMBBELL_TRICEP_EXT",
-      "name_vi": "Duỗi tay sau qua đầu tạ đơn",
+      "name_vi": "Duỗi tạ đơn qua đầu",
       "name_en": "Overhead Dumbbell Tricep Extension",
       "equipment_type": "DUMBBELL",
-      "model_3d_glb_url": "https://cdn.vigorai.app/exercises/overhead_dumbbell_tricep_ext.glb",
-      "asset_checksum": "cd4ebf8e765ff7324a0d327a1fe6c1e1658a6bf648822c45e29d62df81ce3214",
+      "model_3d_glb_url": "assets/3d_bundled/overhead_dumbbell_tricep_ext.glb",
+      "asset_checksum": "ded0225eec17e79595d40b119938276097d04181ddf582f5e44f978bb9ab56d8",
       "primary_muscles": [
         "Mat_Muscle_Triceps"
       ],
@@ -893,9 +905,10 @@
         "elbow_position": "Khép sát đầu"
       },
       "id": "ex-overhead_dumbbell_tricep_ext",
-      "bundled": false,
+      "bundled": true,
       "clips": [
-        "Anim_GoodForm"
+        "Anim_GoodForm",
+        "Anim_BadForm"
       ]
     },
     {
@@ -946,11 +959,11 @@
     },
     {
       "code": "BARBELL_SQUAT",
-      "name_vi": "Squat gánh đòn tạ",
+      "name_vi": "Gánh tạ đòn",
       "name_en": "Barbell Back Squat",
       "equipment_type": "BARBELL",
       "model_3d_glb_url": "assets/3d_bundled/barbell_squat.glb",
-      "asset_checksum": "c5285d532b9725449af9a126d042e5ea4b196b7698389b3dbba511ab391ed0e2",
+      "asset_checksum": "6933137d1885fd8a36a31610f461cd05b5387c9b55c196bb99dcd2757abf017f",
       "primary_muscles": [
         "Mat_Muscle_Quads",
         "Mat_Muscle_Glutes"
@@ -969,7 +982,7 @@
           "breath": "Hít vào",
           "frames": [
             0,
-            50
+            45
           ]
         },
         "isometric": {
@@ -977,8 +990,8 @@
           "end": 0.55,
           "breath": "Giữ lõi",
           "frames": [
-            50,
-            65
+            45,
+            55
           ]
         },
         "concentric": {
@@ -986,8 +999,8 @@
           "end": 1.0,
           "breath": "Thở ra",
           "frames": [
-            65,
-            110
+            55,
+            100
           ]
         }
       },
@@ -1053,11 +1066,11 @@
     },
     {
       "code": "ROMANIAN_DEADLIFT",
-      "name_vi": "Deadlift kiểu Romania (RDL)",
+      "name_vi": "Kéo tạ đòn kiểu Romania",
       "name_en": "Romanian Deadlift",
       "equipment_type": "BARBELL",
-      "model_3d_glb_url": "https://cdn.vigorai.app/exercises/romanian_deadlift.glb",
-      "asset_checksum": "120a0bd82d618d22c53666bfa36f2ae6c833847d032149da7d3e97ebfdea74ee",
+      "model_3d_glb_url": "assets/3d_bundled/romanian_deadlift.glb",
+      "asset_checksum": "1792c1eca5d8ae52308027005d9fd25bec7fb36cf69335c57ac4b8d3e6afed17",
       "primary_muscles": [
         "Mat_Muscle_Hamstrings",
         "Mat_Muscle_Glutes"
@@ -1093,18 +1106,19 @@
         "knee_bend": "Chùng nhẹ 15 độ"
       },
       "id": "ex-romanian_deadlift",
-      "bundled": false,
+      "bundled": true,
       "clips": [
-        "Anim_GoodForm"
+        "Anim_GoodForm",
+        "Anim_BadForm"
       ]
     },
     {
       "code": "LEG_PRESS",
-      "name_vi": "Đạp đùi máy",
+      "name_vi": "Đạp đùi trên máy",
       "name_en": "Machine Leg Press",
       "equipment_type": "MACHINE",
-      "model_3d_glb_url": "https://cdn.vigorai.app/exercises/leg_press.glb",
-      "asset_checksum": "7a1856a7256e246e80790a3906fae2e641907d2f90dc9d2ba3bdd1e190812712",
+      "model_3d_glb_url": "assets/3d_bundled/leg_press.glb",
+      "asset_checksum": "d3c20380fe7c7112777679e0d4694cee8e98950950a4988b75f84b7e60ac11f4",
       "primary_muscles": [
         "Mat_Muscle_Quads",
         "Mat_Muscle_Glutes"
@@ -1138,18 +1152,19 @@
         "foot_placement": "Giữa bàn đạp, rộng bằng vai"
       },
       "id": "ex-leg_press",
-      "bundled": false,
+      "bundled": true,
       "clips": [
-        "Anim_GoodForm"
+        "Anim_GoodForm",
+        "Anim_BadForm"
       ]
     },
     {
       "code": "WALKING_LUNGE",
-      "name_vi": "Chùng chân bước tới tạ đơn",
+      "name_vi": "Bước chùng chân với tạ đơn",
       "name_en": "Dumbbell Walking Lunge",
       "equipment_type": "DUMBBELL",
-      "model_3d_glb_url": "https://cdn.vigorai.app/exercises/walking_lunge.glb",
-      "asset_checksum": "e7be78691429e79da6fdd38aa2701af131069b9fcbb00919ea75959f93c562b8",
+      "model_3d_glb_url": "assets/3d_bundled/walking_lunge.glb",
+      "asset_checksum": "874373cedaf6cea829a074c774d71dd5fed46feba5e0acc668f8ae68d3c931b0",
       "primary_muscles": [
         "Mat_Muscle_Quads",
         "Mat_Muscle_Glutes"
@@ -1185,18 +1200,19 @@
         "step_length": "Góc gối 90-90 độ"
       },
       "id": "ex-walking_lunge",
-      "bundled": false,
+      "bundled": true,
       "clips": [
-        "Anim_GoodForm"
+        "Anim_GoodForm",
+        "Anim_BadForm"
       ]
     },
     {
       "code": "LEG_CURL_MACHINE",
-      "name_vi": "Cuốn đùi sau máy",
+      "name_vi": "Nằm sấp móc đùi sau với máy",
       "name_en": "Seated/Lying Leg Curl",
       "equipment_type": "MACHINE",
-      "model_3d_glb_url": "https://cdn.vigorai.app/exercises/leg_curl_machine.glb",
-      "asset_checksum": "b2a857f9b38700c411a7dafdd5ed9fd8b354c07427bbee9ff906e529899ee175",
+      "model_3d_glb_url": "assets/3d_bundled/leg_curl_machine.glb",
+      "asset_checksum": "9b981f5936df520303102a46aa3d2bf55fd46452f181e94afa3ec9e8110aab52",
       "primary_muscles": [
         "Mat_Muscle_Hamstrings"
       ],
@@ -1228,9 +1244,10 @@
         "pad_position": "Ngay trên gót Achilles"
       },
       "id": "ex-leg_curl_machine",
-      "bundled": false,
+      "bundled": true,
       "clips": [
-        "Anim_GoodForm"
+        "Anim_GoodForm",
+        "Anim_BadForm"
       ]
     },
     {
@@ -1278,11 +1295,11 @@
     },
     {
       "code": "PLANK",
-      "name_vi": "Plank giữ lõi",
+      "name_vi": "Chống khuỷu tay giữ thẳng người",
       "name_en": "Forearm Plank",
       "equipment_type": "BODYWEIGHT",
-      "model_3d_glb_url": "https://cdn.vigorai.app/exercises/plank.glb",
-      "asset_checksum": "51f29739b1644d45e11b8e572fc0b9fd35be8c719fcb2d92cab10dbcddbf4c9c",
+      "model_3d_glb_url": "assets/3d_bundled/plank.glb",
+      "asset_checksum": "6001ec40443255f317ebe123bc70dcbe5541b6cbf52c4f283404efaa2a86e134",
       "primary_muscles": [
         "Mat_Muscle_Abs_Core"
       ],
@@ -1315,9 +1332,10 @@
         "elbow_position": "Thẳng dưới vai"
       },
       "id": "ex-plank",
-      "bundled": false,
+      "bundled": true,
       "clips": [
-        "Anim_GoodForm"
+        "Anim_GoodForm",
+        "Anim_BadForm"
       ]
     },
     {
@@ -1325,8 +1343,8 @@
       "name_vi": "Treo người nâng chân",
       "name_en": "Hanging Leg Raise",
       "equipment_type": "BODYWEIGHT",
-      "model_3d_glb_url": "https://cdn.vigorai.app/exercises/hanging_leg_raise.glb",
-      "asset_checksum": "948637129c1c4d336eadf2db15d6b03d4c3a52f96d1df71ae08ec11598e2b188",
+      "model_3d_glb_url": "assets/3d_bundled/hanging_leg_raise.glb",
+      "asset_checksum": "f55ba36ec0de09fcb20058bfcb9bc6fb3e04537a16b8906ca96a1a61754642e6",
       "primary_muscles": [
         "Mat_Muscle_Abs_Core"
       ],
@@ -1360,9 +1378,10 @@
         "grip": "Nắm chắc xà ngang vai"
       },
       "id": "ex-hanging_leg_raise",
-      "bundled": false,
+      "bundled": true,
       "clips": [
-        "Anim_GoodForm"
+        "Anim_GoodForm",
+        "Anim_BadForm"
       ]
     },
     {
@@ -1410,6 +1429,413 @@
       "bundled": false,
       "clips": [
         "Anim_GoodForm"
+      ]
+    },
+    {
+      "code": "WIDE_GRIP_PULLUP",
+      "name_vi": "Hít xà đơn rộng tay",
+      "name_en": "Wide-Grip Pull-up",
+      "equipment_type": "BODYWEIGHT",
+      "model_3d_glb_url": "assets/3d_bundled/wide_grip_pullup.glb",
+      "asset_checksum": "c6de823782138bef014a52e6e0876de2263df02b4f5cf905d8b51ff76eec1caa",
+      "primary_muscles": [
+        "Mat_Muscle_Back_Lats"
+      ],
+      "secondary_muscles": [
+        "Mat_Muscle_Biceps",
+        "Mat_Muscle_Traps"
+      ],
+      "stabilizer_muscles": [
+        "Mat_Muscle_Abs_Core"
+      ],
+      "phase_keyframes": {
+        "eccentric": {
+          "start": 0.0,
+          "end": 0.45,
+          "breath": "Hít vào"
+        },
+        "isometric": {
+          "start": 0.45,
+          "end": 0.55,
+          "breath": "Giữ lõi"
+        },
+        "concentric": {
+          "start": 0.55,
+          "end": 1.0,
+          "breath": "Thở ra"
+        }
+      },
+      "bad_form_warnings": [
+        "Đạp chân vung người lấy đà (Kipping) làm giảm lực vào cơ Xô"
+      ],
+      "setup_guide": {
+        "grip_width": "Rộng hơn vai 1.5x"
+      },
+      "id": "ex-wide_grip_pullup",
+      "bundled": true,
+      "clips": [
+        "Anim_GoodForm",
+        "Anim_BadForm"
+      ]
+    },
+    {
+      "code": "STRAIGHT_ARM_CABLE_PULLDOWN",
+      "name_vi": "Kéo xô tay thẳng với dây cáp",
+      "name_en": "Straight-Arm Cable Pulldown",
+      "equipment_type": "CABLE",
+      "model_3d_glb_url": "assets/3d_bundled/straight_arm_cable_pulldown.glb",
+      "asset_checksum": "5d536bbfccde5de619fd4a5001cf1a6851827fd83ff8bc8710b62a5a914d2e7c",
+      "primary_muscles": [
+        "Mat_Muscle_Back_Lats"
+      ],
+      "secondary_muscles": [
+        "Mat_Muscle_Triceps"
+      ],
+      "stabilizer_muscles": [
+        "Mat_Muscle_Abs_Core"
+      ],
+      "phase_keyframes": {
+        "eccentric": {
+          "start": 0.0,
+          "end": 0.45,
+          "breath": "Hít vào"
+        },
+        "isometric": {
+          "start": 0.45,
+          "end": 0.55,
+          "breath": "Giữ lõi"
+        },
+        "concentric": {
+          "start": 0.55,
+          "end": 1.0,
+          "breath": "Thở ra"
+        }
+      },
+      "bad_form_warnings": [
+        "Gập khuỷu tay biến thành đẩy tay sau thay vì cô lập cơ Xô"
+      ],
+      "setup_guide": {
+        "pulley_height": "Cao nhất"
+      },
+      "id": "ex-straight_arm_cable_pulldown",
+      "bundled": true,
+      "clips": [
+        "Anim_GoodForm",
+        "Anim_BadForm"
+      ]
+    },
+    {
+      "code": "INCLINE_DUMBBELL_CURL",
+      "name_vi": "Cuốn tạ đơn trên ghế nghiêng",
+      "name_en": "Incline Dumbbell Curl",
+      "equipment_type": "DUMBBELL",
+      "model_3d_glb_url": "assets/3d_bundled/incline_dumbbell_curl.glb",
+      "asset_checksum": "520c80123b50a485c10fb56ff172351e502091fde3c98902839310a3a795388f",
+      "primary_muscles": [
+        "Mat_Muscle_Biceps"
+      ],
+      "secondary_muscles": [],
+      "stabilizer_muscles": [
+        "Mat_Muscle_Shoulders"
+      ],
+      "phase_keyframes": {
+        "eccentric": {
+          "start": 0.0,
+          "end": 0.45,
+          "breath": "Hít vào"
+        },
+        "isometric": {
+          "start": 0.45,
+          "end": 0.55,
+          "breath": "Giữ lõi"
+        },
+        "concentric": {
+          "start": 0.55,
+          "end": 1.0,
+          "breath": "Thở ra"
+        }
+      },
+      "bad_form_warnings": [
+        "Đưa khuỷu tay lao về phía trước làm mất độ căng đầu dài tay trước"
+      ],
+      "setup_guide": {
+        "bench_angle_deg": 45
+      },
+      "id": "ex-incline_dumbbell_curl",
+      "bundled": true,
+      "clips": [
+        "Anim_GoodForm",
+        "Anim_BadForm"
+      ]
+    },
+    {
+      "code": "SKULL_CRUSHER",
+      "name_vi": "Nằm hạ tạ đòn qua trán",
+      "name_en": "Skull Crusher",
+      "equipment_type": "BARBELL",
+      "model_3d_glb_url": "assets/3d_bundled/skull_crusher.glb",
+      "asset_checksum": "ebf84f929465439171678ea7ff03181557aab5c21fcf6093c24652d846da5602",
+      "primary_muscles": [
+        "Mat_Muscle_Triceps"
+      ],
+      "secondary_muscles": [],
+      "stabilizer_muscles": [
+        "Mat_Muscle_Shoulders",
+        "Mat_Muscle_Abs_Core"
+      ],
+      "phase_keyframes": {
+        "eccentric": {
+          "start": 0.0,
+          "end": 0.45,
+          "breath": "Hít vào"
+        },
+        "isometric": {
+          "start": 0.45,
+          "end": 0.55,
+          "breath": "Giữ lõi"
+        },
+        "concentric": {
+          "start": 0.55,
+          "end": 1.0,
+          "breath": "Thở ra"
+        }
+      },
+      "bad_form_warnings": [
+        "Xòe hai khuỷu tay sang ngang quá rộng gây áp lực khớp khuỷu"
+      ],
+      "setup_guide": {
+        "bench_angle_deg": 0
+      },
+      "id": "ex-skull_crusher",
+      "bundled": true,
+      "clips": [
+        "Anim_GoodForm",
+        "Anim_BadForm"
+      ]
+    },
+    {
+      "code": "LEG_EXTENSION",
+      "name_vi": "Ngồi đá đùi trước với máy",
+      "name_en": "Leg Extension",
+      "equipment_type": "MACHINE",
+      "model_3d_glb_url": "assets/3d_bundled/leg_extension.glb",
+      "asset_checksum": "15d09cc138d6177d11817bf50e2afc973dfc342f03cfa8949b68e9f0aa5f2355",
+      "primary_muscles": [
+        "Mat_Muscle_Quads"
+      ],
+      "secondary_muscles": [],
+      "stabilizer_muscles": [
+        "Mat_Muscle_Abs_Core"
+      ],
+      "phase_keyframes": {
+        "eccentric": {
+          "start": 0.0,
+          "end": 0.45,
+          "breath": "Hít vào"
+        },
+        "isometric": {
+          "start": 0.45,
+          "end": 0.55,
+          "breath": "Giữ lõi"
+        },
+        "concentric": {
+          "start": 0.55,
+          "end": 1.0,
+          "breath": "Thở ra"
+        }
+      },
+      "bad_form_warnings": [
+        "Giật người nhấc mông khỏi ghế khi đá tạ nặng"
+      ],
+      "setup_guide": {
+        "pad_position": "Ngay trên mu cổ chân"
+      },
+      "id": "ex-leg_extension",
+      "bundled": true,
+      "clips": [
+        "Anim_GoodForm",
+        "Anim_BadForm"
+      ]
+    },
+    {
+      "code": "SEATED_LEG_CURL",
+      "name_vi": "Ngồi móc đùi sau với máy",
+      "name_en": "Seated Leg Curl",
+      "equipment_type": "MACHINE",
+      "model_3d_glb_url": "assets/3d_bundled/seated_leg_curl.glb",
+      "asset_checksum": "e6c35a0db5dc6a0b0b15b4c564ae25059aca27dd4044d15ec39a63ff94018cf5",
+      "primary_muscles": [
+        "Mat_Muscle_Hamstrings"
+      ],
+      "secondary_muscles": [
+        "Mat_Muscle_Calves"
+      ],
+      "stabilizer_muscles": [],
+      "phase_keyframes": {
+        "eccentric": {
+          "start": 0.0,
+          "end": 0.45,
+          "breath": "Hít vào"
+        },
+        "isometric": {
+          "start": 0.45,
+          "end": 0.55,
+          "breath": "Giữ lõi"
+        },
+        "concentric": {
+          "start": 0.55,
+          "end": 1.0,
+          "breath": "Thở ra"
+        }
+      },
+      "bad_form_warnings": [
+        "Nhổm lưng khỏi đệm ghế dùng đà"
+      ],
+      "setup_guide": {
+        "thigh_pad": "Khóa chặt trên đầu gối"
+      },
+      "id": "ex-seated_leg_curl",
+      "bundled": true,
+      "clips": [
+        "Anim_GoodForm",
+        "Anim_BadForm"
+      ]
+    },
+    {
+      "code": "BARBELL_HIP_THRUST",
+      "name_vi": "Đẩy hông với tạ đòn",
+      "name_en": "Barbell Hip Thrust",
+      "equipment_type": "BARBELL",
+      "model_3d_glb_url": "assets/3d_bundled/barbell_hip_thrust.glb",
+      "asset_checksum": "2f6ef45ead3603ad95ef3554cd025f3d1dcec3da11788df19bb390fdc633a9ea",
+      "primary_muscles": [
+        "Mat_Muscle_Glutes"
+      ],
+      "secondary_muscles": [
+        "Mat_Muscle_Hamstrings",
+        "Mat_Muscle_Quads"
+      ],
+      "stabilizer_muscles": [
+        "Mat_Muscle_Abs_Core"
+      ],
+      "phase_keyframes": {
+        "eccentric": {
+          "start": 0.0,
+          "end": 0.45,
+          "breath": "Hít vào"
+        },
+        "isometric": {
+          "start": 0.45,
+          "end": 0.55,
+          "breath": "Giữ lõi"
+        },
+        "concentric": {
+          "start": 0.55,
+          "end": 1.0,
+          "breath": "Thở ra"
+        }
+      },
+      "bad_form_warnings": [
+        "Ưỡn quá mức thắt lưng khi đẩy đỉnh hông"
+      ],
+      "setup_guide": {
+        "bench_position": "Ngay dưới xương bả vai"
+      },
+      "id": "ex-barbell_hip_thrust",
+      "bundled": true,
+      "clips": [
+        "Anim_GoodForm",
+        "Anim_BadForm"
+      ]
+    },
+    {
+      "code": "CABLE_GLUTE_KICKBACK",
+      "name_vi": "Đá chân ra sau với dây cáp",
+      "name_en": "Cable Glute Kickback",
+      "equipment_type": "CABLE",
+      "model_3d_glb_url": "assets/3d_bundled/cable_glute_kickback.glb",
+      "asset_checksum": "6d689cbd62ad85fe28fe080c201f2813bd477de03dc6009a6df86c816f6b4359",
+      "primary_muscles": [
+        "Mat_Muscle_Glutes"
+      ],
+      "secondary_muscles": [
+        "Mat_Muscle_Hamstrings"
+      ],
+      "stabilizer_muscles": [
+        "Mat_Muscle_Abs_Core"
+      ],
+      "phase_keyframes": {
+        "eccentric": {
+          "start": 0.0,
+          "end": 0.45,
+          "breath": "Hít vào"
+        },
+        "isometric": {
+          "start": 0.45,
+          "end": 0.55,
+          "breath": "Giữ lõi"
+        },
+        "concentric": {
+          "start": 0.55,
+          "end": 1.0,
+          "breath": "Thở ra"
+        }
+      },
+      "bad_form_warnings": [
+        "Võng lưng dưới để vung chân cao quá mức"
+      ],
+      "setup_guide": {
+        "pulley_height": "Thấp nhất"
+      },
+      "id": "ex-cable_glute_kickback",
+      "bundled": true,
+      "clips": [
+        "Anim_GoodForm",
+        "Anim_BadForm"
+      ]
+    },
+    {
+      "code": "CABLE_CRUNCH",
+      "name_vi": "Quỳ gối gập bụng với dây cáp",
+      "name_en": "Cable Crunch",
+      "equipment_type": "CABLE",
+      "model_3d_glb_url": "assets/3d_bundled/cable_crunch.glb",
+      "asset_checksum": "3fa1f8256071c10b3fc96e25deb64643ad7c8708ef5b090a8a498f9e76d8d377",
+      "primary_muscles": [
+        "Mat_Muscle_Abs_Core"
+      ],
+      "secondary_muscles": [],
+      "stabilizer_muscles": [
+        "Mat_Muscle_Shoulders"
+      ],
+      "phase_keyframes": {
+        "eccentric": {
+          "start": 0.0,
+          "end": 0.45,
+          "breath": "Hít vào"
+        },
+        "isometric": {
+          "start": 0.45,
+          "end": 0.55,
+          "breath": "Giữ lõi"
+        },
+        "concentric": {
+          "start": 0.55,
+          "end": 1.0,
+          "breath": "Thở ra"
+        }
+      },
+      "bad_form_warnings": [
+        "Gập hông hạ mông thay vì cuộn đốt sống ngực bằng cơ bụng"
+      ],
+      "setup_guide": {
+        "pulley_height": "Cao nhất (dây thừng)"
+      },
+      "id": "ex-cable_crunch",
+      "bundled": true,
+      "clips": [
+        "Anim_GoodForm",
+        "Anim_BadForm"
       ]
     }
   ]

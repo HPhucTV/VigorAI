@@ -1,30 +1,52 @@
-// [OWNER: M2] Stub man hinh AI Readiness & Ban do Phuc hoi 3D (F20-F23) & Analytics (F22, F24 Radar)
+// [OWNER: M2] Hub man hinh AI Readiness & Phuc hoi 3D (F20-F23) va Bieu do Volume / Radar (F22, F24) (T-M2-10, T-M2-11)
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
-import '../../../core/theme/app_theme.dart';
-import '../../gym3d/presentation/widgets/muscle_3d_viewer_widget.dart';
+import '../data/ai_analytics_repository.dart';
+import '../muscle_balance/muscle_radar_view.dart';
+import '../readiness_3d/readiness_recovery_3d_view.dart';
+import '../volume_analytics/volume_analytics_view.dart';
 
-class AiCoachHubScreen extends StatelessWidget {
+class AiCoachHubScreen extends ConsumerWidget {
   const AiCoachHubScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('AI Coach & Phục hồi 3D (F20 - F24)')),
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            Muscle3DViewerWidget(
-              glbAssetOrUrl: 'assets/3d_bundled/base_mannequin.glb',
-              muscleColorsMap: const {
-                MuscleMaterialIds.quads: AppColors.muscleSecondaryOrange,
-                MuscleMaterialIds.chest: AppColors.muscleRecoveredGreen,
+  Widget build(BuildContext context, WidgetRef ref) {
+    return DefaultTabController(
+      length: 3,
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('AI Coach & Phân tích (F20–F24)'),
+          actions: [
+            IconButton(
+              tooltip: 'Làm mới dữ liệu',
+              icon: const Icon(Icons.refresh),
+              onPressed: () {
+                ref.invalidate(aiReadinessProvider);
+                ref.invalidate(analyticsSummaryProvider(90));
+                ref.invalidate(analyticsSummaryProvider(30));
               },
-              onMuscleTap: (muscleId) {},
             ),
-            const SizedBox(height: 16),
-            const Text('AI Coach & Recovery 3D Hub — Triển khai đầy đủ ở Sprint 2 (T-M2-10/11)'),
+            IconButton(
+              tooltip: 'Vào buổi tập',
+              icon: const Icon(Icons.fitness_center),
+              onPressed: () => context.push('/workout/live'),
+            ),
+          ],
+          bottom: const TabBar(
+            tabs: [
+              Tab(icon: Icon(Icons.accessibility_new, size: 18), text: 'Phục hồi 3D'),
+              Tab(icon: Icon(Icons.bar_chart, size: 18), text: 'Volume & PR'),
+              Tab(icon: Icon(Icons.radar, size: 18), text: 'Radar Cơ'),
+            ],
+          ),
+        ),
+        body: const TabBarView(
+          children: [
+            ReadinessRecovery3DView(),
+            VolumeAnalyticsView(),
+            MuscleRadarView(),
           ],
         ),
       ),

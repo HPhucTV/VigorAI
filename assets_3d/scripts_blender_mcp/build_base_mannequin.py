@@ -44,8 +44,28 @@ REQUIRED_SOCKETS = [
 REQUIRED_CLIPS = ["Anim_GoodForm", "Anim_BadForm"]
 
 DEFAULT_BUNDLE_PATH = Path(
+    r"D:\human-base-meshes-bundle-v1.4.1\human_base_meshes_bundle.blend"
+)
+LEGACY_BUNDLE_PATH = Path(
     r"C:\Users\tranh\Downloads\human-base-meshes-bundle-v1.4.1\human_base_meshes_bundle.blend"
 )
+
+
+def resolve_bundle_path(bundle_path: str | Path | None = None) -> Path:
+    """Resolve human_base_meshes_bundle.blend path from arg, env, or known local paths."""
+    candidates: list[Path] = []
+    if bundle_path is not None:
+        candidates.append(Path(bundle_path))
+    env_path = os.environ.get("VIGORAI_HUMAN_BUNDLE_PATH")
+    if env_path:
+        candidates.append(Path(env_path))
+    candidates.extend([DEFAULT_BUNDLE_PATH, LEGACY_BUNDLE_PATH])
+    for candidate in candidates:
+        if candidate.exists():
+            return candidate
+    raise FileNotFoundError(
+        f"Khong tim thay human_base_meshes_bundle.blend tai cac duong dan: {[str(c) for c in candidates]}"
+    )
 
 # Linear RGBA conversions for VigorAI PBR colors
 COLOR_MUSCLE_GREY = (0.341, 0.341, 0.341, 1.0)  # sRGB #9E9E9E
@@ -114,7 +134,7 @@ def _create_pbr_material(
     if not getattr(mat, "use_nodes", True):
         mat.use_nodes = True
     nt = mat.node_tree
-    bsdf = nt.nodes.get("Principled BSDF")
+    bsdf = next((n for n in nt.nodes if n.type == "BSDF_PRINCIPLED"), None)
     if bsdf is None:
         nt.nodes.clear()
         bsdf = nt.nodes.new("ShaderNodeBsdfPrincipled")
@@ -126,15 +146,22 @@ def _create_pbr_material(
     return mat
 
 
-def _load_and_normalize_base_mesh(bundle_path: Path, collection):
+def _load_and_normalize_base_mesh(
+    bundle_path: Path,
+    collection,
+    mesh_object_name: str = "GEO-body_male_realistic",
+    target_height: float = 1.78,
+):
     import bpy  # type: ignore
     from mathutils import Vector  # type: ignore
 
-    if not bundle_path.exists():
-        raise FileNotFoundError(f"Khong tim thay human_base_meshes_bundle.blend tai: {bundle_path}")
-
-    with bpy.data.libraries.load(str(bundle_path), link=False) as (_, dt):
-        dt.objects = ["GEO-body_male_realistic"]
+    resolved = resolve_bundle_path(bundle_path)
+    with bpy.data.libraries.load(str(resolved), link=False) as (df, dt):
+        if mesh_object_name not in df.objects:
+            raise ValueError(
+                f"Khong tim thay '{mesh_object_name}' trong {resolved}"
+            )
+        dt.objects = [mesh_object_name]
 
     src_obj = dt.objects[0]
     collection.objects.link(src_obj)
@@ -158,7 +185,7 @@ def _load_and_normalize_base_mesh(bundle_path: Path, collection):
     ys = [v.co.y for v in me.vertices]
     zs = [v.co.z for v in me.vertices]
     h = max(zs) - min(zs)
-    scale = 1.78 / h
+    scale = target_height / h
     cx = 0.5 * (min(xs) + max(xs))
     cy = 0.5 * (min(ys) + max(ys))
     cz = min(zs)
@@ -277,7 +304,7 @@ def _classify_polygon(
     return "Mat_Body_Neutral"
 
 
-def _create_armature(collection):
+def _create_armature(collection, height_scale: float = 1.0):
     import bpy  # type: ignore
     from mathutils import Vector  # type: ignore
 
@@ -290,6 +317,9 @@ def _create_armature(collection):
     bpy.ops.object.mode_set(mode="EDIT")
     eb = arm_data.edit_bones
 
+    def sc(pt: tuple[float, float, float]) -> Vector:
+        return Vector((pt[0] * height_scale, pt[1] * height_scale, pt[2] * height_scale))
+
     def add_bone(
         name: str,
         head: tuple[float, float, float],
@@ -299,8 +329,8 @@ def _create_armature(collection):
         roll_axis: tuple[float, float, float] = (1.0, 0.0, 0.0),
     ):
         b = eb.new(name)
-        b.head = Vector(head)
-        b.tail = Vector(tail)
+        b.head = sc(head)
+        b.tail = sc(tail)
         if parent_name:
             b.parent = eb[parent_name]
             b.use_connect = connected
@@ -382,13 +412,18 @@ def _create_armature(collection):
     return arm_obj
 
 
-def _create_sockets(collection, arm_obj) -> dict[str, object]:
+def _create_sockets(collection, arm_obj, height_scale: float = 1.0) -> dict[str, object]:
     import bpy  # type: ignore
     from mathutils import Matrix  # type: ignore
 
     sockets = {}
 
     def add_socket(name: str, world_pos: tuple[float, float, float], bone_name: str | None):
+        scaled = (
+            world_pos[0] * height_scale,
+            world_pos[1] * height_scale,
+            world_pos[2] * height_scale,
+        )
         empty = bpy.data.objects.new(name, None)
         empty.empty_display_type = "PLAIN_AXES"
         empty.empty_display_size = 0.06
@@ -398,9 +433,9 @@ def _create_sockets(collection, arm_obj) -> dict[str, object]:
             empty.parent_type = "BONE"
             empty.parent_bone = bone_name
             bpy.context.view_layer.update()
-            empty.matrix_world = Matrix.Translation(world_pos)
+            empty.matrix_world = Matrix.Translation(scaled)
         else:
-            empty.location = world_pos
+            empty.location = scaled
         sockets[name] = empty
         return empty
 
@@ -454,7 +489,10 @@ def set_heatmap_preview_colors(enabled: bool = True) -> None:
     for _, mat_name in MUSCLE_MESH_MATERIAL_PAIRS:
         mat = bpy.data.materials.get(mat_name)
         if mat and mat.node_tree:
-            bsdf = mat.node_tree.nodes.get("Principled BSDF")
+            bsdf = next(
+                (n for n in mat.node_tree.nodes if n.type == "BSDF_PRINCIPLED"),
+                None,
+            )
             if bsdf:
                 rgba = HEATMAP_PREVIEW_COLORS[mat_name] if enabled else COLOR_MUSCLE_GREY
                 bsdf.inputs["Base Color"].default_value = rgba
@@ -463,9 +501,12 @@ def set_heatmap_preview_colors(enabled: bool = True) -> None:
 def build_mannequin(
     blend_path: str | Path | None = None,
     glb_paths: Iterable[str | Path] = (),
-    bundle_path: Path = DEFAULT_BUNDLE_PATH,
+    bundle_path: Path | None = None,
     decimate_ratio: float = 0.56,
     keep_heatmap_preview: bool = False,
+    mesh_object_name: str = "GEO-body_male_realistic",
+    target_height: float = 1.78,
+    use_draco: bool = False,
 ) -> dict:
     """Dung hoan chinh Base Mannequin Low-Poly Anatomical Faceted tu Blender Human Base Meshes."""
     import bpy  # type: ignore
@@ -480,8 +521,16 @@ def build_mannequin(
     scene.frame_start = 1
     scene.frame_end = 90
 
+    resolved_bundle = resolve_bundle_path(bundle_path)
+    height_scale = target_height / 1.78
+
     # 1. Load & normalize official Blender Human Base Mesh
-    unified = _load_and_normalize_base_mesh(Path(bundle_path), col)
+    unified = _load_and_normalize_base_mesh(
+        resolved_bundle,
+        col,
+        mesh_object_name=mesh_object_name,
+        target_height=target_height,
+    )
     orig_me = unified.data
 
     # Build KDTree of original polygon centers -> original .sculpt_face_set ID
@@ -533,18 +582,27 @@ def build_mannequin(
 
     slot_index = {mname: idx for idx, mname in enumerate(mat_slots_order)}
 
-    # Assign each decimated polygon cleanly using original face-set + anatomical rules
+    # Assign each decimated polygon cleanly using original face-set + normalized anatomical rules
+    inv_scale = 1.0 / height_scale if height_scale > 0 else 1.0
     for poly in me.polygons:
         _, orig_idx, _ = kd.find(poly.center)
         sid = orig_sids[orig_idx]
         c = poly.center
         n = poly.normal
-        target_mat = _classify_polygon(sid, c.x, c.y, c.z, n.x, n.y, n.z)
+        target_mat = _classify_polygon(
+            sid,
+            c.x * inv_scale,
+            c.y * inv_scale,
+            c.z * inv_scale,
+            n.x,
+            n.y,
+            n.z,
+        )
         poly.material_index = slot_index[target_mat]
     me.update()
 
     # 4. Create Armature_GymHuman and bind unified watertight mesh via Automatic Heat Weights
-    arm_obj = _create_armature(col)
+    arm_obj = _create_armature(col, height_scale=height_scale)
     bpy.ops.object.select_all(action="DESELECT")
     unified.select_set(True)
     arm_obj.select_set(True)
@@ -587,7 +645,7 @@ def build_mannequin(
         bpy.data.materials.remove(tmp_head_mat)
 
     # 6. Create 4 Empty Sockets parented to bones
-    _create_sockets(col, arm_obj)
+    _create_sockets(col, arm_obj, height_scale=height_scale)
     bpy.context.view_layer.update()
 
     total_tris = sum(
@@ -595,7 +653,7 @@ def build_mannequin(
         for obj in bpy.data.objects
         if obj.type == "MESH"
     )
-    print(f"[VigorAI] Seamless Base Mannequin built: {total_tris} triangles across {sum(1 for o in bpy.data.objects if o.type == 'MESH')} meshes")
+    print(f"[VigorAI] Seamless Base Mannequin ({mesh_object_name}) built: {total_tris} triangles across {sum(1 for o in bpy.data.objects if o.type == 'MESH')} meshes")
 
     if keep_heatmap_preview:
         set_heatmap_preview_colors(True)
@@ -609,12 +667,12 @@ def build_mannequin(
         print(f"[VigorAI] Saved .blend -> {blend_path}")
 
     for glb_out in glb_paths:
-        export_draco_glb(str(glb_out))
+        export_draco_glb(str(glb_out), use_draco=use_draco)
 
     return {"total_triangles": total_tris}
 
 
-def export_draco_glb(filepath: str) -> None:
+def export_draco_glb(filepath: str, use_draco: bool = False) -> None:
     import bpy  # type: ignore
 
     out = Path(filepath)
@@ -622,7 +680,7 @@ def export_draco_glb(filepath: str) -> None:
     bpy.ops.export_scene.gltf(
         filepath=str(out),
         export_format="GLB",
-        export_draco_mesh_compression_enable=False,
+        export_draco_mesh_compression_enable=use_draco,
         export_texcoords=False,
         export_tangents=False,
         export_normals=True,
@@ -637,12 +695,31 @@ def export_draco_glb(filepath: str) -> None:
 
 if __name__ == "__main__":
     repo_root = Path(__file__).resolve().parents[2]
-    blend_out = repo_root / "assets_3d" / "source_blend" / "base_mannequin.blend"
-    glb_export = repo_root / "assets_3d" / "exported_glb" / "base_mannequin.glb"
-    glb_bundled = repo_root / "mobile" / "assets" / "3d_bundled" / "base_mannequin.glb"
+    preview = bool(os.environ.get("VIGORAI_HEATMAP_PREVIEW"))
+    use_draco = bool(os.environ.get("VIGORAI_USE_DRACO"))
 
+    # 1. Male Mannequin (1.78m)
     build_mannequin(
-        blend_path=blend_out,
-        glb_paths=[glb_export, glb_bundled],
-        keep_heatmap_preview=bool(os.environ.get("VIGORAI_HEATMAP_PREVIEW")),
+        blend_path=repo_root / "assets_3d" / "source_blend" / "base_mannequin.blend",
+        glb_paths=[
+            repo_root / "assets_3d" / "exported_glb" / "base_mannequin.glb",
+            repo_root / "mobile" / "assets" / "3d_bundled" / "base_mannequin.glb",
+        ],
+        mesh_object_name="GEO-body_male_realistic",
+        target_height=1.78,
+        keep_heatmap_preview=preview,
+        use_draco=use_draco,
+    )
+
+    # 2. Female Mannequin (1.66m) for Body Avatar F13
+    build_mannequin(
+        blend_path=repo_root / "assets_3d" / "source_blend" / "base_mannequin_female.blend",
+        glb_paths=[
+            repo_root / "assets_3d" / "exported_glb" / "base_mannequin_female.glb",
+            repo_root / "mobile" / "assets" / "3d_bundled" / "base_mannequin_female.glb",
+        ],
+        mesh_object_name="GEO-body_female_realistic",
+        target_height=1.66,
+        keep_heatmap_preview=preview,
+        use_draco=use_draco,
     )

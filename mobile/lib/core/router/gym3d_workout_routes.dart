@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../features/gym3d/presentation/exercise_3d_detail_screen.dart';
 import '../../features/gym3d/presentation/gym3d_library_screen.dart';
 import '../../features/workout/presentation/live_workout_logger_screen.dart';
+import '../../features/workout/presentation/routines_screen.dart';
 
 final List<RouteBase> gym3dWorkoutRoutes = [
   GoRoute(
@@ -19,8 +20,16 @@ final List<RouteBase> gym3dWorkoutRoutes = [
     ),
   ),
   GoRoute(
+    path: '/workout/routines',
+    name: 'workout_routines',
+    builder: (context, state) => const RoutinesScreen(),
+  ),
+  GoRoute(
     path: '/workout/live',
     name: 'live_workout_logger',
-    builder: (context, state) => const LiveWorkoutLoggerScreen(),
+    builder: (context, state) => LiveWorkoutLoggerScreen(
+      initialRoutineId: state.uri.queryParameters['routineId'],
+      initialExerciseCode: state.uri.queryParameters['exerciseCode'],
+    ),
   ),
 ];

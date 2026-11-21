@@ -17,6 +17,247 @@
 
 ---
 
+## Phiên 24 — 2026-11-21 21:42 | Thành viên: M2 (3D Blender MCP, Workout, Recovery 3D & Charts) | Task: `T-M2-07` (`[x]` Hoàn tất 100% — Nhóm 10 Bụng & Lõi / Abs & Core — 3 bài, tổng **30/30** bài `gym.txt`)
+- **Phạm vi thực hiện (Strict `[OWNER: M2]`):**
+  - Hoàn thiện **3 bài Nhóm 10 Cơ Bụng & Lõi (`Abs & Core`)** trong `gym.txt` qua Blender 5.3 headless script (`build_sprint2_exercises.py`), nâng tổng tiến độ `T-M2-07` lên **30/30 bài (100%)** và tổng asset `.glb` đồng bộ lên **33/33 file** (gồm 2 Mannequin Nam/Nữ + `PUSH_UP` MVP + 30/30 bài `gym.txt`):
+    1. `HANGING_LEG_RAISE` (*Treo người nâng chân*): `hanging_leg_raise.glb` (`1,412,008 B`, `12,176 tris`, SHA-256 `f55ba36ec0de...`) & `abs_hanging_leg_raise.blend` (`Anim_GoodForm` kiểm soát cuộn xương chậu nâng chân song song/cao không đung đưa vs `Anim_BadForm` đánh lăng hông kipping lấy đà; dùng giàn Pull-Up `Equip_PullUpRig`).
+    2. `CABLE_CRUNCH` (*Quỳ gối gập bụng với dây cáp*): `cable_crunch.glb` (`1,462,356 B`, `12,292 tris`, SHA-256 `3fa1f8256071...`) & `abs_cable_crunch.blend` (`Anim_GoodForm` khóa hông quỳ trên thảm `Equip_KneelingMat` & cuộn tròn cột sống ngực `24° -> 96°`, giữ đầu dây thừng cạnh thái dương vs `Anim_BadForm` giữ lưng thẳng đơ & ngồi lùi hông về gót; tinh chỉnh độ cao gối để không xuyên đáy thảm).
+    3. `PLANK` (*Chống khuỷu tay giữ thẳng người*): `plank.glb` (`1,395,112 B`, `11,860 tris`, SHA-256 `6001ec404432...`) & `abs_plank.blend` (`Anim_GoodForm` giữ đường thẳng vai–hông–cổ chân trên thảm `Equip_Mat` với nhịp thở siết core vs `Anim_BadForm` lỗi kép đẩy hông chữ V ở `f=1` rồi sụp võng thắt lưng ở `f=50`; tinh chỉnh góc cổ chân/bàn chân chống chuẩn trên mặt thảm `Z >= 0.018`).
+- **Files đã tạo / cập nhật:**
+  - `assets_3d/scripts_blender_mcp/build_sprint2_exercises.py` (cập nhật & tinh chỉnh pose `_pose_cable_crunch`, `_pose_plank`)
+  - `assets_3d/exported_glb/{hanging_leg_raise,cable_crunch,plank}.glb` & `mobile/assets/3d_bundled/{hanging_leg_raise,cable_crunch,plank}.glb` (bit-for-bit giống nhau)
+  - `assets_3d/source_blend/abs_{hanging_leg_raise,cable_crunch,plank}.blend`
+  - `assets_3d/exported_glb/assets_manifest.json` (đồng bộ đủ `33` assets) & `mobile/assets/mock_json/mock_m2_exercises.json` (cập nhật `bundled: true`, SHA-256, `name_vi` cho `PLANK`)
+  - `mobile/lib/features/gym3d/data/exercise_repository.dart` (thêm mapping `HANGING_LEG_RAISE`, `CABLE_CRUNCH`, `PLANK` vào `_localBundledGlbs`)
+  - `docs/taskboard.md` (chuyển trạng thái `T-M2-07` sang `[x]`)
+- **Kiểm chứng & Kết quả:**
+  - Kiểm tra trực quan bằng Blender 5.3 EEVEE (`render_previews.py` đa góc & đa khung hình `f=1, 25, 50, 75, 100`), phát hiện & sửa dứt điểm lỗi mũi chân `PLANK` xuyên đáy thảm và lỗi gối `CABLE_CRUNCH` (`Anim_BadForm`) sát đáy thảm, sau đó render & kiểm tra lại sạch 100%.
+  - Chạy script kiểm chứng headless `verify_sprint2_abs_all30.py` trên Blender 5.3 (`exit 0`): toàn bộ `33/33` file `.glb` đạt `GLB_OK` (`11,848 – 12,796 tris <= 25,000`, `1,315,064 – 1,462,356 B` trong ngưỡng `800KB–2.5MB`, đủ 11 `Mat_Muscle_*`, `clips=['Anim_GoodForm', 'Anim_BadForm']`), `REPO_AND_MOCK_ALL30_OK`, 3 file `abs_*.blend` đạt `BLEND_OK`, `ALL_DART_RELATIVE_IMPORTS_OK (checked=70)`.
+  - `git status -s` xác nhận mọi thay đổi nằm đúng phạm vi `[OWNER: M2]` + `docs/taskboard.md` + `session_log.md`; không chạm file `[LOCKED STUB]` hay code M1/M3/M4. *(Lưu ý: máy Windows hiện tại chưa cài Flutter SDK nên chưa chạy `flutter analyze`/`flutter test` cục bộ.)*
+- **Bước tiếp theo:**
+  - Sẵn sàng để `M3` upload toàn bộ gói `.glb` lên MinIO/CDN (`T-M3-09`) và chạy CI `flutter analyze` / `flutter test` kiểm tra màn hình Gym 3D trên thiết bị/emulator.
+
+---
+
+## Phiên 23 — 2026-11-21 21:29 | Thành viên: M2 (3D Blender MCP, Workout, Recovery 3D & Charts) | Task: `T-M2-07` (`[~]` Nhóm 9 Cơ Mông / Glutes — 3 bài, tổng **27/30** bài `gym.txt`)
+- **Mục tiêu phiên:** Tiếp tục dựng, kiểm tra trực quan đa góc/đa khung hình và đồng bộ SHA-256 cho **3 bài Nhóm 9: Cơ Mông (Glutes)** theo `gym.txt` (`BARBELL_HIP_THRUST`, `WALKING_LUNGE`, `CABLE_GLUTE_KICKBACK`) trong phạm vi `[OWNER: M2]`.
+- **Những file đã tạo / chỉnh sửa:**
+  - `assets_3d/scripts_blender_mcp/build_sprint2_exercises.py`: Bổ sung `Phase 9` với `_build_hip_thrust_bench_object`, `_build_cable_kickback_station`, cài đặt `_pose_barbell_hip_thrust`/`build_barbell_hip_thrust`, `_pose_walking_lunge`/`build_walking_lunge`, `_pose_cable_glute_kickback`/`build_cable_glute_kickback` (`30 FPS`, `100 frames`) và đăng ký vào `EXERCISE_SPECS` + `ordered_specs`.
+  - **File 3D & `.blend` mới:**
+    - `barbell_hip_thrust.glb` (`1,427,712 B`, `12,368 tris`, SHA-256 `2f6ef45ead36...`) + `assets_3d/source_blend/glutes_barbell_hip_thrust.blend`
+    - `walking_lunge.glb` (`1,404,556 B`, `12,256 tris`, SHA-256 `874373cedaf6...`) + `assets_3d/source_blend/glutes_walking_lunge.blend`
+    - `cable_glute_kickback.glb` (`1,410,336 B`, `12,148 tris`, SHA-256 `6d689cbd62ad...`) + `assets_3d/source_blend/glutes_cable_glute_kickback.blend`
+    - Sao chép đồng nhất từng byte giữa `assets_3d/exported_glb/` và `mobile/assets/3d_bundled/`.
+  - `assets_3d/exported_glb/assets_manifest.json` & `mobile/assets/mock_json/mock_m2_exercises.json`: Đồng bộ SHA-256 (`30` assets trong manifest, `39` bài trong mock JSON), `bundled: true`, `clips: ["Anim_GoodForm", "Anim_BadForm"]` và chuẩn hóa `name_vi` khớp `gym.txt` Phần 9 (`"Đẩy hông với tạ đòn"`, `"Bước chùng chân với tạ đơn"`, `"Đá chân ra sau với dây cáp"`).
+  - `mobile/lib/features/gym3d/data/exercise_repository.dart`: Đăng ký thêm `BARBELL_HIP_THRUST`, `WALKING_LUNGE`, `CABLE_GLUTE_KICKBACK` vào `_localBundledGlbs`.
+  - `docs/taskboard.md`: Cập nhật tiến độ `T-M2-07` lên **27/30** bài (**90%**).
+- **Quyết định kỹ thuật / Lưu ý quan trọng:**
+  - *Đẩy hông với tạ đòn (`BARBELL_HIP_THRUST`):* Bục ghế ngang (`Y=+0.39..+0.75, Z_top=0.405`) đỡ đúng vùng bả vai trong suốt cung `30° -> 2°`, hai cẳng chân vuông góc `90°` với sàn (`Y=-0.40`), thanh đòn đặt trên nếp gấp hông; `Anim_BadForm` đặt chân gần mông (`Y=-0.22`), ưỡn vồng thắt lưng quá mức (`Pelvis Z=0.54`) và ngửa cổ ra sau ghế.
+  - *Bước chùng chân với tạ đơn (`WALKING_LUNGE`):* Bước tách rộng chuẩn (`L` `Y=-0.34`, `R` `Y=+0.34`), hạ thẳng hông xuống `Z=0.51` tạo hai góc gối `90°–90°` giữ hai tạ đơn dọc hai bên hông không chạm đùi; `Anim_BadForm` bước ngắn (`-0.22`), lao gối trước quá mũi chân + chụm gối (Knee Valgus), nhấc gót và đổ lưng `34°`.
+  - *Đá chân ra sau với dây cáp (`CABLE_GLUTE_KICKBACK`):* Ròng rọc thấp lệch phải `X=-0.14` thẳng hàng chân đá `R`, tay vịn ngực `Z=1.18`, sửa hướng khoen đai cổ chân `+Y` và giữ đường chân đá thẳng hợp lý (`GoodForm` `Y=+0.52, Z=0.44`; `BadForm` `Y=+0.66, Z=0.50` kèm võng lưng dưới rõ rệt) giúp dây cáp luôn đi dưới gối không cắt chân hay khớp gối.
+- **Kiểm tra / Kết quả chạy thử:**
+  - Render EEVEE đa góc & các mốc khung hình (`f=1, 25, 50, 75, 100`) qua Blender 5.3 CLI (`render_previews.py`) và kiểm tra ảnh trực quan sau lần chỉnh cuối xác nhận sạch xuyên thấu cho cả 3 bài.
+  - Headless Blender 5.3 (`verify_sprint2_glutes.py`, exit 0): **30/30** `.glb` khớp SHA-256 bit-for-bit giữa `exported_glb/` và `3d_bundled/`, kích thước hợp lệ (`1,315,064 B – 1,446,388 B`), đủ 11 `Mat_Muscle_*`, `extensionsUsed=[]`, `<= 12,796 tris` (`< 25,000`), đủ `['Anim_GoodForm', 'Anim_BadForm']`; **3/3** file `.blend` mới và `mock_m2_exercises.json` / `exercise_repository.dart` hợp lệ; `ALL_DART_RELATIVE_IMPORTS_OK (checked=70)`; `git status -s` giữ nguyên biên `[OWNER: M2]`.
+  - *Lưu ý:* Máy chưa cài Flutter SDK nên chưa chạy trực tiếp `flutter analyze` / `flutter test`.
+- **Việc cần làm ở phiên kế tiếp:**
+  - Chờ người dùng kiểm thử 3 bài Nhóm cơ Mông; tiếp theo dựng **Nhóm 10 (nhóm cuối): Cơ Bụng & Lõi (Abs & Core)** gồm 3 bài trong `gym.txt` (`Treo người nâng chân`, `Quỳ gối gập bụng với dây cáp`, `Chống khuỷu tay giữ thẳng người`).
+
+---
+
+## Phiên 22 — 2026-11-21 21:18 | Thành viên: M2 (3D Blender MCP, Workout, Recovery 3D & Charts) | Task: `T-M2-07` (`[~]` Nhóm 8 Cơ Đùi sau / Hamstrings — 3 bài, tổng **24/30** bài `gym.txt`)
+- **Mục tiêu phiên:** Tiếp tục dựng, kiểm tra trực quan đa góc/đa khung hình và đồng bộ SHA-256 cho **3 bài Nhóm 8: Cơ Đùi sau (Hamstrings)** theo `gym.txt` (`ROMANIAN_DEADLIFT`, `LEG_CURL_MACHINE`, `SEATED_LEG_CURL`) trong phạm vi `[OWNER: M2]`.
+- **Những file đã tạo / chỉnh sửa:**
+  - `assets_3d/scripts_blender_mcp/build_sprint2_exercises.py`: Bổ sung `Phase 8` với `_build_lying_leg_curl_machine`, `_build_seated_leg_curl_machine`, cài đặt `_pose_romanian_deadlift`/`build_romanian_deadlift`, `_pose_leg_curl_machine`/`build_leg_curl_machine`, `_pose_seated_leg_curl`/`build_seated_leg_curl` (`30 FPS`, `100 frames`) và đăng ký vào `EXERCISE_SPECS` + `ordered_specs`.
+  - **File 3D & `.blend` mới:**
+    - `romanian_deadlift.glb` (`1,417,600 B`, `12,284 tris`, SHA-256 `1792c1eca5d8...`) + `assets_3d/source_blend/hamstrings_romanian_deadlift.blend`
+    - `leg_curl_machine.glb` (`1,417,128 B`, `12,520 tris`, SHA-256 `9b981f5936df...`) + `assets_3d/source_blend/hamstrings_leg_curl_machine.blend`
+    - `seated_leg_curl.glb` (`1,428,052 B`, `12,796 tris`, SHA-256 `e6c35a0db5dc...`) + `assets_3d/source_blend/hamstrings_seated_leg_curl.blend`
+    - Sao chép đồng nhất từng byte giữa `assets_3d/exported_glb/` và `mobile/assets/3d_bundled/`.
+  - `assets_3d/exported_glb/assets_manifest.json` & `mobile/assets/mock_json/mock_m2_exercises.json`: Đồng bộ SHA-256 (`27` assets trong manifest, `39` bài trong mock JSON), `bundled: true`, `clips: ["Anim_GoodForm", "Anim_BadForm"]` và chuẩn hóa `name_vi` khớp `gym.txt` Phần 8 (`"Kéo tạ đòn kiểu Romania"`, `"Nằm sấp móc đùi sau với máy"`, `"Ngồi móc đùi sau với máy"`).
+  - `mobile/lib/features/gym3d/data/exercise_repository.dart`: Đăng ký thêm `ROMANIAN_DEADLIFT`, `LEG_CURL_MACHINE`, `SEATED_LEG_CURL` vào `_localBundledGlbs`.
+  - `docs/taskboard.md`: Cập nhật tiến độ `T-M2-07` lên **24/30** bài (**80%**).
+- **Quyết định kỹ thuật / Lưu ý quan trọng:**
+  - *Kéo tạ đòn kiểu Romania (`ROMANIAN_DEADLIFT`):* Gối giữ độ chùng cố định `~15°`, đẩy mạnh hông ra sau (Hip Hinge `Pelvis Y = +0.30, Z = 0.77`), lưng phẳng nghiêng `~72°`, thanh đòn trượt sát đùi/ống đồng xuống giữa ống đồng (`Z = 0.42`, không chạm sàn); `Anim_BadForm` gập gối thành Squat (`Z = 0.57`), cuộn cong lưng chữ C (`95°`) và để thanh đòn trôi xa ống đồng.
+  - *Nằm sấp móc đùi sau (`LEG_CURL_MACHINE`):* Đặt tháp tạ về phía trước-phải (`X = -0.46, Y = -0.78`) giữ thoáng hoàn toàn vùng hông/đùi sau khi nhìn ngang; con lăn đồng tâm khớp gối `(0, 0.47, 0.49)` cuốn đều qua cung `8° -> 102°` với hướng bàn chân giữ liên tục theo `calf_dir.cross((1,0,0))` không lật cổ chân; `Anim_BadForm` nhổm hông lên `+10.5 cm` tách khỏi mặt đệm.
+  - *Ngồi móc đùi sau (`SEATED_LEG_CURL`):* Lùi khung chân ghế về `Y = +0.10` giữ thoáng gầm ghế khi cẳng chân cuốn tới `96°`, bổ sung đệm khóa trên đầu gối (`Thigh Lockdown Pad`) kèm tay cầm phía trên đệm đùi, đặt con lăn sau gót Achilles (`Z_local = +0.088`); `Anim_BadForm` nhổm lưng & vai lao về trước (`80° -> 114°`) rời khỏi đệm tựa lưng.
+- **Kiểm tra / Kết quả chạy thử:**
+  - Render EEVEE đa góc & các mốc khung hình (`f=1, 25, 50, 75, 100`) qua Blender 5.3 CLI (`render_previews.py`) và kiểm tra ảnh trực quan sau lần chỉnh cuối xác nhận sạch xuyên thấu cho cả 3 bài.
+  - Headless Blender 5.3 (`verify_sprint2_hamstrings.py`, exit 0): **27/27** `.glb` khớp SHA-256 bit-for-bit giữa `exported_glb/` và `3d_bundled/`, kích thước hợp lệ (`1,315,064 B – 1,446,388 B`), đủ 11 `Mat_Muscle_*`, `extensionsUsed=[]`, `<= 12,796 tris` (`< 25,000`), đủ `['Anim_GoodForm', 'Anim_BadForm']`; **3/3** file `.blend` mới và `mock_m2_exercises.json` / `exercise_repository.dart` hợp lệ; `ALL_DART_RELATIVE_IMPORTS_OK (checked=70)`; `git status -s` giữ nguyên biên `[OWNER: M2]`.
+  - *Lưu ý:* Máy chưa cài Flutter SDK nên chưa chạy trực tiếp `flutter analyze` / `flutter test`.
+- **Việc cần làm ở phiên kế tiếp:**
+  - Chờ người dùng kiểm thử 3 bài Nhóm cơ Đùi sau; tiếp theo dựng **Nhóm 9: Cơ Mông (Glutes)** gồm 3 bài trong `gym.txt` (`Đẩy hông với tạ đòn`, `Bước chùng chân với tạ đơn`, `Đá chân ra sau với dây cáp`).
+
+---
+
+## Phiên 21 — 2026-11-21 21:05 | Thành viên: M2 (3D Blender MCP, Workout, Recovery 3D & Charts) | Task: `T-M2-07` (`[~]` Nhóm 7 Cơ Đùi trước / Quadriceps — 3 bài, tổng **21/30** bài `gym.txt`)
+- **Mục tiêu phiên:** Tiếp tục dựng, kiểm tra trực quan đa góc/đa khung hình và đồng bộ SHA-256 cho **3 bài Nhóm 7: Cơ Đùi trước (Quadriceps)** theo `gym.txt` (`BARBELL_SQUAT`, `LEG_PRESS`, `LEG_EXTENSION`) trong phạm vi `[OWNER: M2]`.
+- **Những file đã tạo / chỉnh sửa:**
+  - `assets_3d/scripts_blender_mcp/build_sprint2_exercises.py`: Bổ sung `Phase 7` với `_build_squat_rack_object`, `_build_leg_press_machine`, `_build_leg_extension_machine`, cài đặt `_pose_barbell_squat`/`build_barbell_squat`, `_pose_leg_press`/`build_leg_press`, `_pose_leg_extension`/`build_leg_extension` (`30 FPS`, `100 frames`) và đăng ký vào `EXERCISE_SPECS` + `ordered_specs`.
+  - **File 3D & `.blend` mới / nâng cấp:**
+    - `barbell_squat.glb` (`1,434,464 B`, `12,484 tris`, SHA-256 `6933137d1885...`) + `assets_3d/source_blend/quads_barbell_squat.blend`
+    - `leg_press.glb` (`1,427,468 B`, `12,696 tris`, SHA-256 `d3c20380fe7c...`) + `assets_3d/source_blend/quads_leg_press.blend`
+    - `leg_extension.glb` (`1,415,264 B`, `12,524 tris`, SHA-256 `15d09cc138d6...`) + `assets_3d/source_blend/quads_leg_extension.blend`
+    - Sao chép đồng nhất từng byte giữa `assets_3d/exported_glb/` và `mobile/assets/3d_bundled/`.
+  - `assets_3d/exported_glb/assets_manifest.json` & `mobile/assets/mock_json/mock_m2_exercises.json`: Đồng bộ SHA-256 (`24` assets trong manifest, `39` bài trong mock JSON), `bundled: true`, chuẩn hóa `phase_keyframes` `[0, 45]`/`[45, 55]`/`[55, 100]` cho `BARBELL_SQUAT` và chuẩn hóa `name_vi` khớp `gym.txt` Phần 7 (`"Gánh tạ đòn"`, `"Đạp đùi trên máy"`, `"Ngồi đá đùi trước với máy"`).
+  - `mobile/lib/features/gym3d/data/exercise_repository.dart`: Đăng ký thêm `LEG_PRESS`, `LEG_EXTENSION` vào `_localBundledGlbs` (`BARBELL_SQUAT` đã có sẵn).
+  - `docs/taskboard.md`: Cập nhật tiến độ `T-M2-07` lên **21/30** bài (**70%**).
+- **Quyết định kỹ thuật / Lưu ý quan trọng:**
+  - *Gánh tạ đòn (`BARBELL_SQUAT`):* Nâng cấp từ bản MVP 110 frames lên chuẩn Sprint 2 `100 frames` kèm `Equip_SquatRack` (`X = ±0.58`, J-cups & thanh bảo hiểm `Z = 0.68`) và gắn `Equip_Barbell` trực tiếp vào `Bone_Barbell` trên cầu vai `Spine_03`/`Neck`; `Anim_GoodForm` xuống song song/dưới song song (`Pelvis Z: 0.90 -> 0.46`) giữ bàn chân áp sàn và lòng bàn tay vòng qua thanh đòn, `Anim_BadForm` thể hiện rõ chụm gối (Knee Valgus), nhấc gót và gập lưng chu C.
+  - *Đạp đùi trên máy (`LEG_PRESS`):* Dựng máy đạp đùi ray trượt đôi `40°` (`X = ±0.34` ngoài chân), lưng tựa ghế `35°`, bàn chân ép phẳng mặt bàn đạp (`track_dir`); đã tinh chỉnh `Anim_BadForm` để phần lưng trên vẫn tựa đệm trong khi vùng thắt lưng/xương cụt cuộn nhấc khỏi đệm ghế (Butt Wink), chụm gối, khóa cứng khớp gối ở đỉnh và buông tay đẩy gối.
+  - *Ngồi đá đùi trước (`LEG_EXTENSION`):* Đặt tháp tạ lệch phía sau-phải (`X = -0.44, Y = 0.54`) giữ thoáng góc nhìn bên phải, trục cần đá `Bone_LegExtArm` đồng tâm khớp gối `(0, -0.37, 0.56)` giúp con lăn cổ chân tiếp xúc đều dọc cung `84° -> 4°`; đã tinh chỉnh `Anim_BadForm` trượt hông về trước khi nhấc mông `+10 cm` tránh xuyên tựa lưng và ghim cổ chân dưới con lăn không xuyên mesh.
+- **Kiểm tra / Kết quả chạy thử:**
+  - Render EEVEE đa góc & các mốc khung hình (`f=1, 25, 50, 75, 100`) qua Blender 5.3 CLI (`render_previews.py`) và kiểm tra trực quan xác nhận sạch xuyên thấu cho cả `GoodForm` và `BadForm`.
+  - Headless Blender 5.3 (`verify_sprint2_quads.py`, exit 0): **24/24** `.glb` khớp SHA-256 bit-for-bit giữa `exported_glb/` và `3d_bundled/`, kích thước hợp lệ (`1,315,064 B – 1,446,388 B`), đủ 11 `Mat_Muscle_*`, `extensionsUsed=[]`, `<= 12,696 tris` (`< 25,000`), đủ `['Anim_GoodForm', 'Anim_BadForm']`; **3/3** file `.blend` mới và `mock_m2_exercises.json` / `exercise_repository.dart` hợp lệ; `ALL_DART_RELATIVE_IMPORTS_OK (checked=70)`; `git status -s` giữ nguyên biên `[OWNER: M2]`.
+  - *Lưu ý:* Máy chưa cài Flutter SDK nên chưa chạy trực tiếp `flutter analyze` / `flutter test`.
+- **Việc cần làm ở phiên kế tiếp:**
+  - Chờ người dùng kiểm thử 3 bài Nhóm cơ Đùi trước; tiếp theo dựng **Nhóm 8: Cơ Đùi sau (Hamstrings)** gồm 3 bài trong `gym.txt` (`Kéo tạ đòn kiểu Romania`, `Nằm sấp móc đùi sau với máy`, `Ngồi móc đùi sau với máy`).
+
+---
+
+## Phiên 20 — 2026-11-21 20:51 | Thành viên: M2 (3D Blender MCP, Workout, Recovery 3D & Charts) | Task: `T-M2-07` (`[~]` Nhóm 6 Cơ Tay sau / Triceps — 3 bài, tổng **18/30** bài `gym.txt`)
+- **Mục tiêu phiên:** Tiếp tục dựng, kiểm tra trực quan đa góc/đa khung hình và đồng bộ SHA-256 cho **3 bài Nhóm 6: Cơ Tay sau (Triceps)** theo `gym.txt` (`CABLE_TRICEP_PUSHDOWN`, `SKULL_CRUSHER`, `OVERHEAD_DUMBBELL_TRICEP_EXT`) trong phạm vi `[OWNER: M2]`.
+- **Những file đã tạo / chỉnh sửa:**
+  - `assets_3d/scripts_blender_mcp/build_sprint2_exercises.py`: Cài đặt `_pose_cable_tricep_pushdown`/`build_cable_tricep_pushdown`, `_pose_skull_crusher`/`build_skull_crusher`, `_pose_overhead_dumbbell_tricep_ext`/`build_overhead_dumbbell_tricep_ext` với đủ 2 clip `Anim_GoodForm` & `Anim_BadForm` (`30 FPS`, `100 frames`) và đăng ký vào `EXERCISE_SPECS` + `ordered_specs`.
+  - **File 3D & `.blend` mới:**
+    - `cable_tricep_pushdown.glb` (`1,440,944 B`, `12,280 tris`, SHA-256 `ea04f1897288...`) + `assets_3d/source_blend/triceps_cable_tricep_pushdown.blend`
+    - `skull_crusher.glb` (`1,389,472 B`, `12,356 tris`, SHA-256 `ebf84f929465...`) + `assets_3d/source_blend/triceps_skull_crusher.blend`
+    - `overhead_dumbbell_tricep_ext.glb` (`1,391,508 B`, `12,052 tris`, SHA-256 `ded0225eec17...`) + `assets_3d/source_blend/triceps_overhead_dumbbell_tricep_ext.blend`
+    - Sao chép đồng nhất từng byte giữa `assets_3d/exported_glb/` và `mobile/assets/3d_bundled/`.
+  - `assets_3d/exported_glb/assets_manifest.json` & `mobile/assets/mock_json/mock_m2_exercises.json`: Đồng bộ SHA-256 (`22` assets trong manifest, `39` bài trong mock JSON), `bundled: true`, `clips: ["Anim_GoodForm", "Anim_BadForm"]` và chuẩn hóa `name_vi` khớp `gym.txt` Phần 6 (`"Đẩy cáp dây thừng xuống"`, `"Nằm hạ tạ đòn qua trán"`, `"Duỗi tạ đơn qua đầu"`).
+  - `mobile/lib/features/gym3d/data/exercise_repository.dart`: Đăng ký thêm `CABLE_TRICEP_PUSHDOWN`, `SKULL_CRUSHER`, `OVERHEAD_DUMBBELL_TRICEP_EXT` vào `_localBundledGlbs`.
+  - `docs/taskboard.md`: Cập nhật tiến độ `T-M2-07` lên **18/30** bài (**60%**).
+- **Quyết định kỹ thuật / Lưu ý quan trọng:**
+  - *Blender MCP Fallback:* Kết nối MCP tới Blender GUI bị ngắt (`WinError 10053`), nên toàn bộ quy trình build, xuất `.glb`/`.blend` và kiểm tra trực quan được thực hiện bằng Blender 5.3 CLI (`--background --python-exit-code 1`) + script render EEVEE đa góc (`front`, `right`, `back`, `three_quarter`, `back_three_quarter`) và các mốc `f=1, 25, 50, 75, 100`.
+  - *Đẩy cáp dây thừng xuống (`CABLE_TRICEP_PUSHDOWN`):* Dựng cụm ròng rọc cao (`CablePulleyHigh`) + dây thừng nylon chữ V hai nhánh có núm đầu dây (`RopeHandle`); `Anim_GoodForm` khóa hai khuỷu sát sườn và tách cổ tay nhẹ lúc duỗi hết tầm, `Anim_BadForm` ngả người lao vai về trước và xoè khuỷu sang hai bên.
+  - *Nằm hạ tạ đòn qua trán (`SKULL_CRUSHER`):* Nằm ngửa trên ghế phẳng (`BenchFlat`), hạ thanh tạ đòn gọn phía trên trán (`"qua trán"`) mà không xuyên hộp sọ; `Anim_BadForm` mở góc khuỷu rộng sang hai bên và thả rơi thiếu kiểm soát.
+  - *Duỗi tạ đơn qua đầu (`OVERHEAD_DUMBBELL_TRICEP_EXT`):* Phát hiện và sửa triệt để lỗi bánh tạ dưới chạm nhẹ chỏm sau hộp sọ ở `f=1`: chỉnh độ ngả core `GoodForm` (`torso_dir=(0, -0.15, 0.988)`), đưa tạ lùi về `Y=0.13..0.24, Z=1.90..1.48` (`GoodForm`) và `Y=0.20..0.28, Z=1.91..1.58` (`BadForm` kèm ngả lưng `16°` và xoè khuỷu `90°`), render kiểm chứng lại hoàn toàn sạch.
+- **Kiểm tra / Kết quả chạy thử:**
+  - Headless Blender 5.3 (`verify_sprint2_triceps.py`, exit 0): **22/22** `.glb` khớp SHA-256 bit-for-bit giữa `exported_glb/` và `3d_bundled/`, kích thước hợp lệ (`1,315,064 B – 1,446,388 B`), đủ 11 `Mat_Muscle_*`, `extensionsUsed=[]`, `<= 12,416 tris`, đủ `['Anim_GoodForm', 'Anim_BadForm']`; **3/3** file `.blend` mới và `mock_m2_exercises.json` / `exercise_repository.dart` hợp lệ; `ALL_DART_RELATIVE_IMPORTS_OK (checked=70)`; `git status -s` giữ nguyên biên `[OWNER: M2]`.
+  - *Lưu ý:* Máy chưa cài Flutter SDK nên chưa chạy trực tiếp `flutter analyze` / `flutter test`.
+- **Việc cần làm ở phiên kế tiếp:**
+  - Chờ người dùng kiểm thử 3 bài Nhóm cơ Tay sau; tiếp theo dựng **Nhóm 7: Cơ Đùi trước (Quadriceps)** gồm 3 bài trong `gym.txt` (`Gánh tạ đòn`, `Đạp đùi trên máy`, `Ngồi đá đùi trước với máy`).
+
+---
+
+## Phiên 19 — 2026-11-21 20:37 | Thành viên: M2 (3D Blender MCP, Workout, Recovery 3D & Charts) | Task: `T-M2-07` (`[~]` Nhóm 5 Cơ Tay trước / Biceps — 3 bài, tổng **15/30** bài `gym.txt`)
+- **Mục tiêu phiên:** Tiếp tục dựng qua **Blender 5.3 MCP** (`execute_blender_code` + `look`), kiểm tra trực quan đa góc/đa khung hình và đồng bộ SHA-256 cho **3 bài Nhóm 5: Cơ Tay trước (Biceps)** theo `gym.txt` (`BARBELL_BICEP_CURL`, `DUMBBELL_HAMMER_CURL`, `INCLINE_DUMBBELL_CURL`) trong phạm vi `[OWNER: M2]`.
+- **Những file đã tạo / chỉnh sửa:**
+  - `assets_3d/scripts_blender_mcp/build_sprint2_exercises.py`: Tái sử dụng `Equip_Barbell`, `Equip_Dumbbell_L/R` và ghế nghiêng `45°` (`Equip_Bench_Incline45`), cài đặt `build_barbell_bicep_curl`, `build_dumbbell_hammer_curl`, `build_incline_dumbbell_curl` với đủ 2 clip `Anim_GoodForm` & `Anim_BadForm` (`30 FPS`, `100 frames`) và đăng ký vào `EXERCISE_SPECS` + `ordered_specs`.
+  - **File 3D & `.blend` mới:**
+    - `barbell_bicep_curl.glb` (`1,402,584 B`, `12,284 tris`, SHA-256 `b8f14393fb4b...`) + `assets_3d/source_blend/biceps_barbell_bicep_curl.blend`
+    - `dumbbell_hammer_curl.glb` (`1,409,460 B`, `12,256 tris`, SHA-256 `01ff7c521e65...`) + `assets_3d/source_blend/biceps_dumbbell_hammer_curl.blend`
+    - `incline_dumbbell_curl.glb` (`1,397,824 B`, `12,396 tris`, SHA-256 `520c80123b50...`) + `assets_3d/source_blend/biceps_incline_dumbbell_curl.blend`
+    - Sao chép đồng nhất từng byte giữa `assets_3d/exported_glb/` và `mobile/assets/3d_bundled/`.
+  - `assets_3d/exported_glb/assets_manifest.json` & `mobile/assets/mock_json/mock_m2_exercises.json`: Đồng bộ SHA-256 (`19` assets trong manifest, `39` bài trong mock JSON), `bundled: true`, `clips: ["Anim_GoodForm", "Anim_BadForm"]` và chuẩn hóa `name_vi` khớp `gym.txt` Phần 5 (`"Đứng cuốn tạ đòn"`, `"Cuốn tạ đơn kiểu búa"`, `"Cuốn tạ đơn trên ghế nghiêng"`).
+  - `mobile/lib/features/gym3d/data/exercise_repository.dart`: Đăng ký thêm `BARBELL_BICEP_CURL`, `DUMBBELL_HAMMER_CURL`, `INCLINE_DUMBBELL_CURL` vào `_localBundledGlbs`.
+  - `docs/taskboard.md`: Cập nhật tiến độ `T-M2-07` lên **15/30** bài (mốc **50%**).
+- **Quyết định kỹ thuật / Lưu ý quan trọng:**
+  - *Đứng cuốn tạ đòn (`BARBELL_BICEP_CURL`):* Khóa khuỷu cố định hai bên sườn (`elbow_y = -0.03, elbow_z = 1.145`, cung `R = 0.295 m`) kết hợp tay nắm ngửa đối xứng (`thumb_dir = Vector((sx, 0, 0))`) không xoắn cổ tay/khuỷu; `Anim_BadForm` mô phỏng lỗi lắc lưng (`-22°` → `+16°`) và đẩy khuỷu lên cao lấy đà.
+  - *Cuốn búa tạ đơn (`DUMBBELL_HAMMER_CURL`):* Căn tạ ở `X = ±0.245..0.265` tránh va chạm đùi và giữ thân tạ dựng đứng theo hướng `thumb_dir = hinge_inside`; `Anim_BadForm` dùng `depth ** 0.42` ở pha hạ (`f < 45`) để tạo chuyển động thả rơi tự do và vung tạ ra sau hông (`-18°`).
+  - *Cuốn tạ đơn trên ghế nghiêng `45°` (`INCLINE_DUMBBELL_CURL`):* Lưng tựa khít mặt đệm `45°` (`Pelvis = (0.0, -0.06, 0.61)`), hai cánh tay trên thả thẳng đứng ngoài cạnh ghế (`X = ±0.265`, `elbow_y = +0.285`) kéo giãn tối đa đầu dài tay trước mà không chạm khung ghế; `Anim_BadForm` lao mạnh khuỷu về phía trước ngực khi cuốn lên.
+- **Kiểm tra / Kết quả chạy thử:**
+  - Kiểm tra trực quan bằng Blender MCP `look` (`angles`: `front`, `right`, `back`, `three_quarter` + `frames`: `[1, 25, 50, 75, 100]`, shading `material`) đạt yêu cầu ngay lần đầu cho cả `Anim_GoodForm` & `Anim_BadForm` của 3 bài; để sẵn `INCLINE_DUMBBELL_CURL` `Anim_GoodForm` tại `f=1` trong viewport Blender.
+  - Headless Blender 5.3 kiểm tra toàn bộ **19/19** `.glb` (`verify_sprint2_biceps.py`, exit 0): khớp SHA-256 bit-for-bit giữa `exported_glb/` và `3d_bundled/`, đủ 11 `Mat_Muscle_*`, `extensionsUsed=[]`, `<= 12,416 tris` (`< 25,000`), JSON hợp lệ, `ALL_DART_RELATIVE_IMPORTS_OK (checked=70)`, `git status -s` xác nhận không chạm `[LOCKED STUB]` hay file của M1/M3/M4.
+  - *Lưu ý:* Máy chưa cài Flutter SDK nên chưa chạy trực tiếp `flutter analyze` / `flutter test`.
+- **Việc cần làm ở phiên kế tiếp:**
+  - Chờ người dùng kiểm thử 3 bài Nhóm cơ Tay trước; tiếp theo dựng **Nhóm 6: Cơ Tay sau (Triceps)** gồm 3 bài trong `gym.txt` (`Đẩy cáp dây thừng xuống`, `Nằm hạ tạ đòn qua trán`, `Đứng đẩy tạ đơn qua đầu 1 hoặc 2 tay`).
+
+---
+
+## Phiên 18 — 2026-11-21 11:00 | Thành viên: M2 (3D Blender MCP, Workout, Recovery 3D & Charts) | Task: `T-M2-07` (`[~]` Nhóm 4 Cơ Vai / Shoulders — 3 bài, tổng **12/30** bài `gym.txt`)
+- **Mục tiêu phiên:** Tiếp tục dựng qua **Blender 5.3 MCP** (`execute_blender_code` + `look`), kiểm tra trực quan đa góc/đa khung hình và đồng bộ SHA-256 cho **3 bài Nhóm 4: Cơ Vai (Shoulders)** theo `gym.txt` (`DUMBBELL_SHOULDER_PRESS`, `DUMBBELL_LATERAL_RAISE`, `CABLE_FACE_PULL`) trong phạm vi `[OWNER: M2]`.
+- **Những file đã tạo / chỉnh sửa:**
+  - `assets_3d/scripts_blender_mcp/build_sprint2_exercises.py`: Bổ sung trạm cáp dây thừng `_build_cable_rope_station` (`Equip_CableTower_FacePull`, `Equip_RopeHub`, `Equip_Cable_FacePull`, 2 nhánh dây thừng co giãn `Equip_RopeBranch_L/R` & 2 nút chặn `Equip_RopeKnob_L/R`), tái sử dụng ghế nghiêng `80°` (`Equip_Bench_Upright80`) và tạ đơn (`Equip_Dumbbell_L/R`), cài đặt `build_dumbbell_shoulder_press`, `build_dumbbell_lateral_raise`, `build_cable_face_pull` với đủ 2 clip `Anim_GoodForm` & `Anim_BadForm` (`30 FPS`, `100 frames`) và đăng ký vào `EXERCISE_SPECS` + `ordered_specs`.
+  - **File 3D & `.blend` mới:**
+    - `dumbbell_shoulder_press.glb` (`1,411,936 B`, `12,396 tris`, SHA-256 `a70b92aadae5...`) + `assets_3d/source_blend/shoulders_dumbbell_shoulder_press.blend`
+    - `dumbbell_lateral_raise.glb` (`1,412,476 B`, `12,256 tris`, SHA-256 `f52e2a0f7a81...`) + `assets_3d/source_blend/shoulders_dumbbell_lateral_raise.blend`
+    - `cable_face_pull.glb` (`1,441,360 B`, `12,280 tris`, SHA-256 `958111166abf...`) + `assets_3d/source_blend/shoulders_cable_face_pull.blend`
+    - Sao chép đồng nhất từng byte giữa `assets_3d/exported_glb/` và `mobile/assets/3d_bundled/`.
+  - `assets_3d/exported_glb/assets_manifest.json` & `mobile/assets/mock_json/mock_m2_exercises.json`: Đồng bộ SHA-256 (`16` assets trong manifest, `39` bài trong mock JSON), `bundled: true`, `clips: ["Anim_GoodForm", "Anim_BadForm"]` và chuẩn hóa `name_vi` khớp `gym.txt` Phần 4 (`"Ngồi đẩy vai qua đầu với tạ đơn"`, `"Dang tạ đơn sang ngang cho vai giữa"`, `"Kéo cáp hướng mặt cho vai sau"`).
+  - `mobile/lib/features/gym3d/data/exercise_repository.dart`: Đăng ký thêm `DUMBBELL_SHOULDER_PRESS`, `DUMBBELL_LATERAL_RAISE`, `CABLE_FACE_PULL` vào `_localBundledGlbs`.
+  - `docs/taskboard.md`: Cập nhật tiến độ `T-M2-07` lên **12/30** bài hoàn thành.
+- **Quyết định kỹ thuật / Lưu ý quan trọng:**
+  - *Ngồi đẩy vai (`DUMBBELL_SHOULDER_PRESS`):* Căn `Pelvis = (0.0, -0.165, 0.58)` khớp mặt đệm tựa `80°` để lưng áp sát ghế không xuyên mesh khi `GoodForm`, đối lập với `BadForm` ưỡn lưng dưới rời đệm và hạ tạ quá sâu dưới vai (`Z = 1.02 m`).
+  - *Dang tạ ngang (`DUMBBELL_LATERAL_RAISE`):* Dùng hướng ngón cái tiến về trước `thumb_dir = Vector((0.0, -1.0, 0.0))` kết hợp mặt phẳng xương bả vai `20°` để hai lòng bàn tay xoay mượt từ áp đùi sang úp sàn ở đỉnh `85°`.
+  - *Kéo cáp hướng mặt (`CABLE_FACE_PULL`):* Giải hình học bảo toàn chiều dài dây thừng cố định `L_rope = 0.42 m` từ nút chia `Equip_RopeHub` tới hai bàn tay; sau kiểm tra bằng Blender MCP `look`, đã kéo sâu điểm kết thúc ở `f=1` về ngang thái dương (`hand_y = +0.07`, `elbow_pole = (sx*0.92, 0.48, 0.12)`) giúp khuỷu tay rút gọn về ngang vai, đối lập rõ với `BadForm` tụt khuỷu dưới cổ tay.
+- **Kiểm tra / Kết quả chạy thử:**
+  - Kiểm tra trực quan bằng Blender MCP `look` (`angles`: `front`, `right`, `back`, `three_quarter` + `frames`: `[1, 25, 50, 75, 100]`, shading `material`) đạt yêu cầu cho cả `Anim_GoodForm` & `Anim_BadForm` của 3 bài; để sẵn `CABLE_FACE_PULL` `Anim_GoodForm` tại `f=1` trong viewport Blender.
+  - Headless Blender 5.3 kiểm tra toàn bộ **16/16** `.glb` (`verify_sprint2_shoulders.py`, exit 0): khớp SHA-256 bit-for-bit giữa `exported_glb/` và `3d_bundled/`, đủ 11 `Mat_Muscle_*`, `extensionsUsed=[]`, `<= 12,416 tris` (`< 25,000`), JSON hợp lệ, `ALL_DART_RELATIVE_IMPORTS_OK (checked=70)`, `git status -s` xác nhận không chạm `[LOCKED STUB]` hay file của M1/M3/M4.
+  - *Lưu ý:* Máy chưa cài Flutter SDK nên chưa chạy trực tiếp `flutter analyze` / `flutter test`.
+- **Việc cần làm ở phiên kế tiếp:**
+  - Chờ người dùng kiểm thử 3 bài Nhóm cơ Vai; tiếp theo dựng **Nhóm 5: Cơ Tay trước (Biceps)** gồm 3 bài trong `gym.txt` (`Đứng cuốn tạ đòn`, `Cuốn tạ đơn kiểu búa`, `Cuốn tạ đơn trên ghế nghiêng`).
+
+---
+
+## Phiên 17 — 2026-11-20 15:55 | Thành viên: M2 (3D Blender MCP, Workout, Recovery 3D & Charts) | Task: `T-M2-07` (`[~]` Nhóm 3 Cơ Lưng giữa & Lưng dưới — 3 bài, tổng **9/30** bài `gym.txt`)
+- **Mục tiêu phiên:** Tiếp tục dựng qua **Blender 5.3 MCP** (`execute_blender_code` + `look`), kiểm tra trực quan đa góc/đa khung hình và đồng bộ SHA-256 cho **3 bài Nhóm 3: Lưng giữa & Lưng dưới (Mid & Lower Back)** theo `gym.txt` (`BARBELL_BENT_OVER_ROW`, `SEATED_CABLE_ROW`, `BARBELL_DEADLIFT`) trong phạm vi `[OWNER: M2]`.
+- **Những file đã tạo / chỉnh sửa:**
+  - `assets_3d/scripts_blender_mcp/build_sprint2_exercises.py`: Bổ sung dụng cụ máy ngồi kéo cáp `_build_seated_row_machine` (`Equip_SeatedRowMachine`, `Equip_VHandle`, dây cáp co giãn `Equip_Cable_Row`), 3 hàm dựng/animation (`build_barbell_bent_over_row`, `build_seated_cable_row`, `build_barbell_deadlift`) với đủ 2 clip `Anim_GoodForm` & `Anim_BadForm` (`30 FPS`, `100 frames`, lỗi `giật thân + gù lưng trên` / `cong lưng dưới + ngả sau` / `hông cao + lưng cong chữ C + tạ trôi xa ống đồng`), và đăng ký vào `EXERCISE_SPECS` + `ordered_specs`.
+  - **File 3D & `.blend` mới:**
+    - `barbell_bent_over_row.glb` (`1,405,872 B`, `12,284 tris`, SHA-256 `1415727e5ae4...`) + `assets_3d/source_blend/back_barbell_bent_over_row.blend`
+    - `seated_cable_row.glb` (`1,438,352 B`, `12,416 tris`, SHA-256 `c434576897e3...`) + `assets_3d/source_blend/back_seated_cable_row.blend`
+    - `barbell_deadlift.glb` (`1,416,356 B`, `12,284 tris`, SHA-256 `b4fa80771a34...`) + `assets_3d/source_blend/back_barbell_deadlift.blend`
+    - Sao chép đồng nhất từng byte giữa `assets_3d/exported_glb/` và `mobile/assets/3d_bundled/`.
+  - `assets_3d/exported_glb/assets_manifest.json` & `mobile/assets/mock_json/mock_m2_exercises.json`: Đồng bộ SHA-256 (`13` assets trong manifest, `39` bài trong mock JSON), `bundled: true`, `clips: ["Anim_GoodForm", "Anim_BadForm"]` và chuẩn hóa `name_vi` khớp `gym.txt` Phần 3 (`"Gập người kéo tạ đòn"`, `"Ngồi kéo cáp hẹp tay"`, `"Kéo tạ đòn từ sàn"`).
+  - `mobile/lib/features/gym3d/data/exercise_repository.dart`: Đăng ký thêm `BARBELL_BENT_OVER_ROW`, `SEATED_CABLE_ROW`, `BARBELL_DEADLIFT` vào `_localBundledGlbs`.
+  - `docs/taskboard.md`: Cập nhật tiến độ `T-M2-07` lên **9/30** bài hoàn thành.
+- **Quyết định kỹ thuật / Lưu ý quan trọng:**
+  - *Kết nối trực tiếp Blender MCP:* Khi kiểm tra `SEATED_CABLE_ROW` qua `look`, phát hiện mũi/lòng bàn chân chạm nhẹ vào mặt thép bàn đạp nghiêng `22°`; đã tịnh tiến bàn đạp về trước `6 cm` (`Y = -0.84, Z = 0.47`) và xác minh lại qua `look` cho thấy hai lòng bàn chân áp khít lên bàn đạp không xuyên mesh.
+  - *Conventional Deadlift (`BARBELL_DEADLIFT`):* Đồng bộ bánh tạ ngoài `R = 0.215 m` với `bar_z = 0.215 m` tại đáy (`f=45..55`) để bánh tạ chạm chuẩn mặt sàn `Z = 0.000 m`, `Pelvis` hạ xuống `Z = 0.53 m` giữ lưng phẳng `62°` và hai bàn tay nắm sấp đối xứng (`X = ±0.27`) khóa chặt thanh đòn bên ngoài ống đồng.
+- **Kiểm tra / Kết quả chạy thử:**
+  - Kiểm tra trực quan bằng Blender MCP `look` (`angles`: `front`, `right`, `back`, `three_quarter` + `frames`: `[1, 25, 50, 75, 100]`, shading `material`) đạt yêu cầu cho cả `Anim_GoodForm` & `Anim_BadForm` của 3 bài.
+  - Headless Blender 5.3 kiểm tra toàn bộ **13/13** `.glb` (`verify_sprint2_back.py`, exit 0): khớp SHA-256 bit-for-bit giữa `exported_glb/` và `3d_bundled/`, đủ 11 `Mat_Muscle_*`, `extensionsUsed=[]`, `<= 12,416 tris` (`< 25,000`), JSON hợp lệ, `ALL_DART_RELATIVE_IMPORTS_OK (checked=70)`, `git status -s` không chạm `[LOCKED STUB]` hay file của M1/M3/M4.
+  - *Lưu ý:* Máy chưa cài Flutter SDK nên chưa chạy trực tiếp `flutter analyze` / `flutter test`.
+- **Việc cần làm ở phiên kế tiếp:**
+  - Chờ người dùng kiểm thử 3 bài Nhóm cơ Lưng giữa & Lưng dưới; tiếp theo dựng **Nhóm 4: Cơ Vai (Shoulders)** gồm 3 bài trong `gym.txt` (`Ngồi đẩy vai qua đầu với tạ đơn`, `Dang tạ đơn sang ngang cho vai giữa`, `Kéo cáp hướng mặt cho vai sau`).
+
+---
+
+## Phiên 16 — 2026-11-20 15:30 | Thành viên: M2 (3D Blender MCP, Workout, Recovery 3D & Charts) | Task: `T-M2-07` (`[~]` Nhóm 2 Cơ Xô / Lats — 3 bài, tổng **6/30** bài `gym.txt`)
+- **Mục tiêu phiên:** Tiếp tục dựng, kiểm tra trực quan đa góc/đa khung hình và đồng bộ SHA-256 cho **3 bài Nhóm cơ Xô (Lats)** trong `gym.txt` (`WIDE_GRIP_PULLUP`, `LAT_PULLDOWN`, `STRAIGHT_ARM_CABLE_PULLDOWN`) theo phạm vi `[OWNER: M2]`.
+- **Những file đã tạo / chỉnh sửa:**
+  - `assets_3d/scripts_blender_mcp/build_sprint2_exercises.py`: Bổ sung 3 bộ dụng cụ rời (`_build_pullup_rack_object`, `_build_lat_pulldown_machine`, `_build_single_cable_tower`), 3 hàm dựng/animation (`build_wide_grip_pullup`, `build_lat_pulldown`, `build_straight_arm_cable_pulldown`) với đủ 2 clip `Anim_GoodForm` & `Anim_BadForm` (`30 FPS`, `100 frames`, chuyển động chuẩn cơ Xô vs lỗi `Kipping swing` / `ngả lưng >44°` / `gập khuỷu >95° thành Tricep Pushdown`), cùng cập nhật `EXERCISE_SPECS` & `ordered_specs`.
+  - **File 3D & `.blend` mới:**
+    - `wide_grip_pullup.glb` (`1,406,808 B`, `12,176 tris`, SHA-256 `c6de82378213...`) + `assets_3d/source_blend/lats_wide_grip_pullup.blend`
+    - `lat_pulldown.glb` (`1,432,108 B`, `12,380 tris`, SHA-256 `5fe27fe31087...`) + `assets_3d/source_blend/lats_lat_pulldown.blend`
+    - `straight_arm_cable_pulldown.glb` (`1,408,692 B`, `12,120 tris`, SHA-256 `5d536bbfccde...`) + `assets_3d/source_blend/lats_straight_arm_cable_pulldown.blend`
+    - Sao chép đồng nhất từng byte giữa `assets_3d/exported_glb/` và `mobile/assets/3d_bundled/`.
+  - `assets_3d/exported_glb/assets_manifest.json` & `mobile/assets/mock_json/mock_m2_exercises.json`: Đồng bộ SHA-256, `bundled: true`, `clips: ["Anim_GoodForm", "Anim_BadForm"]` và chuẩn hóa `name_vi` của `LAT_PULLDOWN` thành `"Kéo xô trước ngực với máy cáp"`.
+  - `mobile/lib/features/gym3d/data/exercise_repository.dart`: Đăng ký thêm `WIDE_GRIP_PULLUP`, `LAT_PULLDOWN`, `STRAIGHT_ARM_CABLE_PULLDOWN` vào `_localBundledGlbs` để load offline ngay trên Android WebView.
+  - `docs/taskboard.md`: Cập nhật tiến độ `T-M2-07` lên **6/30** bài hoàn thành (Nhóm 1 Ngực + Nhóm 2 Xô).
+- **Quyết định kỹ thuật / Lưu ý quan trọng:**
+  - *Kết nối Blender:* Blender GUI đang đóng khi bắt đầu phiên nên Blender MCP báo `Not connected to Blender`; đã dựng & render kiểm tra trực quan đa góc (`front`, `right`, `back`, `three_quarter`, `back_three_quarter`) và đa khung hình (`1, 25, 50, 75, 100`) qua **Blender 5.3 CLI EEVEE** (`--background --python-exit-code 1`).
+  - *Chuẩn hóa tay nắm sấp đối xứng (Symmetric Pronated Grip):* Xác định trục cục bộ của `Hand_L` / `Hand_R` trong `Armature_GymHuman` (`+Z` = ngón cái, `+X` là lòng bàn tay trái, `-X` là lòng bàn tay phải), truyền `thumb_dir = Vector((-sx, 0, 0))` cho `_aim_bone_world` để loại bỏ hoàn toàn lỗi xoắn một bên tay ngửa / một bên sấp và triệt tiêu xoắn khớp khuỷu trên bài hít xà.
+  - *Tinh chỉnh biomechanics qua kiểm tra ảnh render:* Hạ tầm với `LatBar` (`1.18–1.60 m` dọc trục `Y = 0.08`) và nâng đệm đùi/mặt sàn đứng (`ankle Z = 0.140`) để tay luôn khóa chặt vào thanh kéo ở `f=50`, bàn chân đặt chuẩn trên sàn thép; mở bán kính cung vung thẳng tay `arm_arc = 0.565` cho `STRAIGHT_ARM_CABLE_PULLDOWN` giữ tay duỗi thẳng tự nhiên (~20° mềm khuỷu) đối lập rõ với lỗi gập khuỷu ở `Anim_BadForm`.
+- **Kiểm tra / Kết quả chạy thử:**
+  - Headless Blender 5.3 kiểm tra đồng bộ cả 10 `.glb` (`base_mannequin`, `base_mannequin_female`, 2 bài MVP, 3 bài Ngực, 3 bài Xô): 100% khớp SHA-256 bit-for-bit giữa `exported_glb/` và `3d_bundled/`, đủ 11 `Mat_Muscle_*`, `extensionsUsed=[]`, `<= 12,396 tris` (`< 25,000`), JSON hợp lệ (`39` bài), `ALL_DART_RELATIVE_IMPORTS_OK (checked=70)`, `git status -s` xác nhận không chạm file `[LOCKED STUB]` hay của M1/M3/M4.
+  - *Lưu ý:* Máy chưa cài Flutter SDK nên chưa chạy trực tiếp `flutter analyze` / `flutter test`.
+- **Việc cần làm ở phiên kế tiếp:**
+  - Chờ người dùng kiểm thử 3 bài Nhóm cơ Xô; nếu đạt yêu cầu, tiếp tục dựng **Nhóm 3: Cơ Tay trước (Biceps)** gồm 3 bài trong `gym.txt`.
+
+---
+
+## Phiên 15 — 2026-11-20 15:05 | Thành viên: M2 (3D Blender MCP, Workout, Recovery 3D & Charts) | Task: `T-M2-07` (`[~]` Pilot Ngực 3 bài), `T-M2-08`..`T-M2-11` (`[~]`)
+- **Mục tiêu phiên:** Triển khai hạ tầng Sprint 2 của Thành viên M2 theo `[OWNER: M2]`, trong đó phần 3D Blender MCP ưu tiên làm trước **3 bài Nhóm cơ Ngực (Chest)** từ `gym.txt` (`BARBELL_BENCH_PRESS`, `INCLINE_DUMBBELL_PRESS`, `CABLE_CHEST_FLY`) sử dụng bộ mesh `D:\human-base-meshes-bundle-v1.4.1\human_base_meshes_bundle.blend` để người dùng kiểm thử trước khi mở rộng 27 bài còn lại.
+- **Những file đã tạo / chỉnh sửa:**
+  - **3D Blender MCP (`T-M2-07` Pilot 3 bài Ngực + Mannequin Nam/Nữ):**
+    - `assets_3d/scripts_blender_mcp/build_base_mannequin.py`: Cập nhật `resolve_bundle_path()` hỗ trợ `D:\human-base-meshes-bundle-v1.4.1\human_base_meshes_bundle.blend`, tìm Principled BSDF theo node type, hỗ trợ xuất cả `base_mannequin.glb` (`GEO-body_male_realistic`, `1.78 m`, `1,315,064 B`) và `base_mannequin_female.glb` (`GEO-body_female_realistic`, `1.66 m`, `1,320,320 B`, `11,848 tris`).
+    - `assets_3d/scripts_blender_mcp/build_sprint2_exercises.py`: Dựng dụng cụ rời (`Equip_Barbell`, `Equip_Bench`, `Equip_Bench_Incline` `30°`, `Equip_Dumbbell_L/R`, `Equip_CableMachine` kèm `Equip_Handle_L/R` & dây cáp co giãn động `Equip_Cable_L/R`) và xuất đủ 2 clip `Anim_GoodForm` + `Anim_BadForm` (`30 FPS`, `100 frames`) cho 3 bài Ngực: `barbell_bench_press.glb` (`1,404,416 B`), `incline_dumbbell_press.glb` (`1,411,316 B`), `cable_chest_fly.glb` (`1,446,388 B`), kèm `.blend` kiểm tra tại `assets_3d/source_blend/chest_*.blend`. Đồng bộ SHA-256 sang `assets_3d/exported_glb/assets_manifest.json` và `mobile/assets/mock_json/mock_m2_exercises.json` (bổ sung đủ 39 bài gồm 30 bài `gym.txt` + 9 bài `EXERCISES_SEED`).
+  - **Phòng tập 3D Nâng cao (`T-M2-08`):** `muscle_3d_viewer_widget.dart` (`normalizedProgress`, `BodyAvatarPreset` Nam/Nữ/Cơ bắp), `exercise_repository.dart`, `gym3d_library_screen.dart` (bộ lọc 10 nhóm cơ + dụng cụ + tìm kiếm + chọn Avatar), `exercise_3d_detail_screen.dart` (Overlay nhịp thở 3 pha + cảnh báo `Anim_BadForm` + Timeline Scrubber + 3 nút nhảy pha + Avatar selector).
+  - **Giáo án & Live Workout Logger (`T-M2-09`):** `workout_calculators.dart` (1RM Epley/Brzycki, Progressive Overload, Greedy Plate Calculator, Streak), `workout_repository.dart` (4 mẫu giáo án, khôi phục phiên `IN_PROGRESS` crash-safe, pre-fill, PR, bù nước `+500/+750 ml`, Exercise Swapper top 5), `routines_screen.dart` (kéo thả & Superset), `plate_calculator_sheet.dart`, `exercise_swapper_sheet.dart`, `live_workout_logger_screen.dart`, `gym3d_workout_routes.dart`.
+  - **AI Readiness 3D & Biểu đồ (`T-M2-10`, `T-M2-11`):** `ai_analytics_repository.dart` (tổng hợp thuần Dart `< 300ms`, Banister decay cục bộ 72h, fallback user mới `85.0`), `readiness_recovery_3d_view.dart`, `volume_analytics_view.dart` (`fl_chart` `BarChart` + PR Wall), `muscle_radar_view.dart` (`fl_chart` 6-axis `RadarChart`), `ai_coach_hub_screen.dart`.
+  - **Unit Tests (`T-M2-12` prep):** `mobile/test/workout/workout_sprint2_test.dart`.
+- **Quyết định kỹ thuật / Lưu ý quan trọng:**
+  - Giữ nguyên 100% các file `[LOCKED STUB]` và chỉ chạm file `[OWNER: M2]`.
+  - Máy hiện tại (`ĐĂNG KHOA`) chưa cài Flutter SDK nên các file Dart mới kiểm tra cấu trúc import tương đối & logic; cần chạy `flutter pub get`, `dart run build_runner build --delete-conflicting-outputs`, `flutter analyze --no-fatal-infos` và `flutter test test/workout/` trên máy có Flutter SDK.
+- **Kiểm tra / Kết quả chạy thử:**
+  - Blender MCP `look` (`angles` & `frames` cho cả `Anim_GoodForm` và `Anim_BadForm`): Đã tinh chỉnh vị trí cổ tay/lòng bàn tay ôm sát thanh đòn, tạ đơn và tay cầm cáp, kiểm tra lưng tựa ghế `30°` và dây cáp căng mượt không clipping.
+  - Blender 5.3 Headless Verification (`--python-exit-code 1`): Pass 100% (7 `.glb` khớp SHA-256 bit-for-bit giữa `exported_glb/` và `3d_bundled/`, đủ 11 `Mat_Muscle_*`, đủ `Anim_GoodForm`/`Anim_BadForm`, `MOCK_EXERCISES = 39`, `ALL_DART_RELATIVE_IMPORTS_OK`).
+- **Việc cần làm ở phiên kế tiếp:**
+  - Người dùng kiểm thử 3 bài Nhóm cơ Ngực (`chest_*.blend` & app 3D); sau khi duyệt, chạy mở rộng `build_sprint2_exercises.py` cho 9 nhóm cơ còn lại (`27+` bài) để chốt `T-M2-07`, chạy `flutter analyze` + `flutter test test/workout/` để chốt `T-M2-08`..`T-M2-11`, và build `.aab` `v1.1.0+2` (`T-M2-12`).
+
+---
+
 ## Phiên 14 — 2026-11-20 09:09 | Thành viên: M1 + M2 + M3 (Hotfix Điện thoại thật: 3D Load < 0.8s & Lỗi Auth Thân thiện) | Task: `T-M2-02`, `T-M2-03`, `T-M1-04`, `T-M2-06`, `T-M3-06`
 - **Mục tiêu phiên:** Xử lý 2 lỗi phát hiện khi test `app-release.apk` trên điện thoại thật: (1) Màn hình 3D treo mãi *"Đang dựng mô hình 3D..."* do Android Release chặn HTTP local proxy `127.0.0.1` của `model_viewer_plus` (`net::ERR_CLEARTEXT_NOT_PERMITTED`) và tránh tải Draco WASM từ `gstatic.com`; (2) Màn hình Đăng nhập hiển thị cả chuỗi `DioException` kỹ thuật dài dòng thay vì thông báo ngắn gọn tiếng Việt + thiếu tài khoản `demo@vigorai.app` trên Railway.
 - **Những file đã tạo / chỉnh sửa:**
