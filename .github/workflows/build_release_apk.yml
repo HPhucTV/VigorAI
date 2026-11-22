@@ -1,0 +1,105 @@
+name: Build Android Release APK
+
+on:
+  push:
+    branches:
+      - main
+      - HPhucTV
+    paths:
+      - 'mobile/**'
+      - '.github/workflows/build_release_apk.yml'
+  workflow_dispatch:
+    inputs:
+      use_mock_api:
+        description: 'Use Mock API (true/false)'
+        required: false
+        default: 'false'
+      api_base_url:
+        description: 'Backend API Base URL'
+        required: false
+        default: 'https://vigorai-production.up.railway.app'
+      mvp_closed_testing:
+        description: 'Enable MVP Closed Testing flag (true/false)'
+        required: false
+        default: 'false'
+
+jobs:
+  build-release-apk:
+    runs-on: ubuntu-latest
+    concurrency:
+      group: build-release-apk-${{ github.ref }}
+      cancel-in-progress: true
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Java 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+
+      - name: Set up Flutter (stable)
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          cache: true
+
+      - name: Install required Android SDK 36 & NDK 28.2
+        run: |
+          SDK_ROOT="${ANDROID_HOME:-$ANDROID_SDK_ROOT}"
+          SDKMGR="$SDK_ROOT/cmdline-tools/latest/bin/sdkmanager"
+          if [ ! -x "$SDKMGR" ]; then
+            SDKMGR="$(command -v sdkmanager)"
+          fi
+          yes | "$SDKMGR" --licenses > /dev/null || true
+          "$SDKMGR" "platforms;android-36" "build-tools;36.0.0" "ndk;28.2.13676358"
+
+      - name: Bootstrap Gradle 9.5.0 wrapper (gitignored)
+        run: |
+          if [ ! -f mobile/android/gradlew ] || [ ! -f mobile/android/gradle/wrapper/gradle-wrapper.jar ]; then
+            curl -fsSL https://services.gradle.org/distributions/gradle-9.5.0-bin.zip -o /tmp/gradle.zip
+            unzip -q /tmp/gradle.zip -d /tmp/gradle-dist
+            mkdir -p /tmp/gw-init
+            (cd /tmp/gw-init && /tmp/gradle-dist/gradle-9.5.0/bin/gradle wrapper --gradle-version 9.5.0 --distribution-type all)
+            cp /tmp/gw-init/gradlew mobile/android/gradlew
+            cp /tmp/gw-init/gradlew.bat mobile/android/gradlew.bat
+            mkdir -p mobile/android/gradle/wrapper
+            cp /tmp/gw-init/gradle/wrapper/gradle-wrapper.jar mobile/android/gradle/wrapper/gradle-wrapper.jar
+            chmod +x mobile/android/gradlew
+          fi
+
+      - name: Flutter pub get & Drift codegen
+        working-directory: mobile
+        run: |
+          flutter --version
+          flutter pub get
+          dart run build_runner build
+
+      - name: Analyze & Unit Tests
+        working-directory: mobile
+        run: |
+          flutter analyze --no-fatal-infos
+          flutter test test/health/ test/workout/
+
+      - name: Build Android Release APK
+        working-directory: mobile
+        env:
+          USE_MOCK_API: ${{ inputs.use_mock_api || 'false' }}
+          API_BASE_URL: ${{ inputs.api_base_url || 'https://vigorai-production.up.railway.app' }}
+          MVP_CLOSED_TESTING: ${{ inputs.mvp_closed_testing || 'false' }}
+        run: |
+          flutter build apk --release \
+            --dart-define=USE_MOCK_API="$USE_MOCK_API" \
+            --dart-define=API_BASE_URL="$API_BASE_URL" \
+            --dart-define=MVP_CLOSED_TESTING="$MVP_CLOSED_TESTING"
+          cp build/app/outputs/flutter-apk/app-release.apk build/app/outputs/flutter-apk/VigorAI-release.apk
+          ls -lh build/app/outputs/flutter-apk/VigorAI-release.apk
+
+      - name: Upload VigorAI-release.apk artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: VigorAI-release-apk
+          path: mobile/build/app/outputs/flutter-apk/VigorAI-release.apk
+          retention-days: 14
