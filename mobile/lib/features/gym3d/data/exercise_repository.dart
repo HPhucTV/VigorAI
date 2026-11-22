@@ -32,10 +32,99 @@ class ExerciseRepository {
     return false;
   }
 
+  static int _rowQualityScore(String id, String code, String url) {
+    var score = 0;
+    if (!_hasStaleUrl(code, url)) score += 4;
+    if (!id.startsWith('ex-')) score += 2;
+    if (url.startsWith('https://') || url.startsWith('assets/')) score += 1;
+    return score;
+  }
+
+  /// Chon ban ghi uu tien nhat khi co nhieu dong cung ma `code` (tranh loi Bad state: Too many elements).
+  static T pickPreferredByCode<T>(
+    List<T> candidates, {
+    required String Function(T item) idOf,
+    required String Function(T item) codeOf,
+    required String Function(T item) urlOf,
+  }) {
+    var best = candidates.first;
+    var bestScore = _rowQualityScore(idOf(best), codeOf(best), urlOf(best));
+    for (var i = 1; i < candidates.length; i++) {
+      final cand = candidates[i];
+      final score = _rowQualityScore(idOf(cand), codeOf(cand), urlOf(cand));
+      if (score > bestScore) {
+        best = cand;
+        bestScore = score;
+      }
+    }
+    return best;
+  }
+
+  /// Khu trung lap danh sach bai tap theo ma `code` (khong phan biet hoa/thuong).
+  static List<T> deduplicateByCode<T>(
+    Iterable<T> items, {
+    required String Function(T item) idOf,
+    required String Function(T item) codeOf,
+    required String Function(T item) urlOf,
+  }) {
+    final grouped = <String, List<T>>{};
+    for (final item in items) {
+      grouped.putIfAbsent(codeOf(item).trim().toUpperCase(), () => []).add(item);
+    }
+    return grouped.values
+        .map(
+          (group) => pickPreferredByCode<T>(
+            group,
+            idOf: idOf,
+            codeOf: codeOf,
+            urlOf: urlOf,
+          ),
+        )
+        .toList();
+  }
+
   final AppDatabase _db;
   final Dio _dio;
 
   ExerciseRepository(this._db, this._dio);
+
+  Future<List<ExercisesTableData>> _cleanupDuplicateRows(
+    List<ExercisesTableData> rawRows,
+  ) async {
+    if (rawRows.length <= 1) return rawRows;
+    final grouped = <String, List<ExercisesTableData>>{};
+    for (final row in rawRows) {
+      grouped.putIfAbsent(row.code.trim().toUpperCase(), () => []).add(row);
+    }
+
+    final kept = <ExercisesTableData>[];
+    final redundantIds = <String>[];
+    for (final group in grouped.values) {
+      if (group.length == 1) {
+        kept.add(group.first);
+        continue;
+      }
+      final preferred = pickPreferredByCode<ExercisesTableData>(
+        group,
+        idOf: (r) => r.id,
+        codeOf: (r) => r.code,
+        urlOf: (r) => r.model3dGlbUrl,
+      );
+      kept.add(preferred);
+      for (final row in group) {
+        if (row.id != preferred.id) {
+          redundantIds.add(row.id);
+        }
+      }
+    }
+
+    if (redundantIds.isNotEmpty) {
+      await (_db.delete(_db.exercisesTable)
+            ..where((t) => t.id.isIn(redundantIds)))
+          .go();
+    }
+    return kept;
+  }
 
   ExerciseModel _applyBundledOverrides(
     ExerciseModel model,
@@ -92,7 +181,8 @@ class ExerciseRepository {
   }
 
   Future<List<ExerciseModel>> loadExercises({bool forceRefresh = false}) async {
-    final existingRows = await _db.select(_db.exercisesTable).get();
+    final rawRows = await _db.select(_db.exercisesTable).get();
+    final existingRows = await _cleanupDuplicateRows(rawRows);
     final mockList = await _loadFromMockAsset();
     final mockByCode = <String, ExerciseModel>{
       for (final m in mockList) m.code.toUpperCase(): m,
@@ -157,16 +247,35 @@ class ExerciseRepository {
   }
 
   Future<ExerciseModel?> getExerciseByCode(String code) async {
-    final normalized = code.toUpperCase();
-    final row = await (_db.select(_db.exercisesTable)
+    final normalized = code.trim().toUpperCase();
+    final matchedRows = await (_db.select(_db.exercisesTable)
           ..where((t) => t.code.equals(normalized)))
-        .getSingleOrNull();
-    if (row != null) {
+        .get();
+    if (matchedRows.isNotEmpty) {
+      final preferred = matchedRows.length == 1
+          ? matchedRows.first
+          : pickPreferredByCode<ExercisesTableData>(
+              matchedRows,
+              idOf: (r) => r.id,
+              codeOf: (r) => r.code,
+              urlOf: (r) => r.model3dGlbUrl,
+            );
+      if (matchedRows.length > 1) {
+        final redundantIds = matchedRows
+            .where((r) => r.id != preferred.id)
+            .map((r) => r.id)
+            .toList();
+        if (redundantIds.isNotEmpty) {
+          await (_db.delete(_db.exercisesTable)
+                ..where((t) => t.id.isIn(redundantIds)))
+              .go();
+        }
+      }
       final mockList = await _loadFromMockAsset();
       final mockByCode = <String, ExerciseModel>{
         for (final m in mockList) m.code.toUpperCase(): m,
       };
-      return _applyBundledOverrides(_rowToModel(row), mockByCode);
+      return _applyBundledOverrides(_rowToModel(preferred), mockByCode);
     }
     final all = await loadExercises();
     for (final ex in all) {
@@ -186,28 +295,54 @@ class ExerciseRepository {
   }
 
   Future<void> _upsertExercises(List<ExerciseModel> items) async {
-    await _db.batch((batch) {
-      for (final item in items) {
-        batch.insert(
-          _db.exercisesTable,
-          ExercisesTableCompanion.insert(
-            id: item.id,
-            code: item.code,
-            nameVi: item.nameVi,
-            nameEn: Value(item.nameEn),
-            equipmentType: item.equipmentType,
-            model3dGlbUrl: item.model3dGlbUrl,
-            assetChecksum: item.assetChecksum,
-            primaryMusclesJson: jsonEncode(item.primaryMuscles),
-            secondaryMusclesJson: Value(jsonEncode(item.secondaryMuscles)),
-            stabilizerMusclesJson: Value(jsonEncode(item.stabilizerMuscles)),
-            phaseKeyframesJson: Value(jsonEncode(item.phaseKeyframes.toJson())),
-            badFormWarningsJson: Value(jsonEncode(item.badFormWarnings)),
-            setupGuideJson: Value(jsonEncode(item.setupGuide)),
-          ),
-          mode: InsertMode.insertOrReplace,
-        );
+    final uniqueItems = deduplicateByCode<ExerciseModel>(
+      items,
+      idOf: (e) => e.id,
+      codeOf: (e) => e.code,
+      urlOf: (e) => e.model3dGlbUrl,
+    );
+    final incomingIdByCode = <String, String>{
+      for (final item in uniqueItems) item.code.trim().toUpperCase(): item.id,
+    };
+
+    await _db.transaction(() async {
+      final currentRows = await _db.select(_db.exercisesTable).get();
+      final staleIds = <String>[];
+      for (final row in currentRows) {
+        final upper = row.code.trim().toUpperCase();
+        final replacementId = incomingIdByCode[upper];
+        if (replacementId != null && row.id != replacementId) {
+          staleIds.add(row.id);
+        }
       }
+      if (staleIds.isNotEmpty) {
+        await (_db.delete(_db.exercisesTable)
+              ..where((t) => t.id.isIn(staleIds)))
+            .go();
+      }
+      await _db.batch((batch) {
+        for (final item in uniqueItems) {
+          batch.insert(
+            _db.exercisesTable,
+            ExercisesTableCompanion.insert(
+              id: item.id,
+              code: item.code.trim().toUpperCase(),
+              nameVi: item.nameVi,
+              nameEn: Value(item.nameEn),
+              equipmentType: item.equipmentType,
+              model3dGlbUrl: item.model3dGlbUrl,
+              assetChecksum: item.assetChecksum,
+              primaryMusclesJson: jsonEncode(item.primaryMuscles),
+              secondaryMusclesJson: Value(jsonEncode(item.secondaryMuscles)),
+              stabilizerMusclesJson: Value(jsonEncode(item.stabilizerMuscles)),
+              phaseKeyframesJson: Value(jsonEncode(item.phaseKeyframes.toJson())),
+              badFormWarningsJson: Value(jsonEncode(item.badFormWarnings)),
+              setupGuideJson: Value(jsonEncode(item.setupGuide)),
+            ),
+            mode: InsertMode.insertOrReplace,
+          );
+        }
+      });
     });
   }
 

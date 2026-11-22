@@ -17,6 +17,33 @@
 
 ---
 
+## Phiên 29 — 2026-11-22 10:05 | Thành viên: M1 + M2 (Fix 3 lỗi UI Copy, Layout Biometrics & Gym 3D Duplicate SQLite) | Task: Bugfix Pre-Test Release
+- **Mục tiêu phiên:** Xử lý triệt để 3 lỗi thực tế phát hiện khi test máy thật: (1) lược bỏ chữ kỹ thuật CNTT/mã nội bộ và tiếng Anh thừa gây bể layout trên toàn bộ màn hình Mobile trong khi vẫn giữ đầy đủ CH Play Guardrails, (2) sửa lỗi tràn viền thẻ BMI & lệch kích thước 3 khung chỉ số ở `BiometricsScreen`, (3) sửa triệt để lỗi `Bad state: Too many elements` khi mở chi tiết bài tập trong Phòng tập 3D, đồng thời tạo `note.md` (chặn qua `.gitignore`) lưu checklist test trên máy có Android Studio.
+- **Những file đã tạo / chỉnh sửa:**
+  - **Phòng tập 3D & Chống trùng SQLite (`[OWNER: M2]` + phòng ngừa `[OWNER: M1]`):**
+    - `mobile/lib/features/gym3d/data/exercise_repository.dart`: Bổ sung `pickPreferredByCode`, `deduplicateByCode`, `_cleanupDuplicateRows` tự chữa lành dòng trùng `code` (giữa ID `ex-*` mock và UUID server); bỏ `.getSingleOrNull()` ở `getExerciseByCode` thay bằng `.get()` + tự xóa dòng thừa; bọc `_upsertExercises` trong transaction dọn sạch ID cũ trùng `code` trước khi chèn.
+    - `mobile/lib/features/gym3d/presentation/exercise_3d_detail_screen.dart`: Thay màn hình báo lỗi raw exception thành thông báo thân thiện kèm nút **Thử lại**; sửa thanh tua pha chống tràn ngang và bỏ `(30 FPS)`.
+    - `mobile/lib/features/health/data/health_repository.dart`, `mobile/lib/core/sync/sync_queue_manager.dart`, `mobile/lib/features/workout/data/workout_repository.dart`: Gia cố phòng ngừa cùng lỗi `Bad state: Too many elements` cho các truy vấn `dailyHealthLogsTable` theo `logDateIso` (đổi sang `.get()` sắp theo `updatedAt desc` + tự dọn trùng).
+    - `mobile/test/workout/workout_sprint2_test.dart`: Bổ sung unit test hồi quy kiểm chứng `ExerciseRepository.deduplicateByCode` ưu tiên UUID server + URL hợp lệ.
+  - **Layout Hình 3 & Dashboard (`[OWNER: M1]`):**
+    - `mobile/lib/features/health/biometrics/presentation/biometrics_screen.dart`: Đưa `weightKg` + badge `BMI` (`FittedBox` bên trong `Expanded`) lên hàng riêng, chuyển dòng `Cập nhật` xuống dưới để hết văng ra ngoài khung; bọc 3 `_MetricTile` (`Tỷ lệ mỡ`, `Khối cơ`, `TB 7 ngày`) bằng `IntrinsicHeight` + `CrossAxisAlignment.stretch` và bỏ `margin` lệch phải để 3 khung cân đối tuyệt đối.
+    - `mobile/lib/features/health/presentation/health_dashboard_screen.dart`: Bọc `Expanded` cho tiêu đề thẻ Nước & Thực phẩm bổ sung tránh đè số; chuyển 2 thẻ `Quét món AI` / `Ảnh tiến độ` sang `IntrinsicHeight` + bố cục gọn để không bẻ 4 dòng.
+  - **Lược bỏ chữ kỹ thuật CNTT & mã nội bộ (`[OWNER: M1]` & `[OWNER: M2]`):**
+    - `[OWNER: M1]`: `health_dashboard_screen.dart` (gỡ unused import `api_endpoints.dart`), `biometrics_screen.dart`, `nutrition_screen.dart`, `food_scan_screen.dart`, `progress_photos_screen.dart`, `hydration_screen.dart`, `sleep_screen.dart`, `supplements_screen.dart`, `onboarding_disclaimer_screen.dart`, `login_screen.dart` (gỡ unused import `api_endpoints.dart`), `register_screen.dart`, `auth_controller.dart`, `health_repository.dart`.
+    - `[OWNER: M2]`: `gym3d_library_screen.dart`, `exercise_3d_detail_screen.dart`, `live_workout_logger_screen.dart`, `routines_screen.dart`, `exercise_swapper_sheet.dart`, `plate_calculator_sheet.dart`, `ai_coach_hub_screen.dart`, `readiness_recovery_3d_view.dart`, `ai_analytics_repository.dart`.
+  - **Ghi chú kiểm thử cục bộ & `.gitignore` (`[LOCKED STUB]` theo chỉ định trực tiếp của người dùng):**
+    - Tạo `note.md` (checklist chạy `flutter analyze`, `flutter test`, test cài đè chữa lành dữ liệu 3D, test layout 360dp/font 1.3x, soát text UI) và thêm `note.md` vào `.gitignore` *(lưu ý tách commit `.gitignore` thành Micro-PR riêng khi push Git)*.
+- **Quyết định kỹ thuật / Lưu ý quan trọng:**
+  - Bảo toàn 100% CH Play Policy Guardrails: giữ nguyên Miễn trừ Y tế ở Onboarding, trích dẫn `Mifflin-St Jeor (1990)` ở `NutritionScreen`, trích dẫn `Epley/Brzycki` ở `LiveWorkoutLoggerScreen`/`VolumeAnalyticsView` và thẻ `disclaimer` ở `FoodScanScreen` + `ReadinessRecovery3DView`.
+  - Chỉ xóa chữ kỹ thuật CNTT/mã nội bộ (`F01`–`F26`, `M2`/`M4`, `Model B/C`, `SQLite`, `Offline-First`, `WorkManager`, `Photo Picker`, `Blender MCP`, `YOLOv8`, `MVP`, `Cloud 3D`, `3D Offline Ready`, `modelVersion`, `useMockApi`...) và chỉ rút gọn tiếng Anh ở những nơi làm bể layout.
+- **Kiểm tra / Kết quả chạy thử:**
+  - Đã chạy kiểm chứng trên **Flutter 3.50.1 / Dart 3.14.0**: `flutter pub get` & `dart run build_runner build` OK, `flutter analyze --no-fatal-infos` Exit `0` (**0 errors · 0 warnings**), `flutter test test/health/ test/workout/` **28 / 28 PASS** (gồm unit test hồi quy mới `deduplicates duplicate exercise codes and prefers server UUID with non-stale URL`).
+  - Đã gỡ lại Android Studio/SDK/Flutter trên máy phụ do máy yếu; còn phần test UI trực quan & cài đè máy thật/emulator sẽ chạy trên máy chính theo `note.md`.
+- **Việc cần làm ở phiên kế tiếp:**
+  - Khi về máy có Android Studio & Flutter SDK, chạy toàn bộ checklist trong `note.md` (`flutter analyze`, `flutter test`, cài đè APK test self-healing Phòng tập 3D & layout `BiometricsScreen`).
+
+---
+
 ## Phiên 28 — 2026-11-21 22:34 | Thành viên: M3 + M2 (CDN 3D Cloud Offload & Release APK Test) | Task: `T-M3-09` (`[x]` Hoàn tất) & Gỡ 28 `.glb` mở rộng khỏi Bundle Mobile
 - **Mục tiêu phiên:** Hoàn tất `T-M3-09` (tách 28/31 bài tập `.glb` mở rộng lên Cloud/Railway S3 Bucket + FastAPI CDN endpoint), thu gọn `mobile/assets/3d_bundled/` từ `44.38 MB` xuống `6.53 MiB` (`6.85 MB`), deploy live lên Railway và build file `app-release.apk` trỏ thẳng Server Production để test máy thật.
 - **Những thay đổi đã thực hiện:**

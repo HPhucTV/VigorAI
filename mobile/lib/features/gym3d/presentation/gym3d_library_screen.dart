@@ -55,7 +55,7 @@ class _Gym3DLibraryScreenState extends ConsumerState<Gym3DLibraryScreen> {
         title: const Text('Phòng tập 3D Tương tác'),
         actions: [
           PopupMenuButton<BodyAvatarPreset>(
-            tooltip: 'Chọn mô hình cơ thể 3D (F13)',
+            tooltip: 'Chọn mô hình cơ thể 3D',
             initialValue: avatarPreset,
             onSelected: (preset) {
               ref.read(bodyAvatarPresetProvider.notifier).state = preset;
@@ -153,7 +153,7 @@ class _Gym3DLibraryScreenState extends ConsumerState<Gym3DLibraryScreen> {
                           const SizedBox(width: 10),
                           Expanded(
                             child: Text(
-                              'Đã đóng gói sẵn ${visiblePool.length} bài tập 3D Offline (đủ 10 nhóm cơ) — xoay 360°, Đúng/Sai & Bản đồ cơ.',
+                              'Đã có sẵn ${visiblePool.length} bài tập 3D — xoay 360°, Đúng/Sai & Bản đồ cơ.',
                               style: const TextStyle(fontSize: 13),
                             ),
                           ),
@@ -313,44 +313,6 @@ class _Exercise3DCard extends StatelessWidget {
                             ),
                           ),
                         ),
-                        if (exercise.isBundled)
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 3,
-                            ),
-                            decoration: BoxDecoration(
-                              color: AppColors.accent.withValues(alpha: 0.14),
-                              borderRadius: BorderRadius.circular(20),
-                            ),
-                            child: const Text(
-                              '3D Offline Ready',
-                              style: TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w600,
-                                color: AppColors.stepTeal,
-                              ),
-                            ),
-                          )
-                        else if (exercise.model3dGlbUrl.startsWith('http'))
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 3,
-                            ),
-                            decoration: BoxDecoration(
-                              color: Colors.indigo.withValues(alpha: 0.10),
-                              borderRadius: BorderRadius.circular(20),
-                            ),
-                            child: const Text(
-                              'Cloud 3D',
-                              style: TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w600,
-                                color: Colors.indigo,
-                              ),
-                            ),
-                          ),
                         if (exercise.hasBadFormClip)
                           Container(
                             padding: const EdgeInsets.symmetric(

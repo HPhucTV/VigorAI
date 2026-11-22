@@ -122,7 +122,7 @@ class _ReadinessRecovery3DViewState
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         const Text(
-                          'Điểm Sẵn sàng Tập luyện (Model C)',
+                          'Điểm Sẵn sàng Tập luyện',
                           style: TextStyle(
                             fontSize: 13,
                             color: Colors.black54,
@@ -139,7 +139,7 @@ class _ReadinessRecovery3DViewState
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          'Ngày ${snapshot.targetDateIso} · ${snapshot.modelVersion}',
+                          'Ngày ${snapshot.targetDateIso}',
                           style: Theme.of(context).textTheme.bodySmall,
                         ),
                       ],
@@ -258,7 +258,7 @@ class _ReadinessRecovery3DViewState
 
           // 4. Smart Overload & Deload Recommendations (F21)
           const Text(
-            'Đề xuất Mức tạ & Cảnh báo Quá tải (F21)',
+            'Đề xuất Mức tạ & Cảnh báo Quá tải',
             style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
           ),
           const SizedBox(height: 8),

@@ -22,6 +22,19 @@ class _ProgressPhotosScreenState extends ConsumerState<ProgressPhotosScreen> {
   ProgressPhotoItem? _afterPhoto;
   double _sliderFraction = 0.5;
 
+  static String _poseLabel(String pose) {
+    switch (pose) {
+      case 'FRONT':
+        return 'Trước';
+      case 'SIDE':
+        return 'Nghiêng';
+      case 'BACK':
+        return 'Sau';
+      default:
+        return pose;
+    }
+  }
+
   Future<void> _addPhoto({required bool fromCamera}) async {
     final repo = ref.read(progressPhotosRepositoryProvider);
     final saved = await repo.captureOrPickAndSave(
@@ -33,9 +46,7 @@ class _ProgressPhotosScreenState extends ConsumerState<ProgressPhotosScreen> {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
-        content: Text(
-          'Đã lưu ảnh riêng tư vào bộ nhớ nội bộ ứng dụng (không lộ ra Gallery).',
-        ),
+        content: Text('Đã lưu ảnh tiến độ thành công.'),
       ),
     );
   }
@@ -46,7 +57,7 @@ class _ProgressPhotosScreenState extends ConsumerState<ProgressPhotosScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Ảnh Tiến độ Cơ thể (F24)'),
+        title: const Text('Ảnh Tiến độ Cơ thể'),
       ),
       body: photosAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
@@ -67,19 +78,19 @@ class _ProgressPhotosScreenState extends ConsumerState<ProgressPhotosScreen> {
             padding: const EdgeInsets.all(16),
             children: [
               // Huy hieu bao mat rieng tu CH Play
-              Card(
-                color: const Color(0xFFE8F5E9),
-                child: const ListTile(
+              const Card(
+                color: Color(0xFFE8F5E9),
+                child: ListTile(
                   leading: Icon(
                     Icons.lock_outline,
                     color: AppColors.muscleRecoveredGreen,
                   ),
                   title: Text(
-                    'Lưu trữ 100% cục bộ & riêng tư',
+                    'Lưu trữ an toàn trên máy',
                     style: TextStyle(fontWeight: FontWeight.bold),
                   ),
                   subtitle: Text(
-                    'Ảnh chỉ nằm trong thư mục riêng tư progress_photos/, không xuất hiện ở Gallery công cộng và tự xóa sạch khi xóa tài khoản.',
+                    'Ảnh chỉ hiển thị trong ứng dụng, không xuất hiện ở thư viện ảnh chung và tự xóa khi bạn xóa tài khoản.',
                   ),
                 ),
               ),
@@ -93,7 +104,7 @@ class _ProgressPhotosScreenState extends ConsumerState<ProgressPhotosScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const Text(
-                        'Chụp / Chọn ảnh mới (Android Photo Picker)',
+                        'Chụp / Chọn ảnh mới',
                         style: TextStyle(fontWeight: FontWeight.bold),
                       ),
                       const SizedBox(height: 8),
@@ -101,7 +112,7 @@ class _ProgressPhotosScreenState extends ConsumerState<ProgressPhotosScreen> {
                         spacing: 8,
                         children: ['FRONT', 'SIDE', 'BACK'].map((pose) {
                           return ChoiceChip(
-                            label: Text('Góc $pose'),
+                            label: Text(_poseLabel(pose)),
                             selected: _capturePose == pose,
                             onSelected: (_) =>
                                 setState(() => _capturePose = pose),
@@ -200,7 +211,7 @@ class _ProgressPhotosScreenState extends ConsumerState<ProgressPhotosScreen> {
                 spacing: 8,
                 children: ['ALL', 'FRONT', 'SIDE', 'BACK'].map((pose) {
                   return ChoiceChip(
-                    label: Text(pose == 'ALL' ? 'Tất cả' : pose),
+                    label: Text(pose == 'ALL' ? 'Tất cả' : _poseLabel(pose)),
                     selected: _selectedPoseFilter == pose,
                     onSelected: (_) =>
                         setState(() => _selectedPoseFilter = pose),
@@ -236,7 +247,7 @@ class _ProgressPhotosScreenState extends ConsumerState<ProgressPhotosScreen> {
                                 child: Icon(Icons.broken_image_outlined),
                               ),
                       ),
-                      title: Text('${item.poseTag} · ${item.dateLabel}'),
+                      title: Text('${_poseLabel(item.poseTag)} · ${item.dateLabel}'),
                       subtitle: Wrap(
                         spacing: 6,
                         children: [

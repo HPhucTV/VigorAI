@@ -34,15 +34,15 @@ class _OnboardingDisclaimerScreenState
       color: AppColors.stepTeal,
       title: 'Quản lý Sức khỏe Toàn diện',
       subtitle:
-          'Theo dõi cân nặng, BMI chuẩn Châu Á, bước chân qua Android Health Connect, '
-          'lượng nước bù theo buổi tập, Calo/Macro & giấc ngủ (Offline-First).',
+          'Theo dõi cân nặng, BMI chuẩn Châu Á, bước chân hàng ngày, '
+          'lượng nước bù theo buổi tập, Calo/Macro & giấc ngủ.',
     ),
     (
       icon: Icons.view_in_ar_rounded,
       color: AppColors.primary,
-      title: 'Phòng tập 3D Tương tác (Blender MCP)',
+      title: 'Phòng tập 3D Tương tác',
       subtitle:
-          'Quan sát 360° từng bài tập Gym trên mô hình Mannequin giải phẫu 11 nhóm cơ, '
+          'Quan sát 360° từng bài tập Gym trên mô hình giải phẫu 11 nhóm cơ, '
           'so sánh tư thế Đúng/Sai và tua chậm 0.25x theo nhịp hít thở.',
     ),
     (
@@ -50,7 +50,7 @@ class _OnboardingDisclaimerScreenState
       color: AppColors.calorieOrange,
       title: 'Trợ lý AI Dinh dưỡng & Phục hồi',
       subtitle:
-          'Chụp ảnh bữa ăn để ước tính Calo/Macro (YOLOv8) và dự báo điểm Sẵn sàng '
+          'Chụp ảnh bữa ăn để ước tính Calo/Macro tự động và dự báo điểm Sẵn sàng '
           'tập luyện kèm Bản đồ Mỏi cơ 3D cá nhân hóa.',
     ),
   ];
@@ -167,7 +167,7 @@ class _OnboardingDisclaimerScreenState
                           SizedBox(width: 8),
                           Expanded(
                             child: Text(
-                              'Miễn trừ Trách nhiệm Y tế (CH Play Mandatory)',
+                              'Miễn trừ Trách nhiệm Y tế',
                               style: TextStyle(fontWeight: FontWeight.bold),
                             ),
                           ),

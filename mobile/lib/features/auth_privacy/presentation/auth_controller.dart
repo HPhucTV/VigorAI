@@ -154,7 +154,7 @@ class AuthController extends StateNotifier<AuthState> {
   }) async {
     if (!state.disclaimerAccepted) {
       state = state.copyWith(
-        errorMessage: 'Bạn cần chấp nhận Miễn trừ Trách nhiệm Y tế ở Onboarding.',
+        errorMessage: 'Bạn cần chấp nhận Miễn trừ Trách nhiệm Y tế trước khi đăng ký.',
       );
       return false;
     }

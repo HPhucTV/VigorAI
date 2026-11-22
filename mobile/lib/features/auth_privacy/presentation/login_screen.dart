@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../core/network/api_endpoints.dart';
 import 'auth_controller.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
@@ -58,7 +57,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       leading: const Icon(Icons.warning_amber, color: Colors.red),
                       title: const Text('Chưa xác nhận Miễn trừ Y tế'),
                       subtitle: const Text(
-                        'Bắt buộc đồng ý điều khoản tại Onboarding trước khi sử dụng.',
+                        'Bắt buộc đồng ý điều khoản trước khi sử dụng ứng dụng.',
                       ),
                       trailing: TextButton(
                         onPressed: () => context.go('/onboarding'),
@@ -76,9 +75,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 ),
                 const SizedBox(height: 6),
                 Text(
-                  ApiEndpoints.useMockApi
-                      ? 'Đang chạy ở chế độ Mock Data (useMockApi = true)'
-                      : 'Kết nối máy chủ: ${ApiEndpoints.baseUrl}',
+                  'Đăng nhập để theo dõi sức khỏe và lịch tập của bạn.',
                   style: Theme.of(context).textTheme.bodySmall,
                 ),
                 const SizedBox(height: 20),

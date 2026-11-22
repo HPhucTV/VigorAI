@@ -85,3 +85,6 @@ backend/ai_models/weights/
 *.blend2
 *.blend3
 assets_3d/renders_tmp/
+
+# --- Local Test Notes (Khong push len GitHub) ---
+note.md

@@ -5,7 +5,6 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/config/feature_flags.dart';
 import '../../../core/database/health_tables.drift.dart';
-import '../../../core/network/api_endpoints.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../auth_privacy/presentation/auth_controller.dart';
 import '../data/health_repository.dart';
@@ -57,11 +56,9 @@ class _HealthDashboardScreenState extends ConsumerState<HealthDashboardScreen>
               'Xin chào, ${authState.user?.fullName ?? "Vận động viên"}',
               style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
             ),
-            Text(
-              ApiEndpoints.useMockApi
-                  ? 'VigorAI · Offline-First (Mock API)'
-                  : 'VigorAI · Offline-First + Cloud Sync',
-              style: const TextStyle(fontSize: 12),
+            const Text(
+              'VigorAI · Sức khỏe & Tập luyện',
+              style: TextStyle(fontSize: 12),
             ),
           ],
         ),
@@ -79,8 +76,8 @@ class _HealthDashboardScreenState extends ConsumerState<HealthDashboardScreen>
                     : const Icon(Icons.cloud_upload_outlined, size: 16),
                 label: Text(
                   healthState.isSyncing
-                      ? 'Đang sync...'
-                      : 'Sync (${healthState.pendingSyncCount})',
+                      ? 'Đang đồng bộ...'
+                      : 'Đồng bộ (${healthState.pendingSyncCount})',
                 ),
                 onPressed: healthState.isSyncing
                     ? null
@@ -88,9 +85,9 @@ class _HealthDashboardScreenState extends ConsumerState<HealthDashboardScreen>
                         final report = await controller.syncWithServer();
                         if (!context.mounted) return;
                         final msg = report.skippedOffline
-                            ? 'Chưa có mạng — giữ an toàn ${report.remainingPendingCount} bản ghi offline.'
+                            ? 'Chưa có mạng — đã lưu ${report.remainingPendingCount} thay đổi trên thiết bị.'
                             : (report.errorMessage ??
-                                'Đồng bộ hoàn tất (${report.pushedCount} đẩy lên).');
+                                'Đồng bộ hoàn tất (${report.pushedCount} mục).');
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(content: Text(msg)),
                         );
@@ -251,11 +248,17 @@ class _HealthDashboardScreenState extends ConsumerState<HealthDashboardScreen>
                                 mainAxisAlignment:
                                     MainAxisAlignment.spaceBetween,
                                 children: [
-                                  const Text(
-                                    'Lượng nước thông minh (F03)',
-                                    style:
-                                        TextStyle(fontWeight: FontWeight.bold),
+                                  const Expanded(
+                                    child: Text(
+                                      'Lượng nước thông minh',
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
                                   ),
+                                  const SizedBox(width: 8),
                                   Text(
                                     '${daily.waterMl} / ${daily.targetWaterMl} ml',
                                   ),
@@ -315,14 +318,19 @@ class _HealthDashboardScreenState extends ConsumerState<HealthDashboardScreen>
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Row(
+                            const Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                const Text(
-                                  'Dinh dưỡng hôm nay (Mifflin-St Jeor)',
-                                  style: TextStyle(fontWeight: FontWeight.bold),
+                                Expanded(
+                                  child: Text(
+                                    'Dinh dưỡng hôm nay',
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style:
+                                        TextStyle(fontWeight: FontWeight.bold),
+                                  ),
                                 ),
-                                const Icon(Icons.chevron_right),
+                                Icon(Icons.chevron_right),
                               ],
                             ),
                             const SizedBox(height: 6),
@@ -347,58 +355,115 @@ class _HealthDashboardScreenState extends ConsumerState<HealthDashboardScreen>
                     ),
                   ),
                   const SizedBox(height: 10),
-                  // T-M1-10 (F19) & T-M1-11 (F24): Quet mon an AI & Anh Progress cuc bo
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Card(
-                          color: const Color(0xFFFFF3E0),
-                          child: ListTile(
-                            onTap: () => context.push('/health/food-scan'),
-                            leading: const Icon(
-                              Icons.camera_alt_outlined,
-                              color: AppColors.calorieOrange,
-                            ),
-                            title: const Text(
-                              'Quét Món AI',
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 14,
+                  // T-M1-10 (F19) & T-M1-11 (F24): Quet mon an AI & Anh tien do
+                  IntrinsicHeight(
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Expanded(
+                          child: Card(
+                            color: const Color(0xFFFFF3E0),
+                            child: InkWell(
+                              borderRadius: BorderRadius.circular(16),
+                              onTap: () => context.push('/health/food-scan'),
+                              child: const Padding(
+                                padding: EdgeInsets.all(12),
+                                child: Row(
+                                  children: [
+                                    Icon(
+                                      Icons.camera_alt_outlined,
+                                      color: AppColors.calorieOrange,
+                                    ),
+                                    SizedBox(width: 10),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
+                                        children: [
+                                          Text(
+                                            'Quét món AI',
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 14,
+                                            ),
+                                          ),
+                                          SizedBox(height: 2),
+                                          Text(
+                                            'Tính calo qua ảnh',
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: TextStyle(
+                                              fontSize: 12,
+                                              color: Colors.black54,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
-                            ),
-                            subtitle: const Text(
-                              'Model B (F19)',
-                              style: TextStyle(fontSize: 12),
                             ),
                           ),
                         ),
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Card(
-                          color: const Color(0xFFE8F5E9),
-                          child: ListTile(
-                            onTap: () =>
-                                context.push('/health/progress-photos'),
-                            leading: const Icon(
-                              Icons.compare,
-                              color: AppColors.muscleRecoveredGreen,
-                            ),
-                            title: const Text(
-                              'Ảnh Progress',
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 14,
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Card(
+                            color: const Color(0xFFE8F5E9),
+                            child: InkWell(
+                              borderRadius: BorderRadius.circular(16),
+                              onTap: () =>
+                                  context.push('/health/progress-photos'),
+                              child: const Padding(
+                                padding: EdgeInsets.all(12),
+                                child: Row(
+                                  children: [
+                                    Icon(
+                                      Icons.compare,
+                                      color: AppColors.muscleRecoveredGreen,
+                                    ),
+                                    SizedBox(width: 10),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
+                                        children: [
+                                          Text(
+                                            'Ảnh tiến độ',
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 14,
+                                            ),
+                                          ),
+                                          SizedBox(height: 2),
+                                          Text(
+                                            'So sánh trước sau',
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: TextStyle(
+                                              fontSize: 12,
+                                              color: Colors.black54,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
-                            ),
-                            subtitle: const Text(
-                              'Riêng tư (F24)',
-                              style: TextStyle(fontSize: 12),
                             ),
                           ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                   const SizedBox(height: 10),
                   // T-M2-03 (F07-F10): The noi bat mo Phong tap 3D Tuong tac ngay duoi muc Dinh duong
@@ -410,7 +475,7 @@ class _HealthDashboardScreenState extends ConsumerState<HealthDashboardScreen>
                         child: Icon(Icons.view_in_ar, color: Colors.white),
                       ),
                       title: const Text(
-                        'Phòng tập 3D Tương tác (3 bài mẫu MVP)',
+                        'Phòng tập 3D Tương tác',
                         style: TextStyle(fontWeight: FontWeight.bold),
                       ),
                       subtitle: const Text(
@@ -434,10 +499,16 @@ class _HealthDashboardScreenState extends ConsumerState<HealthDashboardScreen>
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                const Text(
-                                  'Thực phẩm bổ sung hôm nay (F06)',
-                                  style: TextStyle(fontWeight: FontWeight.bold),
+                                const Expanded(
+                                  child: Text(
+                                    'Thực phẩm bổ sung hôm nay',
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style:
+                                        TextStyle(fontWeight: FontWeight.bold),
+                                  ),
                                 ),
+                                const SizedBox(width: 8),
                                 Text(
                                   '${healthState.weeklySupplementAdherencePct.toStringAsFixed(0)}% tuần',
                                   style: const TextStyle(
@@ -483,7 +554,7 @@ class _HealthDashboardScreenState extends ConsumerState<HealthDashboardScreen>
                           child: FilledButton.icon(
                             onPressed: () => context.push('/workout/live'),
                             icon: const Icon(Icons.fitness_center),
-                            label: const Text('Tập Gym 3D (M2)'),
+                            label: const Text('Tập Gym 3D'),
                           ),
                         ),
                         const SizedBox(width: 10),
@@ -491,7 +562,7 @@ class _HealthDashboardScreenState extends ConsumerState<HealthDashboardScreen>
                           child: FilledButton.tonalIcon(
                             onPressed: () => context.push('/ai-coach'),
                             icon: const Icon(Icons.auto_awesome),
-                            label: const Text('AI Coach (M4)'),
+                            label: const Text('AI Coach'),
                           ),
                         ),
                       ],
@@ -507,11 +578,11 @@ class _HealthDashboardScreenState extends ConsumerState<HealthDashboardScreen>
                         color: AppColors.warningRed,
                       ),
                       title: const Text(
-                        'Quyền riêng tư & Xóa Tài khoản (F26)',
+                        'Xóa tài khoản',
                         style: TextStyle(fontWeight: FontWeight.bold),
                       ),
                       subtitle: const Text(
-                        'Xóa vĩnh viễn tài khoản, hồ sơ sức khỏe, SQLite và ảnh cục bộ.',
+                        'Xóa vĩnh viễn tài khoản, hồ sơ sức khỏe và dữ liệu trên thiết bị.',
                       ),
                       trailing: TextButton(
                         onPressed: authState.isLoading
@@ -536,8 +607,8 @@ class _HealthDashboardScreenState extends ConsumerState<HealthDashboardScreen>
       builder: (dialogCtx) => AlertDialog(
         title: const Text('Xóa vĩnh viễn tài khoản?'),
         content: const Text(
-          'Hành động này sẽ xóa toàn bộ dữ liệu trên máy chủ VigorAI, '
-          'CSDL SQLite cục bộ và ảnh tiến độ riêng tư. Không thể khôi phục sau khi xóa.',
+          'Hành động này sẽ xóa toàn bộ dữ liệu trên máy chủ VigorAI '
+          'và trên thiết bị này. Không thể khôi phục sau khi xóa.',
         ),
         actions: [
           TextButton(

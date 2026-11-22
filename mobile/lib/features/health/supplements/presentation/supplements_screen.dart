@@ -15,7 +15,7 @@ class SupplementsScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Thực phẩm Bổ sung (F06)'),
+        title: const Text('Thực phẩm Bổ sung'),
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _openAddSupplementSheet(context, controller),
@@ -52,7 +52,7 @@ class SupplementsScreen extends ConsumerWidget {
                         ),
                         const SizedBox(height: 4),
                         const Text(
-                          'Bấm "Đã uống" ngay trong app hoặc trên thanh thông báo Android.',
+                          'Bấm "Đã uống" ngay trong ứng dụng hoặc trên thanh thông báo.',
                           style: TextStyle(fontSize: 13, color: Colors.black54),
                         ),
                       ],
@@ -66,9 +66,9 @@ class SupplementsScreen extends ConsumerWidget {
 
           Card(
             child: SwitchListTile(
-              title: const Text('Nhắc lịch định kỳ bằng WorkManager'),
+              title: const Text('Nhắc lịch uống định kỳ'),
               subtitle: const Text(
-                'Tuân thủ CH Play: Không dùng SCHEDULE_EXACT_ALARM.',
+                'Gửi thông báo nhắc nhở theo lịch bạn đã cài đặt.',
               ),
               value: state.supplementReminderEnabled,
               onChanged: controller.toggleSupplementReminders,

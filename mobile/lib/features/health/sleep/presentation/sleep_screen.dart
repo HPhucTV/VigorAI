@@ -39,7 +39,7 @@ class _SleepScreenState extends ConsumerState<SleepScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Theo dõi Giấc ngủ & Phục hồi (F05)'),
+        title: const Text('Theo dõi Giấc ngủ'),
       ),
       body: ListView(
         padding: const EdgeInsets.all(16),
@@ -149,7 +149,7 @@ class _SleepScreenState extends ConsumerState<SleepScreen> {
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
                             content: Text(
-                              'Đã lưu $previewHours giờ ngủ vào SQLite.',
+                              'Đã lưu $previewHours giờ ngủ hôm nay.',
                             ),
                           ),
                         );
@@ -246,20 +246,19 @@ class _SleepScreenState extends ConsumerState<SleepScreen> {
               ),
             ),
           ),
-          const SizedBox(height: 12),
-
-          Card(
-            color: const Color(0xFFF3F6FA),
-            child: ListTile(
-              leading: const Icon(Icons.health_and_safety_outlined),
-              title: const Text('Tích hợp Android Health Connect'),
-              subtitle: Text(
-                FeatureFlags.enableHealthConnect
-                    ? 'Đã bật đồng bộ tự động SleepSessionRecord từ Health Connect.'
-                    : 'Đang dùng chế độ nhập tay nhanh ở bản v1.0/v1.1. Tự động đồng bộ READ_SLEEP sẽ mở khóa ở bản cập nhật v1.2.0.',
+          if (FeatureFlags.enableHealthConnect) ...[
+            const SizedBox(height: 12),
+            const Card(
+              color: Color(0xFFF3F6FA),
+              child: ListTile(
+                leading: Icon(Icons.health_and_safety_outlined),
+                title: Text('Đồng bộ giấc ngủ tự động'),
+                subtitle: Text(
+                  'Đã bật tự động đồng bộ dữ liệu giấc ngủ từ Health Connect.',
+                ),
               ),
             ),
-          ),
+          ],
         ],
       ),
     );

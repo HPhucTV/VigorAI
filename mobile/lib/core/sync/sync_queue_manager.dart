@@ -441,9 +441,17 @@ class SyncQueueManager {
         if (logDateIso == null) continue;
         final id = raw['id']?.toString() ?? 'daily-$logDateIso';
         final serverUpdated = _parseUtc(raw['updated_at']);
-        final existing = await (_db.select(_db.dailyHealthLogsTable)
-              ..where((t) => t.logDateIso.equals(logDateIso)))
-            .getSingleOrNull();
+        final existingRows = await (_db.select(_db.dailyHealthLogsTable)
+              ..where((t) => t.logDateIso.equals(logDateIso))
+              ..orderBy([(t) => OrderingTerm.desc(t.updatedAt)]))
+            .get();
+        final existing = existingRows.isNotEmpty ? existingRows.first : null;
+        if (existingRows.length > 1) {
+          final redundantIds = existingRows.skip(1).map((r) => r.id).toList();
+          await (_db.delete(_db.dailyHealthLogsTable)
+                ..where((t) => t.id.isIn(redundantIds)))
+              .go();
+        }
 
         final serverSteps = (raw['steps_count'] as num?)?.toInt() ?? 0;
         final serverKcal = (raw['active_calories_kcal'] as num?)?.toInt() ?? 0;

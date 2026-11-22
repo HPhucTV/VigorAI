@@ -218,7 +218,7 @@ class AiAnalyticsRepository {
       readinessScore: baseFallback.readinessScore,
       readinessLevel: baseFallback.readinessLevel,
       insights: const [
-        'Đang ở chế độ offline — bản đồ phục hồi được ước tính từ lịch sử tập 72 giờ gần nhất trên máy.',
+        'Chưa có kết nối mạng — bản đồ phục hồi đang ước tính từ lịch sử tập 72 giờ gần nhất.',
       ],
       muscleFatigueMap: baseFallback.muscleFatigueMap,
       weightRecommendations: const [],

@@ -159,6 +159,22 @@ class HealthRepository {
     return '${dt.year}-$m-$d';
   }
 
+  Future<DailyHealthLogsTableData?> _findDailyRowByDate(String dateIso) async {
+    final rows = await (_db.select(_db.dailyHealthLogsTable)
+          ..where((t) => t.logDateIso.equals(dateIso))
+          ..orderBy([(t) => OrderingTerm.desc(t.updatedAt)]))
+        .get();
+    if (rows.isEmpty) return null;
+    final latest = rows.first;
+    if (rows.length > 1) {
+      final redundantIds = rows.skip(1).map((r) => r.id).toList();
+      await (_db.delete(_db.dailyHealthLogsTable)
+            ..where((t) => t.id.isIn(redundantIds)))
+          .go();
+    }
+    return latest;
+  }
+
   Future<HealthDashboardState> loadDashboardData({
     double heightCm = 172.0,
     String gender = 'MALE',
@@ -172,9 +188,7 @@ class HealthRepository {
     final existingBios = await (_db.select(_db.biometricLogsTable)
           ..where((t) => t.deletedAt.isNull()))
         .get();
-    final existingDaily = await (_db.select(_db.dailyHealthLogsTable)
-          ..where((t) => t.logDateIso.equals(todayStr)))
-        .getSingleOrNull();
+    final existingDaily = await _findDailyRowByDate(todayStr);
 
     if (existingBios.isEmpty && existingDaily == null) {
       await _bootstrapInitialData(todayStr);
@@ -541,9 +555,7 @@ class HealthRepository {
   }) async {
     final todayStr = todayIso();
     final nowUtc = DateTime.now().toUtc();
-    final existing = await (_db.select(_db.dailyHealthLogsTable)
-          ..where((t) => t.logDateIso.equals(todayStr)))
-        .getSingleOrNull();
+    final existing = await _findDailyRowByDate(todayStr);
 
     final targetMl = targetWaterMlOverride ??
         existing?.targetWaterMl ??
@@ -570,9 +582,7 @@ class HealthRepository {
   Future<void> updateTargetWaterMl(int targetWaterMl) async {
     final todayStr = todayIso();
     final nowUtc = DateTime.now().toUtc();
-    final existing = await (_db.select(_db.dailyHealthLogsTable)
-          ..where((t) => t.logDateIso.equals(todayStr)))
-        .getSingleOrNull();
+    final existing = await _findDailyRowByDate(todayStr);
     if (existing == null) return;
     await (_db.update(_db.dailyHealthLogsTable)
           ..where((t) => t.id.equals(existing.id)))
@@ -592,9 +602,7 @@ class HealthRepository {
   }) async {
     final targetIso = todayIso(logDate);
     final nowUtc = DateTime.now().toUtc();
-    final existing = await (_db.select(_db.dailyHealthLogsTable)
-          ..where((t) => t.logDateIso.equals(targetIso)))
-        .getSingleOrNull();
+    final existing = await _findDailyRowByDate(targetIso);
 
     await _db.into(_db.dailyHealthLogsTable).insertOnConflictUpdate(
           DailyHealthLogsTableCompanion(
@@ -1020,7 +1028,7 @@ class HealthDashboardController extends StateNotifier<HealthDashboardState> {
     final report = await _syncManager.syncNow();
     await load();
     final msg = report.skippedOffline
-        ? 'Đang ngoại tuyến — ${report.remainingPendingCount} thay đổi được giữ an toàn trong SQLite.'
+        ? 'Chưa có mạng — ${report.remainingPendingCount} thay đổi đã được lưu trên thiết bị.'
         : (report.errorMessage ??
             'Đã đồng bộ ${report.pushedCount} thay đổi lên máy chủ.');
     state = state.copyWith(isSyncing: false, lastSyncMessage: msg);

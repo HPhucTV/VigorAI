@@ -116,7 +116,7 @@ class _FoodScanScreenState extends ConsumerState<FoodScanScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Quét Món ăn AI (F19)'),
+        title: const Text('Quét Món ăn AI'),
       ),
       body: ListView(
         padding: const EdgeInsets.all(16),
@@ -140,7 +140,7 @@ class _FoodScanScreenState extends ConsumerState<FoodScanScreen> {
                       ? null
                       : () => _pickAndAnalyze(fromCamera: false),
                   icon: const Icon(Icons.photo_library_outlined),
-                  label: const Text('Photo Picker'),
+                  label: const Text('Chọn từ thư viện'),
                 ),
               ),
             ],
@@ -191,7 +191,7 @@ class _FoodScanScreenState extends ConsumerState<FoodScanScreen> {
                               CircularProgressIndicator(color: Colors.white),
                               SizedBox(height: 10),
                               Text(
-                                'AI Model B đang nhận diện món ăn...',
+                                'AI đang nhận diện món ăn...',
                                 style: TextStyle(color: Colors.white),
                               ),
                             ],
@@ -219,7 +219,7 @@ class _FoodScanScreenState extends ConsumerState<FoodScanScreen> {
                       Icon(Icons.fastfood_outlined, size: 42, color: Colors.black45),
                       SizedBox(height: 8),
                       Text(
-                        'Chụp hoặc chọn ảnh khay cơm qua Android Photo Picker (nén < 300 KB).',
+                        'Chụp hoặc chọn ảnh bữa ăn để AI nhận diện và ước tính dinh dưỡng.',
                         textAlign: TextAlign.center,
                         style: TextStyle(color: Colors.black54),
                       ),
@@ -249,22 +249,13 @@ class _FoodScanScreenState extends ConsumerState<FoodScanScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          'Tổng: ${res.totalCalories.round()} kcal',
-                          style: const TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.calorieOrange,
-                          ),
-                        ),
-                        Text(
-                          '${res.modelVersion} · ${res.inferenceTimeMs}ms',
-                          style: const TextStyle(fontSize: 11, color: Colors.black54),
-                        ),
-                      ],
+                    Text(
+                      'Tổng: ${res.totalCalories.round()} kcal',
+                      style: const TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.calorieOrange,
+                      ),
                     ),
                     const SizedBox(height: 6),
                     Text(
