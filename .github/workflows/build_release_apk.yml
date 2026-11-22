@@ -62,6 +62,7 @@ jobs:
             curl -fsSL https://services.gradle.org/distributions/gradle-9.5.0-bin.zip -o /tmp/gradle.zip
             unzip -q /tmp/gradle.zip -d /tmp/gradle-dist
             mkdir -p /tmp/gw-init
+            touch /tmp/gw-init/settings.gradle
             (cd /tmp/gw-init && /tmp/gradle-dist/gradle-9.5.0/bin/gradle wrapper --gradle-version 9.5.0 --distribution-type all)
             cp /tmp/gw-init/gradlew mobile/android/gradlew
             cp /tmp/gw-init/gradlew.bat mobile/android/gradlew.bat
