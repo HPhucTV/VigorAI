@@ -51,28 +51,19 @@ class NutritionScreen extends ConsumerWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            '${state.totalCaloriesConsumed.round()} / ${state.targetCaloriesKcal.round()} kcal',
-                            style: const TextStyle(
-                              fontSize: 22,
-                              fontWeight: FontWeight.bold,
-                              color: AppColors.calorieOrange,
-                            ),
-                          ),
-                          Text(
-                            remainingKcal >= 0
-                                ? 'Còn lại: $remainingKcal kcal · BMR ${state.bmrKcal.round()} kcal'
-                                : 'Vượt ${remainingKcal.abs()} kcal · BMR ${state.bmrKcal.round()} kcal',
-                          ),
-                        ],
-                      ),
-                    ],
+                  Text(
+                    '${state.totalCaloriesConsumed.round()} / ${state.targetCaloriesKcal.round()} kcal',
+                    style: const TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.calorieOrange,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    remainingKcal >= 0
+                        ? 'Còn lại: $remainingKcal kcal · BMR ${state.bmrKcal.round()} kcal'
+                        : 'Vượt ${remainingKcal.abs()} kcal · BMR ${state.bmrKcal.round()} kcal',
                   ),
                   const SizedBox(height: 10),
                   Wrap(
@@ -482,10 +473,28 @@ class _MacroBar extends StatelessWidget {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(label, style: const TextStyle(fontSize: 13)),
-            Text(
-              '${consumed.toStringAsFixed(1)} / ${target.round()} g (${(ratio * 100).round()}%)',
-              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+            Expanded(
+              child: Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(fontSize: 13),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Flexible(
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerRight,
+                child: Text(
+                  '${consumed.toStringAsFixed(1)} / ${target.round()} g (${(ratio * 100).round()}%)',
+                  maxLines: 1,
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
             ),
           ],
         ),
