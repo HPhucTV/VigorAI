@@ -17,6 +17,38 @@
 
 ---
 
+## Phiên 30 — 2026-11-22 18:40 | Thành viên: M1 + M2 | Task: Kiểm thử toàn diện & Bugfix theo `note.md` + Build Release APK
+- **Mục tiêu phiên:** Thực hiện toàn bộ checklist trong `note.md` (Mục 0–5): kiểm tra tĩnh & unit/widget tests, khắc phục các lỗi UI copy/responsive `360dp + font_scale 1.3x` và self-healing SQLite Gym 3D phát hiện thêm, build & xác minh Release APK chuẩn CH Play, chạy E2E trên máy ảo Android 15 (`VigorAI_Pixel6_API35`) kết nối live Railway (`https://vigorai-production.up.railway.app`).
+- **Những file đã tạo / chỉnh sửa (`0` file `[LOCKED STUB]` bị chạm):**
+  - **Sửa lỗi M1 (`[OWNER: M1]`):**
+    - `mobile/lib/features/auth_privacy/presentation/register_screen.dart`: Gỡ `(Bulk)`, `(Cut)`, `(Maintain)` khỏi 3 lựa chọn mục tiêu tập luyện, chuẩn hóa tiếng Việt (`Tăng cơ`, `Giảm mỡ`, `Giữ dáng`).
+    - `mobile/lib/features/health/biometrics/presentation/biometrics_screen.dart`: Bọc `weightKg` trong `Flexible(flex: 5, child: FittedBox(...))` cạnh `Expanded(flex: 6)` badge BMI tránh tràn; đổi legend `Row` sang `Wrap`.
+    - `mobile/lib/features/health/presentation/health_dashboard_screen.dart`: Bọc `Expanded` + `ellipsis` cho tiêu đề `Bước chân` và `Giấc ngủ`; đổi nhóm nút `+250 ml` / `+500 ml` / `Chi tiết` sang `Wrap`.
+    - `mobile/lib/features/health/nutrition/presentation/nutrition_screen.dart`: Gỡ `Row` đơn thừa và bọc `Expanded`/`Flexible(FittedBox)` cho `_MacroBar`.
+    - `mobile/lib/features/health/progress_photos/presentation/progress_photos_screen.dart`: Đưa 3 chip tư thế `Trước` / `Nghiêng` / `Sau` vào `Row` 3 cột `Expanded` (`FittedBox`) để luôn nằm trên 1 hàng ở `360dp + 1.3x`.
+    - `mobile/lib/features/health/sleep/presentation/sleep_screen.dart`: Chuyển hàng đánh giá sao sang `Wrap` với nút `36x36`, tránh tràn ở `360dp + 1.3x`.
+    - `mobile/lib/features/health/food_scan/presentation/food_scan_screen.dart`: Chuyển khung ảnh giữ chỗ sang `BoxConstraints(minHeight: 160)` tránh bóp/tràn ở cỡ chữ lớn.
+    - `mobile/test/health/ui_layout_and_copy_test.dart` *(mới)*: 10 widget tests kiểm tra layout tại `360x780` + `TextScaler.linear(1.3)` và bảo toàn trích dẫn y tế/bỏ chuỗi CNTT cấm.
+    - `mobile/test/health/health_sprint2_test.dart`: Bổ sung unit test hồi quy self-healing trùng `DailyHealthLogs` trên `addWaterMl` & `pullServerUpdates`.
+  - **Sửa lỗi M2 (`[OWNER: M2]`):**
+    - `mobile/lib/features/gym3d/data/exercise_repository.dart`: Thêm tham số `useMockApi` tiêm qua constructor và nhận diện dòng `ex-*` trong `loadExercises()` để tự động làm mới từ `/api/v1/exercises` ngay khi có mạng.
+    - `mobile/lib/features/gym3d/presentation/gym3d_library_screen.dart`: Bọc danh sách (và trạng thái rỗng) trong `RefreshIndicator` gọi `loadExercises(forceRefresh: true)`.
+    - `mobile/lib/features/gym3d/presentation/widgets/muscle_3d_viewer_widget.dart`: Tăng `_loadTimeoutTimer` từ `8s` lên `15s` giúp máy yếu/khởi tạo WebView lạnh không báo nhầm lỗi timeout khi đang dựng WebGL (lỗi thật từ `<model-viewer>` vẫn bắt tức thì qua event `error`).
+    - `mobile/test/workout/workout_sprint2_test.dart`: Bổ sung test SQLite trong bộ nhớ cho `deduplicateByCode` và quá trình chuyển `ex-*` offline -> UUID server online.
+- **Quyết định kỹ thuật / Lưu ý quan trọng:**
+  - Tất cả 33 file `.glb` trong `assets_3d/exported_glb/` đều không dùng nén Draco (`KHR_draco_mesh_compression = False`) và `model_viewer_plus` phục vụ `model-viewer.min.js` + asset cục bộ hoàn toàn offline. Tuy nhiên ở kịch bản máy ảo chạy headless `-gpu swiftshader_indirect`, lần khởi tạo Chromium WebView đầu tiên ngay sau `pm clear` khi offline có thể vượt ngưỡng 15s do biên dịch shader WebGL bằng CPU; sau khi WebView ấm, cả bài Bundled lẫn Cloud đã cache trong `3d_assets/` đều dựng và chạy animation 100% offline.
+  - Ghi nhận thẩm mỹ nhỏ ở tab `Radar Cơ` (`AiCoachHubScreen`): chữ `Ngực (0)` hơi sát dòng phụ đề ngay phía trên tại mật độ mặc định, chưa gây `RenderFlex overflowed`.
+- **Kiểm tra / Kết quả chạy thử:**
+  - `flutter analyze --no-fatal-infos`: Exit `0` (**0 errors · 0 warnings**; 26 info `deprecated_member_use` của `package:flutter/material.dart`).
+  - `flutter test test/health/ test/workout/`: **41 / 41 PASS** (`12` test trong `health_sprint2_test.dart`, `10` test trong `ui_layout_and_copy_test.dart`, `19` test trong `workout_sprint2_test.dart`).
+  - Quét tĩnh 34 file trong `mobile/lib/features/**/*.dart`: **0** chuỗi CNTT/mã nội bộ cấm; bảo toàn `Mifflin-St Jeor`, `Epley`, `Brzycki`, Miễn trừ Y tế Onboarding & AI disclaimer.
+  - Build & Kiểm tra APK Release: `mobile/build/app/outputs/flutter-apk/app-release.apk` (`68,760,617` bytes / `65.58 MB`); ký `CN=VigorAI, OU=Mobile, O=VigorAI Team, L=Ho Chi Minh, ST=HCM, C=VN` (SHA-256 `0629aa11216b6bf38aa06475c4e0e9436d39eca21ddca143a94aef6a82eac321`); merged `AndroidManifest.xml` chứa **0** quyền CH Play bị cấm (chỉ giữ 10 quyền hợp lệ).
+  - E2E Emulator Android 15 (`VigorAI_Pixel6_API35`) bản Release với live Railway: Onboarding, Login (`demo@vigorai.app` -> `Nguyễn Văn An`), Register, `360dp / 480dpi + font_scale 1.3` (Dashboard & Biometrics cân đối), toàn bộ màn hình chi tiết Health, `Gym3DLibraryScreen` + Bundled & Cloud 3D (`Deadlift đòn tạ` tải CDN, kiểm tra SHA-256 & dựng 3D), `AiCoachHubScreen` (`Phục hồi 3D` 79 điểm + `Volume & PR` + `Radar Cơ`), `LiveWorkoutLoggerScreen`, Đồng bộ live (`Đồng bộ hoàn tất (1 mục).`, badge về `0`), và kịch bản `pm clear` offline -> online (`ex-*` được thay sạch bằng UUID PostgreSQL khi kéo làm mới, mở tuần tự 5 bài tập). Logcat: **0** `Bad state: Too many elements`, **0** `RenderFlex overflowed`, **0** `FATAL EXCEPTION`.
+- **Việc cần làm ở phiên kế tiếp:**
+  - Cài `app-release.apk` lên máy Android thật có GPU phần cứng để kiểm tra thêm thao tác xoay/zoom 3D bằng tay, chụp/chọn ảnh thật (`FoodScan` / `ProgressPhotos`), rồi tách 2 PR sạch (`[OWNER: M1]`, `[OWNER: M2]`) và push sau khi người dùng xác nhận (không tự ý push Git trong phiên này).
+
+---
+
 ## Phiên 29 — 2026-11-22 10:05 | Thành viên: M1 + M2 (Fix 3 lỗi UI Copy, Layout Biometrics & Gym 3D Duplicate SQLite) | Task: Bugfix Pre-Test Release
 - **Mục tiêu phiên:** Xử lý triệt để 3 lỗi thực tế phát hiện khi test máy thật: (1) lược bỏ chữ kỹ thuật CNTT/mã nội bộ và tiếng Anh thừa gây bể layout trên toàn bộ màn hình Mobile trong khi vẫn giữ đầy đủ CH Play Guardrails, (2) sửa lỗi tràn viền thẻ BMI & lệch kích thước 3 khung chỉ số ở `BiometricsScreen`, (3) sửa triệt để lỗi `Bad state: Too many elements` khi mở chi tiết bài tập trong Phòng tập 3D, đồng thời tạo `note.md` (chặn qua `.gitignore`) lưu checklist test trên máy có Android Studio.
 - **Những file đã tạo / chỉnh sửa:**

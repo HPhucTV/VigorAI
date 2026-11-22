@@ -85,8 +85,10 @@ class ExerciseRepository {
 
   final AppDatabase _db;
   final Dio _dio;
+  final bool _useMockApi;
 
-  ExerciseRepository(this._db, this._dio);
+  ExerciseRepository(this._db, this._dio, {bool? useMockApi})
+      : _useMockApi = useMockApi ?? ApiEndpoints.useMockApi;
 
   Future<List<ExercisesTableData>> _cleanupDuplicateRows(
     List<ExercisesTableData> rawRows,
@@ -188,7 +190,7 @@ class ExerciseRepository {
       for (final m in mockList) m.code.toUpperCase(): m,
     };
 
-    if (ApiEndpoints.useMockApi) {
+    if (_useMockApi) {
       final existingByCode = {
         for (final r in existingRows) r.code.toUpperCase(): r,
       };
@@ -208,7 +210,11 @@ class ExerciseRepository {
 
     final hasStaleCache =
         existingRows.any((r) => _hasStaleUrl(r.code, r.model3dGlbUrl));
-    if (!forceRefresh && !hasStaleCache && existingRows.length >= mockList.length) {
+    final hasMockSeededRows = existingRows.any((r) => r.id.startsWith('ex-'));
+    if (!forceRefresh &&
+        !hasStaleCache &&
+        !hasMockSeededRows &&
+        existingRows.length >= mockList.length) {
       return existingRows
           .map(_rowToModel)
           .map((e) => _applyBundledOverrides(e, mockByCode))

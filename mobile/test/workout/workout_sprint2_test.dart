@@ -1,5 +1,11 @@
 // [OWNER: M2] Unit Tests & Performance Benchmark cho Sprint 2 (1RM, Plate Calculator, Volume/Radar 1.000 sets < 300ms, Recovery 3D) (T-M2-09..12)
+import 'dart:convert';
+
+import 'package:dio/dio.dart';
+import 'package:drift/native.dart';
+import 'package:flutter/services.dart' show rootBundle;
 import 'package:flutter_test/flutter_test.dart';
+import 'package:vigorai_app/core/database/app_database.dart';
 import 'package:vigorai_app/core/database/workout_tables.drift.dart';
 import 'package:vigorai_app/core/theme/app_theme.dart';
 import 'package:vigorai_app/features/ai_analytics/data/ai_analytics_repository.dart';
@@ -8,6 +14,7 @@ import 'package:vigorai_app/features/gym3d/presentation/widgets/muscle_3d_viewer
 import 'package:vigorai_app/features/workout/domain/workout_calculators.dart';
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
   group('WorkoutCalculators — 1RM Epley/Brzycki (F17)', () {
     test('returns exact weight for 1 rep and 0 for invalid inputs', () {
       expect(WorkoutCalculators.calculateEstimated1Rm(100.0, 1), 100.0);
@@ -464,6 +471,173 @@ void main() {
         (e) => e.code.toUpperCase() == 'BARBELL_BENCH_PRESS',
       );
       expect(bench.id, benchServer.id);
+    });
+  });
+
+  group('ExerciseRepository — SQLite Self-Healing & Offline-to-Online Transition (Note.md Section 3)', () {
+    test('self-heals duplicate code rows in SQLite without Bad state: Too many elements', () async {
+      final db = AppDatabase.forTesting(NativeDatabase.memory());
+      addTearDown(db.close);
+      final dio = Dio(BaseOptions(baseUrl: 'https://test.local'));
+      final repo = ExerciseRepository(db, dio, useMockApi: false);
+
+      // Seed duplicate rows with old ex-* IDs and newer server UUIDs
+      await db.batch((b) {
+        b.insert(
+          db.exercisesTable,
+          ExercisesTableCompanion.insert(
+            id: 'ex-incline_dumbbell_press',
+            code: 'INCLINE_DUMBBELL_PRESS',
+            nameVi: 'Đẩy ngực trên với tạ đơn',
+            equipmentType: 'DUMBBELL',
+            model3dGlbUrl: 'assets/3d_bundled/incline_dumbbell_press.glb',
+            assetChecksum: 'stale-sha',
+            primaryMusclesJson: '["Mat_Muscle_Chest"]',
+          ),
+        );
+        b.insert(
+          db.exercisesTable,
+          ExercisesTableCompanion.insert(
+            id: '22222222-2222-4222-8222-222222222222',
+            code: 'INCLINE_DUMBBELL_PRESS',
+            nameVi: 'Đẩy ngực trên với tạ đơn',
+            equipmentType: 'DUMBBELL',
+            model3dGlbUrl:
+                'https://vigorai-production.up.railway.app/api/v1/exercises/INCLINE_DUMBBELL_PRESS/glb',
+            assetChecksum: 'real-sha',
+            primaryMusclesJson: '["Mat_Muscle_Chest"]',
+          ),
+        );
+        b.insert(
+          db.exercisesTable,
+          ExercisesTableCompanion.insert(
+            id: 'ex-barbell_bench_press',
+            code: 'BARBELL_BENCH_PRESS',
+            nameVi: 'Đẩy ngực ngang với tạ đòn',
+            equipmentType: 'BARBELL',
+            model3dGlbUrl: 'assets/3d_bundled/barbell_bench_press.glb',
+            assetChecksum: 'bench-sha',
+            primaryMusclesJson: '["Mat_Muscle_Chest"]',
+          ),
+        );
+        b.insert(
+          db.exercisesTable,
+          ExercisesTableCompanion.insert(
+            id: '11111111-1111-4111-8111-111111111111',
+            code: 'BARBELL_BENCH_PRESS',
+            nameVi: 'Đẩy ngực ngang với tạ đòn',
+            equipmentType: 'BARBELL',
+            model3dGlbUrl: 'assets/3d_bundled/barbell_bench_press.glb',
+            assetChecksum: 'bench-sha',
+            primaryMusclesJson: '["Mat_Muscle_Chest"]',
+          ),
+        );
+      });
+
+      final incline = await repo.getExerciseByCode('INCLINE_DUMBBELL_PRESS');
+      expect(incline, isNotNull);
+      expect(incline!.id, '22222222-2222-4222-8222-222222222222');
+      expect(incline.model3dGlbUrl, startsWith('https://'));
+
+      final afterIncline = await (db.select(db.exercisesTable)
+            ..where((t) => t.code.equals('INCLINE_DUMBBELL_PRESS')))
+          .get();
+      expect(afterIncline.length, 1);
+
+      // Simulate offline so loadExercises cleans remaining duplicate in SQLite and falls back cleanly
+      dio.interceptors.add(
+        InterceptorsWrapper(
+          onRequest: (options, handler) => handler.reject(
+            DioException.connectionError(
+              requestOptions: options,
+              reason: 'offline',
+            ),
+          ),
+        ),
+      );
+      final loaded = await repo.loadExercises();
+      expect(loaded.length, 2);
+
+      final benchRows = await (db.select(db.exercisesTable)
+            ..where((t) => t.code.equals('BARBELL_BENCH_PRESS')))
+          .get();
+      expect(benchRows.length, 1);
+      expect(benchRows.single.id, '11111111-1111-4111-8111-111111111111');
+    });
+
+    test('transitions cleanly from offline mock seed (ex-*) to live server UUIDs without duplicates', () async {
+      final db = AppDatabase.forTesting(NativeDatabase.memory());
+      addTearDown(db.close);
+
+      var online = false;
+      final dio = Dio(BaseOptions(baseUrl: 'https://test.local'));
+      final rawMock = jsonDecode(
+        await rootBundle.loadString('assets/mock_json/mock_m2_exercises.json'),
+      ) as Map<String, dynamic>;
+      final mockItems =
+          (rawMock['exercises'] as List).cast<Map<String, dynamic>>();
+
+      dio.interceptors.add(
+        InterceptorsWrapper(
+          onRequest: (options, handler) {
+            if (!online) {
+              handler.reject(
+                DioException.connectionError(
+                  requestOptions: options,
+                  reason: 'airplane mode',
+                ),
+              );
+              return;
+            }
+            final serverItems = mockItems
+                .map(
+                  (e) => <String, dynamic>{
+                    ...e,
+                    'id': 'uuid-${(e['code'] as String).toLowerCase()}',
+                  },
+                )
+                .toList();
+            handler.resolve(
+              Response<Map<String, dynamic>>(
+                requestOptions: options,
+                statusCode: 200,
+                data: {'items': serverItems},
+              ),
+            );
+          },
+        ),
+      );
+
+      final repo = ExerciseRepository(db, dio, useMockApi: false);
+
+      // 1. First open offline -> seeds 39 ex-* mock rows cleanly
+      final offlineExercises = await repo.loadExercises();
+      expect(offlineExercises.length, mockItems.length);
+      final offlineDbRows = await db.select(db.exercisesTable).get();
+      expect(offlineDbRows.length, mockItems.length);
+      expect(offlineDbRows.every((r) => r.id.startsWith('ex-')), isTrue);
+
+      // 2. Network comes back -> loadExercises refreshes from /api/v1/exercises and replaces ex-* with UUIDs
+      online = true;
+      final onlineExercises = await repo.loadExercises();
+      expect(onlineExercises.length, mockItems.length);
+
+      final onlineDbRows = await db.select(db.exercisesTable).get();
+      expect(onlineDbRows.length, mockItems.length);
+      expect(onlineDbRows.every((r) => r.id.startsWith('uuid-')), isTrue);
+
+      // 3. Opening 5 distinct exercises (bundled + cloud) succeeds cleanly
+      for (final code in const [
+        'BARBELL_BENCH_PRESS',
+        'BARBELL_SQUAT',
+        'PUSH_UP',
+        'INCLINE_DUMBBELL_PRESS',
+        'LAT_PULLDOWN',
+      ]) {
+        final ex = await repo.getExerciseByCode(code);
+        expect(ex, isNotNull);
+        expect(ex!.id, 'uuid-${code.toLowerCase()}');
+      }
     });
   });
 }
