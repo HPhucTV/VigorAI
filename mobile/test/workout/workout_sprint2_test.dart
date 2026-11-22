@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:vigorai_app/core/database/workout_tables.drift.dart';
 import 'package:vigorai_app/core/theme/app_theme.dart';
 import 'package:vigorai_app/features/ai_analytics/data/ai_analytics_repository.dart';
+import 'package:vigorai_app/features/gym3d/data/exercise_repository.dart';
 import 'package:vigorai_app/features/gym3d/presentation/widgets/muscle_3d_viewer_widget.dart';
 import 'package:vigorai_app/features/workout/domain/workout_calculators.dart';
 
@@ -404,6 +405,65 @@ void main() {
       expect(femaleExercise.x, BodyAvatarPreset.femaleFit.scaleX);
       expect(femaleExercise.y, BodyAvatarPreset.femaleFit.scaleY);
       expect(femaleExercise.z, BodyAvatarPreset.femaleFit.scaleZ);
+    });
+
+    test('deduplicates duplicate exercise codes and prefers server UUID with non-stale URL', () {
+      const mockRow = ExerciseModel(
+        id: 'ex-incline_dumbbell_press',
+        code: 'INCLINE_DUMBBELL_PRESS',
+        nameVi: 'Đẩy ngực trên với tạ đơn',
+        equipmentType: 'DUMBBELL',
+        model3dGlbUrl: 'assets/3d_bundled/incline_dumbbell_press.glb',
+        assetChecksum: 'old-sha',
+        primaryMuscles: [MuscleMaterialIds.chest],
+      );
+      const serverRow = ExerciseModel(
+        id: '11111111-2222-4333-8444-555555555555',
+        code: 'incline_dumbbell_press',
+        nameVi: 'Đẩy ngực trên với tạ đơn',
+        equipmentType: 'DUMBBELL',
+        model3dGlbUrl:
+            'https://vigorai-production.up.railway.app/api/v1/exercises/INCLINE_DUMBBELL_PRESS/glb',
+        assetChecksum: 'new-sha',
+        primaryMuscles: [MuscleMaterialIds.chest],
+      );
+      const benchMock = ExerciseModel(
+        id: 'ex-barbell_bench_press',
+        code: 'BARBELL_BENCH_PRESS',
+        nameVi: 'Đẩy ngực ngang với tạ đòn',
+        equipmentType: 'BARBELL',
+        model3dGlbUrl: 'assets/3d_bundled/barbell_bench_press.glb',
+        assetChecksum: 'bench-sha',
+        primaryMuscles: [MuscleMaterialIds.chest],
+      );
+      const benchServer = ExerciseModel(
+        id: 'aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee',
+        code: 'BARBELL_BENCH_PRESS',
+        nameVi: 'Đẩy ngực ngang với tạ đòn',
+        equipmentType: 'BARBELL',
+        model3dGlbUrl: 'assets/3d_bundled/barbell_bench_press.glb',
+        assetChecksum: 'bench-sha',
+        primaryMuscles: [MuscleMaterialIds.chest],
+      );
+
+      final deduped = ExerciseRepository.deduplicateByCode<ExerciseModel>(
+        const [mockRow, serverRow, benchMock, benchServer],
+        idOf: (e) => e.id,
+        codeOf: (e) => e.code,
+        urlOf: (e) => e.model3dGlbUrl,
+      );
+
+      expect(deduped.length, 2);
+      final incline = deduped.firstWhere(
+        (e) => e.code.toUpperCase() == 'INCLINE_DUMBBELL_PRESS',
+      );
+      expect(incline.id, serverRow.id);
+      expect(incline.model3dGlbUrl, serverRow.model3dGlbUrl);
+
+      final bench = deduped.firstWhere(
+        (e) => e.code.toUpperCase() == 'BARBELL_BENCH_PRESS',
+      );
+      expect(bench.id, benchServer.id);
     });
   });
 }

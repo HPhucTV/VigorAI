@@ -61,7 +61,7 @@ class _Exercise3DDetailScreenState
     final kf = ex.phaseKeyframes;
     if (progress < kf.eccentric.end) {
       return (
-        label: '1. Hạ tạ (Eccentric)',
+        label: '1. Hạ tạ',
         breath: kf.eccentric.breath,
         color: AppColors.hydrationBlue,
         index: 0,
@@ -69,14 +69,14 @@ class _Exercise3DDetailScreenState
     }
     if (progress < kf.isometric.end) {
       return (
-        label: '2. Giữ đáy (Isometric)',
+        label: '2. Giữ đáy',
         breath: kf.isometric.breath,
         color: AppColors.calorieOrange,
         index: 1,
       );
     }
     return (
-      label: '3. Phát lực (Concentric)',
+      label: '3. Phát lực',
       breath: kf.concentric.breath,
       color: AppColors.muscleRecoveredGreen,
       index: 2,
@@ -145,9 +145,34 @@ class _Exercise3DDetailScreenState
         appBar: AppBar(title: const Text('Đang tải bài tập 3D...')),
         body: const Center(child: CircularProgressIndicator()),
       ),
-      error: (err, _) => Scaffold(
+      error: (_, __) => Scaffold(
         appBar: AppBar(title: const Text('Lỗi tải dữ liệu')),
-        body: Center(child: Text('Lỗi: $err')),
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(
+                  Icons.error_outline,
+                  size: 42,
+                  color: AppColors.warningRed,
+                ),
+                const SizedBox(height: 12),
+                const Text(
+                  'Không thể tải chi tiết bài tập 3D lúc này. Vui lòng thử lại.',
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 12),
+                FilledButton(
+                  onPressed: () =>
+                      ref.invalidate(exerciseByCodeProvider(widget.exerciseCode)),
+                  child: const Text('Thử lại'),
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
       data: (exercise) {
         if (exercise == null) {
@@ -272,7 +297,7 @@ class _Exercise3DDetailScreenState
                               Icon(Icons.air, size: 14, color: phaseInfo.color),
                               const SizedBox(width: 6),
                               Text(
-                                '${phaseInfo.label.split(' (').first} · ${phaseInfo.breath}',
+                                '${phaseInfo.label} · ${phaseInfo.breath}',
                                 style: const TextStyle(
                                   color: Colors.white,
                                   fontSize: 11,
@@ -381,7 +406,7 @@ class _Exercise3DDetailScreenState
                   else
                     const Expanded(
                       child: Text(
-                        'Chế độ Tư thế chuẩn (30 FPS)',
+                        'Chế độ Tư thế chuẩn',
                         style: TextStyle(fontWeight: FontWeight.w600),
                       ),
                     ),
@@ -434,12 +459,18 @@ class _Exercise3DDetailScreenState
                               fontWeight: FontWeight.bold,
                             ),
                           ),
-                          Text(
-                            '${phaseInfo.label} · ${phaseInfo.breath}',
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                              color: phaseInfo.color,
+                          const SizedBox(width: 8),
+                          Flexible(
+                            child: Text(
+                              '${phaseInfo.label} · ${phaseInfo.breath}',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              textAlign: TextAlign.end,
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color: phaseInfo.color,
+                              ),
                             ),
                           ),
                         ],

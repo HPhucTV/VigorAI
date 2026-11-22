@@ -624,7 +624,7 @@ class _LiveWorkoutLoggerScreenState
             Text('• Số hiệp hoàn thành: ${summary.totalSets} (${summary.workingSets} hiệp chính)'),
             Text('• Kỷ lục PR mới: ${summary.newPrCount}'),
             Text(
-              '• Bù nước thông minh (F03): +${summary.hydrationBonusMl} ml vào mục tiêu hôm nay',
+              '• Bù nước thông minh: +${summary.hydrationBonusMl} ml vào mục tiêu hôm nay',
               style: const TextStyle(
                 color: AppColors.hydrationBlue,
                 fontWeight: FontWeight.w600,
@@ -633,8 +633,8 @@ class _LiveWorkoutLoggerScreenState
             const SizedBox(height: 6),
             Text(
               summary.syncedToServer
-                  ? 'Đã đồng bộ lên Server VigorAI.'
-                  : 'Đã lưu an toàn offline vào SQLite (tự đồng bộ khi có mạng).',
+                  ? 'Đã đồng bộ dữ liệu buổi tập.'
+                  : 'Đã lưu buổi tập trên máy (tự đồng bộ khi có mạng).',
               style: const TextStyle(fontSize: 12, color: Colors.grey),
             ),
           ],
@@ -671,7 +671,7 @@ class _LiveWorkoutLoggerScreenState
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              _activeSession?.sessionTitle ?? 'Buổi tập Gym (F15)',
+              _activeSession?.sessionTitle ?? 'Buổi tập Gym',
               style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
             ),
             Text(
@@ -690,12 +690,12 @@ class _LiveWorkoutLoggerScreenState
             onPressed: () => setState(() => _useLbs = !_useLbs),
           ),
           IconButton(
-            tooltip: 'Tính bánh tạ (F18)',
+            tooltip: 'Tính bánh tạ',
             icon: const Icon(Icons.calculate_outlined),
             onPressed: () => showPlateCalculatorSheet(context),
           ),
           IconButton(
-            tooltip: 'Giáo án (F14)',
+            tooltip: 'Giáo án',
             icon: const Icon(Icons.calendar_today_outlined),
             onPressed: () => context.push('/workout/routines'),
           ),
@@ -707,7 +707,7 @@ class _LiveWorkoutLoggerScreenState
             MaterialBanner(
               backgroundColor: const Color(0xFFE8F5E9),
               content: const Text(
-                'Đã khôi phục buổi tập dang dở từ SQLite cục bộ (Offline-First).',
+                'Đã khôi phục buổi tập dang dở của bạn.',
                 style: TextStyle(fontSize: 12),
               ),
               actions: [
@@ -826,12 +826,12 @@ class _LiveWorkoutLoggerScreenState
                   ),
                 ),
                 IconButton(
-                  tooltip: 'Xem 3D (F07)',
+                  tooltip: 'Xem 3D',
                   icon: const Icon(Icons.view_in_ar, color: AppColors.primary),
                   onPressed: () => context.push('/gym3d/exercise/${ex.code}'),
                 ),
                 IconButton(
-                  tooltip: 'Đổi bài tập (F25)',
+                  tooltip: 'Đổi bài tập',
                   icon: const Icon(Icons.swap_horiz, color: AppColors.calorieOrange),
                   onPressed: () => _swapExercise(block),
                 ),

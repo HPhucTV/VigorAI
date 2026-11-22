@@ -52,7 +52,7 @@ class _RoutinesScreenState extends ConsumerState<RoutinesScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Lịch & Giáo án Tập luyện (F14)'),
+        title: const Text('Lịch & Giáo án Tập luyện'),
         actions: [
           IconButton(
             tooltip: 'Tạo giáo án mới',

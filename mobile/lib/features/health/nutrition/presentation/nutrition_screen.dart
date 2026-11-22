@@ -27,10 +27,10 @@ class NutritionScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Nhật ký Calo & Macro (F04)'),
+        title: const Text('Nhật ký Calo & Macro'),
         actions: [
           IconButton(
-            tooltip: 'Quét món ăn AI (F19)',
+            tooltip: 'Quét món ăn AI',
             icon: const Icon(Icons.camera_alt_outlined),
             onPressed: () => context.push('/health/food-scan'),
           ),
@@ -132,11 +132,11 @@ class NutritionScreen extends ConsumerWidget {
                 child: Icon(Icons.auto_awesome, color: Colors.white),
               ),
               title: const Text(
-                'Quét Món ăn bằng AI Camera (F19)',
+                'Quét Món ăn bằng AI Camera',
                 style: TextStyle(fontWeight: FontWeight.bold),
               ),
               subtitle: const Text(
-                'Chụp ảnh hoặc chọn qua Photo Picker để AI nhận diện & tính Macro tự động',
+                'Chụp hoặc chọn ảnh món ăn để AI nhận diện & tính Macro tự động',
               ),
               trailing: const Icon(Icons.arrow_forward_ios, size: 16),
               onTap: () => context.push('/health/food-scan'),
@@ -304,7 +304,7 @@ class _AddMealSheetState extends State<_AddMealSheet> {
               children: [
                 Expanded(
                   child: ChoiceChip(
-                    label: const Text('Từ điển Offline'),
+                    label: const Text('Chọn từ danh sách'),
                     selected: !_manualMode,
                     onSelected: (_) => setState(() => _manualMode = false),
                   ),

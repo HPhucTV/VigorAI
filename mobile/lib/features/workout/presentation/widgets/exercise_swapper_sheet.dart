@@ -47,7 +47,7 @@ class _ExerciseSwapperContent extends ConsumerWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const Text(
-                      'Đổi bài tập tức thì (F25)',
+                      'Đổi bài tập tức thì',
                       style:
                           TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
                     ),

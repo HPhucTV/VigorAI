@@ -634,9 +634,17 @@ class WorkoutRepository {
   Future<void> _applyHydrationWorkoutBonus(int bonusMl) async {
     final nowUtc = DateTime.now().toUtc();
     final todayIso = localDateIso();
-    final row = await (_db.select(_db.dailyHealthLogsTable)
-          ..where((t) => t.logDateIso.equals(todayIso)))
-        .getSingleOrNull();
+    final dailyRows = await (_db.select(_db.dailyHealthLogsTable)
+          ..where((t) => t.logDateIso.equals(todayIso))
+          ..orderBy([(t) => OrderingTerm.desc(t.updatedAt)]))
+        .get();
+    final row = dailyRows.isNotEmpty ? dailyRows.first : null;
+    if (dailyRows.length > 1) {
+      final redundantIds = dailyRows.skip(1).map((r) => r.id).toList();
+      await (_db.delete(_db.dailyHealthLogsTable)
+            ..where((t) => t.id.isIn(redundantIds)))
+          .go();
+    }
     final latestBio = await (_db.select(_db.biometricLogsTable)
           ..where((t) => t.deletedAt.isNull())
           ..orderBy([

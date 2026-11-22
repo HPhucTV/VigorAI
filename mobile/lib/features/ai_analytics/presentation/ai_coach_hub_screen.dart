@@ -17,7 +17,7 @@ class AiCoachHubScreen extends ConsumerWidget {
       length: 3,
       child: Scaffold(
         appBar: AppBar(
-          title: const Text('AI Coach & Phân tích (F20–F24)'),
+          title: const Text('AI Coach & Phân tích'),
           actions: [
             IconButton(
               tooltip: 'Làm mới dữ liệu',
