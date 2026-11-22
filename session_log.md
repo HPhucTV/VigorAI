@@ -37,7 +37,10 @@
   - `python -m py_compile` 6 file Python sửa: Exit `0`.
   - `flutter analyze --no-fatal-infos`: Exit `0` (**0 errors · 0 warnings**).
   - `flutter test test/workout/ test/health/`: **27 / 27 PASS**.
-  - Railway Storage Bucket `gym3d-assets` (`sjc`, virtual-host) + Deployment + Release APK: xem chi tiết xác minh bên dưới sau khi hoàn tất đẩy nhánh & build APK.
+  - Railway Storage Bucket `gym3d-assets` (`8414403c`, `sjc`, virtual-host) & Deployment `f1a0afff-30cf-4370-a45f-de07c881b733` (`[SUCCESS]`): đồng bộ **33/33 file `.glb`** (`uploaded=33, skipped=0, failed=0`), `seed=39 exercises`; xác minh live `GET /healthz` (`200 OK`), `GET /api/v1/exercises` (`39` bài), và tải `GET /api/v1/exercises/LAT_PULLDOWN/glb` chuyển hướng `307` sang `https://gym3d-assets-hzz2h5xxtlks.t3.storageapi.dev/exercises/lat_pulldown.glb` (`1,432,108 B`, SHA-256 `5fe27fe31087...` khớp `100%` `assets_manifest.json`).
+  - Release APK test máy thật: build sạch tại `mobile/build/app/outputs/flutter-apk/app-release.apk` (`68,645,929 B` / `65.47 MB` universal fat APK gồm 3 ABI `arm64-v8a` + `x86_64` + `armeabi-v7a`; `assets/flutter_assets/assets` chỉ còn `6.59 MB` sau tách CDN), xác minh chữ ký v2 `CN=VigorAI, O=VigorAI Team` qua `apksigner.bat` và `0` quyền cấm CH Play trong Merged Manifest.
+- **Việc cần làm ở phiên kế tiếp:**
+  - Cài `app-release.apk` lên máy Android thật test Full luồng 3D Cloud Lazy-Loading (`--dart-define=MVP_CLOSED_TESTING=false`), Health/Workout Offline-First và chuẩn bị đóng gói `.aab` `v1.1.0` (`T-M2-12`).
 
 ---
 
