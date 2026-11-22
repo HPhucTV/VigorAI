@@ -148,7 +148,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   ),
                   title: Text(
                     authState.disclaimerAccepted
-                        ? 'Đã chấp thuận Miễn trừ Trách nhiệm Y tế (CH Play)'
+                        ? 'Đã chấp thuận Miễn trừ Trách nhiệm Y tế'
                         : 'Bạn cần đồng ý Miễn trừ Y tế trước khi đăng ký',
                     style: const TextStyle(fontSize: 13),
                   ),
@@ -156,7 +156,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                       ? null
                       : TextButton(
                           onPressed: () => context.go('/onboarding'),
-                          child: const Text('Onboarding'),
+                          child: const Text('Xem điều khoản'),
                         ),
                 ),
                 if (authState.errorMessage != null) ...[

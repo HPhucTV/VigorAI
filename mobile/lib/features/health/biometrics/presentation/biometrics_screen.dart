@@ -48,63 +48,88 @@ class BiometricsScreen extends ConsumerWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              '${latest.weightKg.toStringAsFixed(1)} kg',
-                              style: const TextStyle(
-                                fontSize: 28,
-                                fontWeight: FontWeight.bold,
-                                color: AppColors.primary,
-                              ),
-                            ),
-                            Text('Cập nhật: ${latest.loggedDateIso}'),
-                          ],
+                        Text(
+                          '${latest.weightKg.toStringAsFixed(1)} kg',
+                          style: const TextStyle(
+                            fontSize: 28,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.primary,
+                          ),
                         ),
-                        Chip(
-                          backgroundColor: const Color(0xFFE3F2FD),
-                          label: Text(
-                            'BMI ${latest.bmi.toStringAsFixed(1)} · '
-                            '${BiometricLogModel.classifyAsianBmi(latest.bmi)}',
-                            style: const TextStyle(
-                              fontWeight: FontWeight.w600,
-                              color: AppColors.primary,
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Align(
+                            alignment: Alignment.centerRight,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 6,
+                              ),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFE3F2FD),
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color: AppColors.primary.withValues(alpha: 0.25),
+                                ),
+                              ),
+                              child: FittedBox(
+                                fit: BoxFit.scaleDown,
+                                child: Text(
+                                  'BMI ${latest.bmi.toStringAsFixed(1)} · '
+                                  '${BiometricLogModel.classifyAsianBmi(latest.bmi)}',
+                                  maxLines: 1,
+                                  style: const TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w600,
+                                    color: AppColors.primary,
+                                  ),
+                                ),
+                              ),
                             ),
                           ),
                         ),
                       ],
                     ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Cập nhật: ${latest.loggedDateIso}',
+                      style: const TextStyle(fontSize: 13, color: Colors.black54),
+                    ),
                     const SizedBox(height: 12),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: _MetricTile(
-                            label: 'Tỷ lệ mỡ',
-                            value: latest.bodyFatPct != null
-                                ? '${latest.bodyFatPct!.toStringAsFixed(1)}%'
-                                : '--',
+                    IntrinsicHeight(
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Expanded(
+                            child: _MetricTile(
+                              label: 'Tỷ lệ mỡ',
+                              value: latest.bodyFatPct != null
+                                  ? '${latest.bodyFatPct!.toStringAsFixed(1)}%'
+                                  : '--',
+                            ),
                           ),
-                        ),
-                        Expanded(
-                          child: _MetricTile(
-                            label: 'Khối lượng cơ',
-                            value: latest.muscleMassKg != null
-                                ? '${latest.muscleMassKg!.toStringAsFixed(1)} kg'
-                                : '--',
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: _MetricTile(
+                              label: 'Khối cơ',
+                              value: latest.muscleMassKg != null
+                                  ? '${latest.muscleMassKg!.toStringAsFixed(1)} kg'
+                                  : '--',
+                            ),
                           ),
-                        ),
-                        Expanded(
-                          child: _MetricTile(
-                            label: 'TB 7 ngày',
-                            value: ma7.isNotEmpty
-                                ? '${ma7.last.toStringAsFixed(1)} kg'
-                                : '--',
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: _MetricTile(
+                              label: 'TB 7 ngày',
+                              value: ma7.isNotEmpty
+                                  ? '${ma7.last.toStringAsFixed(1)} kg'
+                                  : '--',
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ],
                 ),
@@ -291,7 +316,7 @@ class BiometricsScreen extends ConsumerWidget {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 const Text(
-                  'Ghi nhận Cân nặng & Số đo (Offline-First)',
+                  'Ghi nhận Cân nặng & Số đo',
                   style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 12),
@@ -367,7 +392,7 @@ class BiometricsScreen extends ConsumerWidget {
                       Navigator.of(sheetCtx).pop(true);
                     }
                   },
-                  child: const Text('Lưu xuống SQLite'),
+                  child: const Text('Lưu chỉ số'),
                 ),
               ],
             ),
@@ -396,7 +421,7 @@ class BiometricsScreen extends ConsumerWidget {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Đã lưu cân nặng vào SQLite và đưa vào hàng đợi Sync.'),
+            content: Text('Đã lưu chỉ số cân nặng.'),
           ),
         );
       }
@@ -499,7 +524,6 @@ class _MetricTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.only(right: 8),
       padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
         color: const Color(0xFFF3F6FA),
@@ -507,10 +531,24 @@ class _MetricTile extends StatelessWidget {
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label, style: const TextStyle(fontSize: 12, color: Colors.black54)),
-          const SizedBox(height: 4),
-          Text(value, style: const TextStyle(fontWeight: FontWeight.bold)),
+          Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(fontSize: 12, color: Colors.black54),
+          ),
+          const SizedBox(height: 6),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Text(
+              value,
+              maxLines: 1,
+              style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+            ),
+          ),
         ],
       ),
     );

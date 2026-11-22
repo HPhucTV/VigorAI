@@ -81,7 +81,7 @@ class _PlateCalculatorSheetContentState
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 const Text(
-                  'Tính Bánh Tạ Trực quan (F18)',
+                  'Tính Bánh Tạ Trực quan',
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
                 IconButton(

@@ -24,7 +24,7 @@ class HydrationScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Lượng nước Thông minh (F03)'),
+        title: const Text('Lượng nước Thông minh'),
       ),
       body: ListView(
         padding: const EdgeInsets.all(16),
@@ -172,7 +172,7 @@ class HydrationScreen extends ConsumerWidget {
                   ),
                   const SizedBox(height: 6),
                   const Text(
-                    'Tự động cộng từ bảng buổi tập cục bộ, hoặc chọn nhanh mức vận động hôm nay:',
+                    'Tự động cộng thêm khi bạn hoàn thành buổi tập, hoặc chọn nhanh mức vận động hôm nay:',
                     style: TextStyle(fontSize: 13, color: Colors.black54),
                   ),
                   const SizedBox(height: 10),
@@ -194,7 +194,7 @@ class HydrationScreen extends ConsumerWidget {
                             workoutMinutes: 60,
                             workoutRpe: 8.0,
                           ),
-                          child: const Text('60p RPE 8 (+750ml)'),
+                          child: const Text('Tập nặng (+750ml)'),
                         ),
                       ),
                     ],
@@ -210,9 +210,9 @@ class HydrationScreen extends ConsumerWidget {
             child: Column(
               children: [
                 SwitchListTile(
-                  title: const Text('Nhắc uống nước bằng WorkManager'),
+                  title: const Text('Nhắc uống nước định kỳ'),
                   subtitle: const Text(
-                    'Chu kỳ mỗi 2 tiếng trong khung 07:00 – 21:30 (Tuân thủ CH Play, không dùng Exact Alarm)',
+                    'Nhắc mỗi 2 tiếng trong khung giờ 07:00 – 21:30',
                   ),
                   value: state.hydrationReminderEnabled,
                   onChanged: controller.toggleHydrationReminder,
@@ -228,7 +228,7 @@ class HydrationScreen extends ConsumerWidget {
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
                               content: Text(
-                                'Đã gửi thông báo nhắc uống nước qua kênh thông báo Android.',
+                                'Đã gửi thông báo nhắc uống nước thử nghiệm.',
                               ),
                             ),
                           );
