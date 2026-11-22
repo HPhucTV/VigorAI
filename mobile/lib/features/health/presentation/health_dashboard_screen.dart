@@ -161,10 +161,14 @@ class _HealthDashboardScreenState extends ConsumerState<HealthDashboardScreen>
                                         color: AppColors.stepTeal,
                                       ),
                                       SizedBox(width: 6),
-                                      Text(
-                                        'Bước chân',
-                                        style: TextStyle(
-                                          fontWeight: FontWeight.w600,
+                                      Expanded(
+                                        child: Text(
+                                          'Bước chân',
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: TextStyle(
+                                            fontWeight: FontWeight.w600,
+                                          ),
                                         ),
                                       ),
                                     ],
@@ -203,10 +207,14 @@ class _HealthDashboardScreenState extends ConsumerState<HealthDashboardScreen>
                                           color: AppColors.sleepPurple,
                                         ),
                                         SizedBox(width: 6),
-                                        Text(
-                                          'Giấc ngủ',
-                                          style: TextStyle(
-                                            fontWeight: FontWeight.w600,
+                                        Expanded(
+                                          child: Text(
+                                            'Giấc ngủ',
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: TextStyle(
+                                              fontWeight: FontWeight.w600,
+                                            ),
                                           ),
                                         ),
                                       ],
@@ -275,7 +283,10 @@ class _HealthDashboardScreenState extends ConsumerState<HealthDashboardScreen>
                                 borderRadius: BorderRadius.circular(4),
                               ),
                               const SizedBox(height: 10),
-                              Row(
+                              Wrap(
+                                spacing: 8,
+                                runSpacing: 6,
+                                crossAxisAlignment: WrapCrossAlignment.center,
                                 children: [
                                   OutlinedButton.icon(
                                     onPressed: () => controller.addWaterMl(250),
@@ -285,7 +296,6 @@ class _HealthDashboardScreenState extends ConsumerState<HealthDashboardScreen>
                                     ),
                                     label: const Text('+250 ml'),
                                   ),
-                                  const SizedBox(width: 8),
                                   OutlinedButton.icon(
                                     onPressed: () => controller.addWaterMl(500),
                                     icon: const Icon(
@@ -294,7 +304,6 @@ class _HealthDashboardScreenState extends ConsumerState<HealthDashboardScreen>
                                     ),
                                     label: const Text('+500 ml'),
                                   ),
-                                  const Spacer(),
                                   TextButton(
                                     onPressed: () =>
                                         context.push('/health/hydration'),

@@ -2,13 +2,54 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:dio/dio.dart';
+import 'package:drift/drift.dart' show Value;
+import 'package:drift/native.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:vigorai_app/core/database/app_database.dart';
 import 'package:vigorai_app/core/database/health_tables.drift.dart';
 import 'package:vigorai_app/core/database/workout_tables.drift.dart';
 import 'package:vigorai_app/core/platform/workmanager_reminder_service.dart';
 import 'package:vigorai_app/core/sync/sync_queue_manager.dart';
 import 'package:vigorai_app/features/auth_privacy/data/auth_repository.dart';
+import 'package:vigorai_app/features/health/data/health_repository.dart';
 import 'package:vigorai_app/features/health/food_scan/data/food_scan_repository.dart';
+
+class _MemorySecureStorage extends FlutterSecureStorage {
+  final Map<String, String> _store = {};
+  _MemorySecureStorage() : super();
+
+  @override
+  Future<String?> read({
+    required String key,
+    IOSOptions? iOptions,
+    AndroidOptions? aOptions,
+    LinuxOptions? lOptions,
+    WebOptions? webOptions,
+    MacOsOptions? mOptions,
+    WindowsOptions? wOptions,
+  }) async =>
+      _store[key];
+
+  @override
+  Future<void> write({
+    required String key,
+    required String? value,
+    IOSOptions? iOptions,
+    AndroidOptions? aOptions,
+    LinuxOptions? lOptions,
+    WebOptions? webOptions,
+    MacOsOptions? mOptions,
+    WindowsOptions? wOptions,
+  }) async {
+    if (value == null) {
+      _store.remove(key);
+    } else {
+      _store[key] = value;
+    }
+  }
+}
 
 void main() {
   group('F01 - Biometrics, WHO Asian BMI & 7-Day Moving Average', () {
@@ -327,6 +368,125 @@ void main() {
       });
       expect(wset.isPr, isTrue);
       expect(wset.estimated1rm, 101.33);
+    });
+  });
+
+  group('DailyHealthLogs — SQLite Duplicate Self-Healing (Note.md Section 3.3)', () {
+    late Directory tempDir;
+
+    setUp(() async {
+      tempDir = await Directory.systemTemp.createTemp('vigorai_daily_test_');
+    });
+
+    tearDown(() async {
+      if (await tempDir.exists()) {
+        await tempDir.delete(recursive: true);
+      }
+    });
+
+    test('deduplicates multiple DailyHealthLogs rows on addWaterMl and sync pull', () async {
+      final db = AppDatabase.forTesting(NativeDatabase.memory());
+      addTearDown(db.close);
+
+      final today = HealthRepository.todayIso();
+      final olderUtc = DateTime.utc(2026, 11, 22, 7, 0);
+      final newerUtc = DateTime.utc(2026, 11, 22, 9, 0);
+
+      // Seed 2 duplicate rows for the same logDateIso
+      await db.batch((b) {
+        b.insert(
+          db.dailyHealthLogsTable,
+          DailyHealthLogsTableCompanion.insert(
+            id: 'daily-$today-dup1',
+            logDateIso: today,
+            waterMl: const Value(500),
+            targetWaterMl: const Value(2450),
+            updatedAt: olderUtc,
+          ),
+        );
+        b.insert(
+          db.dailyHealthLogsTable,
+          DailyHealthLogsTableCompanion.insert(
+            id: 'daily-$today',
+            logDateIso: today,
+            waterMl: const Value(1000),
+            targetWaterMl: const Value(2450),
+            updatedAt: newerUtc,
+          ),
+        );
+      });
+
+      final dio = Dio(BaseOptions(baseUrl: 'https://test.local'));
+      final storage = _MemorySecureStorage();
+      final syncMgr = SyncQueueManager(db, dio, storage);
+      final intakeStore =
+          SupplementIntakeStore(directoryResolver: () async => tempDir);
+      final repo = HealthRepository(db, dio, intakeStore, syncMgr);
+
+      await repo.addWaterMl(deltaMl: 250, weightKg: 70.0);
+
+      final rowsAfterWater = await (db.select(db.dailyHealthLogsTable)
+            ..where((t) => t.logDateIso.equals(today)))
+          .get();
+      expect(rowsAfterWater.length, 1);
+      expect(rowsAfterWater.single.waterMl, 1250);
+
+      // Now seed another duplicate and verify pullServerUpdates cleans it too
+      await db.into(db.dailyHealthLogsTable).insert(
+            DailyHealthLogsTableCompanion.insert(
+              id: 'daily-$today-dup2',
+              logDateIso: today,
+              stepsCount: const Value(4200),
+              waterMl: const Value(1250),
+              targetWaterMl: const Value(2450),
+              updatedAt: newerUtc.subtract(const Duration(minutes: 10)),
+            ),
+          );
+
+      dio.interceptors.add(
+        InterceptorsWrapper(
+          onRequest: (options, handler) {
+            handler.resolve(
+              Response<Map<String, dynamic>>(
+                requestOptions: options,
+                statusCode: 200,
+                data: {
+                  'records': {
+                    'biometric_logs': <dynamic>[],
+                    'daily_health_logs': [
+                      {
+                        'id': 'daily-$today',
+                        'log_date': today,
+                        'steps_count': 6000,
+                        'distance_km': 4.5,
+                        'active_calories_kcal': 280,
+                        'water_ml': 1500,
+                        'target_water_ml': 2450,
+                        'sleep_hours': 7.5,
+                        'sleep_quality_score': 4,
+                        'updated_at': DateTime.now()
+                            .toUtc()
+                            .add(const Duration(minutes: 5))
+                            .toIso8601String(),
+                      },
+                    ],
+                  },
+                },
+              ),
+            );
+          },
+        ),
+      );
+
+      final pulled = await syncMgr.pullServerUpdates(sinceUtc: olderUtc);
+      expect(pulled, 1);
+
+      final rowsAfterPull = await (db.select(db.dailyHealthLogsTable)
+            ..where((t) => t.logDateIso.equals(today)))
+          .get();
+      expect(rowsAfterPull.length, 1);
+      expect(rowsAfterPull.single.waterMl, 1500);
+      expect(rowsAfterPull.single.stepsCount, 6000);
     });
   });
 }

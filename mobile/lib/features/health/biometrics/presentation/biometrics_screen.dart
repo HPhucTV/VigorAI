@@ -50,16 +50,25 @@ class BiometricsScreen extends ConsumerWidget {
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
-                        Text(
-                          '${latest.weightKg.toStringAsFixed(1)} kg',
-                          style: const TextStyle(
-                            fontSize: 28,
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.primary,
+                        Flexible(
+                          flex: 5,
+                          child: FittedBox(
+                            fit: BoxFit.scaleDown,
+                            alignment: Alignment.centerLeft,
+                            child: Text(
+                              '${latest.weightKg.toStringAsFixed(1)} kg',
+                              maxLines: 1,
+                              style: const TextStyle(
+                                fontSize: 28,
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.primary,
+                              ),
+                            ),
                           ),
                         ),
                         const SizedBox(width: 8),
                         Expanded(
+                          flex: 6,
                           child: Align(
                             alignment: Alignment.centerRight,
                             child: Container(
@@ -150,10 +159,11 @@ class BiometricsScreen extends ConsumerWidget {
                     style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
                   ),
                   const SizedBox(height: 6),
-                  const Row(
+                  const Wrap(
+                    spacing: 16,
+                    runSpacing: 6,
                     children: [
                       _LegendDot(color: AppColors.primary, label: 'Thực tế'),
-                      SizedBox(width: 16),
                       _LegendDot(
                         color: AppColors.calorieOrange,
                         label: '7-Day Moving Avg',

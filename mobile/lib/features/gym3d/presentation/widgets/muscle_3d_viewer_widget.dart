@@ -164,7 +164,7 @@ class _Muscle3DViewerWidgetState extends State<Muscle3DViewerWidget> {
 
   void _startLoadWatchdog() {
     _loadTimeoutTimer?.cancel();
-    _loadTimeoutTimer = Timer(const Duration(seconds: 8), () {
+    _loadTimeoutTimer = Timer(const Duration(seconds: 15), () {
       if (!mounted || _isModelLoaded) return;
       setState(() {
         _errorMessage = 'Không thể dựng mô hình 3D. Vui lòng thử tải lại.';

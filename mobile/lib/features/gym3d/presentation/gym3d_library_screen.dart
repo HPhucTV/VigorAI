@@ -215,15 +215,33 @@ class _Gym3DLibraryScreenState extends ConsumerState<Gym3DLibraryScreen> {
                 ),
               ),
               Expanded(
-                child: filtered.isEmpty
-                    ? const Center(child: Text('Không tìm thấy bài tập phù hợp.'))
-                    : ListView.separated(
-                        padding: const EdgeInsets.all(16),
-                        itemCount: filtered.length,
-                        separatorBuilder: (_, __) => const SizedBox(height: 10),
-                        itemBuilder: (context, index) =>
-                            _Exercise3DCard(exercise: filtered[index]),
-                      ),
+                child: RefreshIndicator(
+                  onRefresh: () async {
+                    await ref
+                        .read(exerciseRepositoryProvider)
+                        .loadExercises(forceRefresh: true);
+                    ref.invalidate(exercisesListProvider);
+                  },
+                  child: filtered.isEmpty
+                      ? ListView(
+                          physics: const AlwaysScrollableScrollPhysics(),
+                          children: const [
+                            SizedBox(height: 120),
+                            Center(
+                              child: Text('Không tìm thấy bài tập phù hợp.'),
+                            ),
+                          ],
+                        )
+                      : ListView.separated(
+                          physics: const AlwaysScrollableScrollPhysics(),
+                          padding: const EdgeInsets.all(16),
+                          itemCount: filtered.length,
+                          separatorBuilder: (_, __) =>
+                              const SizedBox(height: 10),
+                          itemBuilder: (context, index) =>
+                              _Exercise3DCard(exercise: filtered[index]),
+                        ),
+                ),
               ),
             ],
           );

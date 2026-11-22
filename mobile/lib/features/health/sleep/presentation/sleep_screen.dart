@@ -111,22 +111,24 @@ class _SleepScreenState extends ConsumerState<SleepScreen> {
                     ],
                   ),
                   const SizedBox(height: 10),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        'Tổng thời lượng: $previewHours giờ (${DailyHealthModel.classifySleepStatus(previewHours)})',
-                        style: const TextStyle(fontWeight: FontWeight.w600),
-                      ),
-                    ],
+                  Text(
+                    'Tổng thời lượng: $previewHours giờ (${DailyHealthModel.classifySleepStatus(previewHours)})',
+                    style: const TextStyle(fontWeight: FontWeight.w600),
                   ),
                   const SizedBox(height: 8),
-                  Row(
+                  Wrap(
+                    crossAxisAlignment: WrapCrossAlignment.center,
                     children: [
                       const Text('Chất lượng: '),
                       ...List.generate(5, (idx) {
                         final star = idx + 1;
                         return IconButton(
+                          visualDensity: VisualDensity.compact,
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(
+                            minWidth: 36,
+                            minHeight: 36,
+                          ),
                           onPressed: () => setState(() => _qualityStars = star),
                           icon: Icon(
                             star <= _qualityStars

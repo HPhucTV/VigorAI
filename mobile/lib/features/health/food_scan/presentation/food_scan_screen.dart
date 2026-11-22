@@ -204,7 +204,7 @@ class _FoodScanScreenState extends ConsumerState<FoodScanScreen> {
             )
           else
             Container(
-              height: 180,
+              constraints: const BoxConstraints(minHeight: 160),
               decoration: BoxDecoration(
                 color: const Color(0xFFF3F6FA),
                 borderRadius: BorderRadius.circular(14),

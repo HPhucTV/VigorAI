@@ -108,16 +108,35 @@ class _ProgressPhotosScreenState extends ConsumerState<ProgressPhotosScreen> {
                         style: TextStyle(fontWeight: FontWeight.bold),
                       ),
                       const SizedBox(height: 8),
-                      Wrap(
-                        spacing: 8,
-                        children: ['FRONT', 'SIDE', 'BACK'].map((pose) {
-                          return ChoiceChip(
-                            label: Text(_poseLabel(pose)),
-                            selected: _capturePose == pose,
-                            onSelected: (_) =>
-                                setState(() => _capturePose = pose),
-                          );
-                        }).toList(),
+                      Row(
+                        children: [
+                          for (var i = 0; i < 3; i++) ...[
+                            if (i > 0) const SizedBox(width: 8),
+                            Expanded(
+                              child: ChoiceChip(
+                                showCheckmark: false,
+                                label: SizedBox(
+                                  width: double.infinity,
+                                  child: FittedBox(
+                                    fit: BoxFit.scaleDown,
+                                    child: Text(
+                                      _poseLabel(
+                                        const ['FRONT', 'SIDE', 'BACK'][i],
+                                      ),
+                                      maxLines: 1,
+                                    ),
+                                  ),
+                                ),
+                                selected: _capturePose ==
+                                    const ['FRONT', 'SIDE', 'BACK'][i],
+                                onSelected: (_) => setState(
+                                  () => _capturePose =
+                                      const ['FRONT', 'SIDE', 'BACK'][i],
+                                ),
+                              ),
+                            ),
+                          ],
+                        ],
                       ),
                       const SizedBox(height: 10),
                       Row(

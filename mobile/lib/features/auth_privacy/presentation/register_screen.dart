@@ -130,10 +130,10 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   initialValue: _fitnessGoal,
                   decoration: const InputDecoration(labelText: 'Mục tiêu luyện tập'),
                   items: const [
-                    DropdownMenuItem(value: 'BULK', child: Text('Tăng cơ (Bulk)')),
-                    DropdownMenuItem(value: 'CUT', child: Text('Giảm mỡ (Cut)')),
+                    DropdownMenuItem(value: 'BULK', child: Text('Tăng cơ')),
+                    DropdownMenuItem(value: 'CUT', child: Text('Giảm mỡ')),
                     DropdownMenuItem(
-                        value: 'MAINTAIN', child: Text('Giữ dáng (Maintain)')),
+                        value: 'MAINTAIN', child: Text('Giữ dáng')),
                   ],
                   onChanged: (v) => setState(() => _fitnessGoal = v ?? 'BULK'),
                 ),
