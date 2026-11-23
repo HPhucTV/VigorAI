@@ -17,6 +17,31 @@
 
 ---
 
+## Phiên 31 — 2026-11-22 20:30 | Thành viên: M4 (Pure AI Engineer) | Task: `T-M4-02` (`[x]`), `T-M4-01` (`[~]`)
+- **Mục tiêu phiên:** Khởi động phần AI của M4: sinh dữ liệu Banister cho Model C và chuẩn bị pipeline dataset cho Model B.
+- **Những file đã tạo / chỉnh sửa (`0` file `[LOCKED STUB]` bị chạm):**
+  - `ai_research/model_c_readiness_ml/generate_banister_data.py`: viết lại đầy đủ (mô phỏng lịch tập 35 ngày, 12 đặc trưng, nhãn `readiness_score` + 11 nhãn `fatigue_Mat_Muscle_*`, sanity check, CLI `--check`).
+  - `ai_research/model_c_readiness_ml/README.md`, `ai_research/model_b_food_yolo/README.md`: hướng dẫn chạy.
+  - `ai_research/model_b_food_yolo/food_classes.py`: 18 lớp cốt lõi v1.0 khớp `class_code` của `food_nutrition_catalog` + bảng alias.
+  - `ai_research/model_b_food_yolo/prepare_dataset.py`: gộp nhãn, lọc bbox lỗi, khử ảnh trùng, chia 70/20/10 phân tầng, ghi `data.yaml`, kiểm tra hợp lệ.
+  - `ai_research/evaluation_reports/banister_data_report.json`: báo cáo sanity check.
+  - `docs/taskboard.md`, `session_log.md`: cập nhật tiến độ.
+- **Quyết định kỹ thuật / Lưu ý quan trọng:**
+  - **Spec mục 5.2.3 có công thức ngược chiều:** `exp(-Δt / (τ · RF))` với RF < 1 làm hồi phục NHANH hơn khi thiếu ngủ/đạm. Code dùng `exp(-Δt / (τ / RF))` đúng yêu cầu DoD "thiếu ngủ/thiếu đạm làm chậm hồi phục". Khi viết `ai_readiness_ml.py`/`feature_extractor.py` phải dùng cùng chiều này. Cần M3/nhóm sửa lại câu chữ spec.
+  - `compute_recovery_factor` chặn `protein_compliance` ở `[0, 1]` (ăn dư đạm không làm phục hồi nhanh hơn).
+  - Nhãn readiness là hàm quy tắc sinh lý + nhiễu Gauss (σ=1.5): R² rất cao trong kiểm tra nhanh chỉ chứng minh dữ liệu học được, chưa phản ánh sai số trên người thật. Cần tinh chỉnh bằng RPE thực ở `T-M4-11`.
+  - CSV sinh ra nằm ở `ai_research/datasets/model_c/` (đã bị `.gitignore` chặn); chạy lại lệnh bên dưới để tái tạo.
+  - Không tải được dataset Roboflow/Kaggle từ môi trường này (mạng bị chặn); `T-M4-01` giữ `[~]`.
+- **Kiểm tra / Kết quả chạy thử:**
+  - `python generate_banister_data.py --n-samples 15000 --seed 42 --check`: PASS; 0 vi phạm chiều phục hồi trên 2.760 ca; readiness trung bình ~75,5; tỉ lệ READY ~56% / MODERATE ~41% / REST_RECOMMENDED ~3%.
+  - `prepare_dataset.py` đã chạy thử trên dataset giả có lỗi cố ý (bbox tràn biên, quá nhỏ, polygon, ảnh trùng, lớp lạ, thiếu nhãn): lọc đúng và validator bắt được nhãn bị phá.
+- **Việc cần làm ở phiên kế tiếp:**
+  - Tải dataset thật từ Roboflow Universe/Kaggle về `ai_research/datasets/raw/`, chạy `prepare_dataset.py`, bổ sung alias theo `unmapped_source_classes`, đạt `data.yaml` 15–20 lớp rồi đóng `T-M4-01`.
+  - `T-M4-05`: viết `benchmark_models.py` (XGBoost vs LightGBM vs MLP) trên CSV Banister.
+  - `T-M4-03`: rà lại stub `ai.py`/`ai_schema.py` rồi đóng task.
+
+---
+
 ## Phiên 30 — 2026-11-22 18:40 | Thành viên: M1 + M2 | Task: Kiểm thử toàn diện & Bugfix theo `note.md` + Build Release APK
 - **Mục tiêu phiên:** Thực hiện toàn bộ checklist trong `note.md` (Mục 0–5): kiểm tra tĩnh & unit/widget tests, khắc phục các lỗi UI copy/responsive `360dp + font_scale 1.3x` và self-healing SQLite Gym 3D phát hiện thêm, build & xác minh Release APK chuẩn CH Play, chạy E2E trên máy ảo Android 15 (`VigorAI_Pixel6_API35`) kết nối live Railway (`https://vigorai-production.up.railway.app`).
 - **Những file đã tạo / chỉnh sửa (`0` file `[LOCKED STUB]` bị chạm):**
