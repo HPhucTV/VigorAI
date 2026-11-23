@@ -16,8 +16,8 @@
 | **M1** | Mobile Core, Health, Food/Photo UI & CH Play | 7 | 5 | 3 | 2 | **17** | `9 / 17 Done (52.9%) · 2 / 17 [~] (Chờ M4 & Play Console 14d)` |
 | **M2** | 3D Blender MCP, Workout, Recovery 3D & Charts | 6 | 6 | 3 | 2 | **17** | `10 / 17 Done (58.8%) · 1 / 17 [~] (Chờ Play Console 14d)` |
 | **M3** | Backend FastAPI, PostgreSQL & Cloud Deploy | 6 | 5 | 2 | 2 | **15** | `11 / 15 Done (73.3%)` |
-| **M4** | **100% Pure AI Engineer (Python Only)** | 5 | 4 | 3 | 2 | **14** | `0 / 14 (0%)` |
-| **Tổng cộng** | **Toàn đội (4 thành viên)** | **24** | **20** | **11** | **8** | **63** | **`30 / 63 Done (47.6%)`** |
+| **M4** | **100% Pure AI Engineer (Python Only)** | 5 | 4 | 3 | 2 | **14** | `1 / 14 Done (7.1%) · 1 / 14 [~] (Chờ tải dataset thật)` |
+| **Tổng cộng** | **Toàn đội (4 thành viên)** | **24** | **20** | **11** | **8** | **63** | **`31 / 63 Done (49.2%)`** |
 
 ### 1.2. Bảng Ánh xạ 26 Chức năng (`F01`–`F26`) sang Mã Task
 
@@ -92,8 +92,8 @@
 
 | Trạng thái | Mã Task & Công việc | Mã `Fxx` | Phạm vi File (File Scope) | Chiến lược Song song (Mock / Unblock) | Tiêu chí Nghiệm thu (Definition of Done) |
 | :---: | :--- | :---: | :--- | :--- | :--- |
-| `[ ]` | **T-M4-01** *(Model B Đợt 1 — Fast Dataset)*: Tải và lọc tập dữ liệu có sẵn từ **Roboflow Universe / Kaggle** cho **15–20 món ăn phổ biến nhất** (cơm trắng, ức gà, trứng, thịt bò, cá hồi, khoai lang, bông cải, chuối, phở, cơm tấm...), chia 70/20/10. | `F19` | `ai_research/model_b_food_yolo/` | Tái sử dụng nhãn có sẵn để rút ngắn thời gian tìm dữ liệu cho bản Production `v1.1.0`. | File `data.yaml` hợp lệ với 15–20 lớp; không có bounding box rỗng/lệch chuẩn YOLO. |
-| `[ ]` | **T-M4-02:** Xây dựng bộ sinh dữ liệu tổng hợp Banister Fitness-Fatigue (`~15,000` mẫu chuỗi 7 ngày) với 12 biến đầu vào & nhãn Readiness/Fatigue. | `F20` | `ai_research/model_c_readiness_ml/generate_banister_data.py` | Làm độc lập hoàn toàn bằng Python, không cần đợi dữ liệu thật. | Tập dữ liệu sinh ra phản ánh đúng quy luật sinh lý (thiếu ngủ/thiếu đạm làm chậm hồi phục). |
+| `[~]` | **T-M4-01** *(Model B Đợt 1 — Fast Dataset; đã xong script lọc/chia/kiểm tra `prepare_dataset.py` + 18 lớp trong `food_classes.py`, còn chờ tải dữ liệu thật từ Roboflow/Kaggle và chạy script)*: Tải và lọc tập dữ liệu có sẵn từ **Roboflow Universe / Kaggle** cho **15–20 món ăn phổ biến nhất** (cơm trắng, ức gà, trứng, thịt bò, cá hồi, khoai lang, bông cải, chuối, phở, cơm tấm...), chia 70/20/10. | `F19` | `ai_research/model_b_food_yolo/` | Tái sử dụng nhãn có sẵn để rút ngắn thời gian tìm dữ liệu cho bản Production `v1.1.0`. | File `data.yaml` hợp lệ với 15–20 lớp; không có bounding box rỗng/lệch chuẩn YOLO. |
+| `[x]` | **T-M4-02:** Xây dựng bộ sinh dữ liệu tổng hợp Banister Fitness-Fatigue (`~15,000` mẫu chuỗi 7 ngày) với 12 biến đầu vào & nhãn Readiness/Fatigue. *(Đã sinh 15.000 mẫu seed 42, sanity check sinh lý PASS: thiếu ngủ/thiếu đạm làm tăng mỏi cơ ở 100% ca; xem `ai_research/evaluation_reports/banister_data_report.json`)* | `F20` | `ai_research/model_c_readiness_ml/generate_banister_data.py` | Làm độc lập hoàn toàn bằng Python, không cần đợi dữ liệu thật. | Tập dữ liệu sinh ra phản ánh đúng quy luật sinh lý (thiếu ngủ/thiếu đạm làm chậm hồi phục). |
 | `[ ]` | **T-M4-03:** Hoàn thiện `routers/ai.py` stub & `ai_schema.py` (trả JSON Mock chuẩn cho `M1` làm UI Quét món ăn & `M2` làm UI Readiness/Recovery). | `INFRA` | `backend/app/routers/ai.py`, `backend/app/schemas/ai_schema.py` | `M1` và `M2` không phải chờ `M4` train xong mới làm UI. | Gọi 2 endpoint AI trên Swagger `/docs` trả về `200 OK` đúng schema. |
 | `[ ]` | **T-M4-04:** Xây dựng logic quy đổi `BBoxAreaRatio` sang gram (`clamp(0.4, 2.5)`) & tra cứu `food_nutrition_catalog` trong `portion_estimator.py` và `ai_food_yolo.py`. | `F19` | `ai_research/model_b_food_yolo/portion_estimator.py`, `backend/app/services/ai_food_yolo.py` | Kiểm thử bằng danh mục JSON dinh dưỡng từ `M3`. | Unit test tính đúng Calo/Protein/Carb/Fat từ danh sách bbox mẫu. |
 | `[ ]` | **T-M4-05:** Chạy benchmark baseline 3 thuật toán **XGBoost vs LightGBM vs MLP** trên dữ liệu Banister & viết script đo `MAE`, `RMSE`, `R2`. | `F20` | `ai_research/model_c_readiness_ml/benchmark_models.py` | Độc lập 100% trong `ai_research/`. | Có bảng so sánh 3 thuật toán và biểu đồ sai số ban đầu cho báo cáo. |
