@@ -1343,12 +1343,51 @@ def _aim_bone_world(
     bpy.context.view_layer.update()
     pb = arm_obj.pose.bones[bone_name]
     cur_mat_world = arm_obj.matrix_world @ pb.matrix
-    cur_y = cur_mat_world.col[1].to_3d().normalized()
+    rest_rot3 = cur_mat_world.to_3x3() @ pb.rotation_quaternion.to_matrix().inverted()
+    rest_y = rest_rot3.col[1].to_3d().normalized()
     tgt_y = target_y_dir_world.normalized()
-    rot_delta = cur_y.rotation_difference(tgt_y)
 
-    new_rot3 = rot_delta.to_matrix() @ cur_mat_world.to_3x3()
+    # Clamp wrist deviation vs Forearm so wrist never kinks sharply
+    if bone_name in ("Hand_L", "Hand_R"):
+        cross_y = rest_y.cross(tgt_y)
+        if cross_y.length > 1e-6:
+            ang_y = math.acos(max(-1.0, min(1.0, rest_y.dot(tgt_y))))
+            max_bend = math.radians(14.0)
+            if ang_y > max_bend:
+                tgt_y = (Quaternion(cross_y.normalized(), max_bend) @ rest_y).normalized()
+
+    rot_delta = rest_y.rotation_difference(tgt_y)
+    swing_rot3 = rot_delta.to_matrix() @ rest_rot3
+    new_rot3 = swing_rot3
+
     if roll_reference_z_world is not None:
+        # When orienting Hand_L/R, align parent Forearm_L/R Z smoothly to roll_reference_z_world
+        # without singular atan2 wraparound, then clamp Hand deviation <= 14 deg from Forearm
+        if bone_name in ("Hand_L", "Hand_R"):
+            side = bone_name.split("_")[1]
+            pb_fore = arm_obj.pose.bones.get(f"Forearm_{side}")
+            if pb_fore is not None:
+                fore_mat = arm_obj.matrix_world @ pb_fore.matrix
+                fore_y = fore_mat.col[1].to_3d().normalized()
+                fref = roll_reference_z_world - fore_y * roll_reference_z_world.dot(fore_y)
+                if fref.length > 0.15:
+                    fnew_z = fref.normalized()
+                    fnew_x = fore_y.cross(fnew_z).normalized()
+                    fnew_z = fnew_x.cross(fore_y).normalized()
+                    frot3 = Matrix((fnew_x, fore_y, fnew_z)).transposed()
+                    fw = Matrix.Translation(fore_mat.translation) @ frot3.to_4x4()
+                    pb_fore.matrix = arm_obj.matrix_world.inverted() @ fw
+                    bpy.context.view_layer.update()
+                    cur_mat_world = arm_obj.matrix_world @ pb.matrix
+                    rest_rot3 = cur_mat_world.to_3x3() @ pb.rotation_quaternion.to_matrix().inverted()
+                    rest_y = rest_rot3.col[1].to_3d().normalized()
+                    tgt_y = target_y_dir_world.normalized()
+                    cy2 = rest_y.cross(tgt_y)
+                    if cy2.length > 1e-6:
+                        ay2 = math.acos(max(-1.0, min(1.0, rest_y.dot(tgt_y))))
+                        if ay2 > math.radians(14.0):
+                            tgt_y = (Quaternion(cy2.normalized(), math.radians(14.0)) @ rest_y).normalized()
+
         ref = roll_reference_z_world - tgt_y * roll_reference_z_world.dot(tgt_y)
         if ref.length > 1e-4:
             new_z = ref.normalized()
@@ -1379,6 +1418,59 @@ def _set_bone_world_axes(
     bpy.context.view_layer.update()
 
 
+def _get_posed_fist_center(arm_obj, side: str) -> tuple[Vector, Vector, Vector]:
+    """Tra ve (fist_center, n_palm, h_z) tu ma tran thuc te cua Hand_{side}."""
+    import bpy  # type: ignore
+
+    bpy.context.view_layer.update()
+    sx = 1.0 if side == "L" else -1.0
+    hm = arm_obj.matrix_world @ arm_obj.pose.bones[f"Hand_{side}"].matrix
+    h_y = hm.col[1].to_3d().normalized()
+    n_palm = (sx * hm.col[0].to_3d()).normalized()
+    h_z = hm.col[2].to_3d().normalized()
+    fist_center = hm.translation + h_y * 0.052 + n_palm * 0.015
+    return fist_center, n_palm, h_z
+
+
+def _solve_arm_grip_ik(
+    arm_obj,
+    side: str,
+    target_grip_pos: Vector,
+    finger_dir: Vector,
+    roll_z_hand: Vector,
+    elbow_pole: Vector,
+    roll_z_upper: Vector,
+    roll_z_lower: Vector,
+) -> Vector:
+    """Giai 2-bone IK + tinh chinh 1 buoc de tam nam tay om khit muc tieu (< 3 mm)."""
+    wrist_target = target_grip_pos - finger_dir.normalized() * 0.050
+    _solve_two_bone_ik_world(
+        arm_obj,
+        f"UpperArm_{side}",
+        f"Forearm_{side}",
+        wrist_target,
+        elbow_pole,
+        roll_z_upper,
+        roll_z_lower,
+    )
+    _aim_bone_world(arm_obj, f"Hand_{side}", finger_dir, roll_z_hand)
+    fist_center, _, _ = _get_posed_fist_center(arm_obj, side)
+    delta = target_grip_pos - fist_center
+    if delta.length > 0.002:
+        _solve_two_bone_ik_world(
+            arm_obj,
+            f"UpperArm_{side}",
+            f"Forearm_{side}",
+            wrist_target + delta,
+            elbow_pole,
+            roll_z_upper,
+            roll_z_lower,
+        )
+        _aim_bone_world(arm_obj, f"Hand_{side}", finger_dir, roll_z_hand)
+        fist_center, _, _ = _get_posed_fist_center(arm_obj, side)
+    return fist_center
+
+
 def _solve_two_bone_ik_world(
     arm_obj,
     upper_name: str,
@@ -1391,6 +1483,26 @@ def _solve_two_bone_ik_world(
     import bpy  # type: ignore
 
     bpy.context.view_layer.update()
+    if upper_name in ("UpperArm_L", "UpperArm_R"):
+        side = upper_name.split("_")[1]
+        clav_name = f"Clavicle_{side}"
+        if clav_name in arm_obj.pose.bones and "Spine_03" in arm_obj.pose.bones:
+            pb_clav = arm_obj.pose.bones[clav_name]
+            pb_clav.rotation_quaternion = Quaternion((1.0, 0.0, 0.0, 0.0))
+            bpy.context.view_layer.update()
+            clav_mat = arm_obj.matrix_world @ pb_clav.matrix
+            clav_head = clav_mat.translation
+            clav_rest_y = clav_mat.col[1].to_3d().normalized()
+            clav_rest_z = clav_mat.col[2].to_3d().normalized()
+            spine_up = (arm_obj.matrix_world @ arm_obj.pose.bones["Spine_03"].matrix).col[1].to_3d().normalized()
+            to_tgt = (target_world - clav_head).normalized()
+            elev = to_tgt.dot(spine_up)
+            if elev > -0.10:
+                t_elev = min(1.0, (elev + 0.10) / 0.95)
+                lift_rad = math.radians(24.0 * t_elev)
+                new_clav_y = (clav_rest_y * math.cos(lift_rad) + spine_up * math.sin(lift_rad)).normalized()
+                _aim_bone_world(arm_obj, clav_name, new_clav_y, clav_rest_z)
+
     pb_up = arm_obj.pose.bones[upper_name]
     pb_lo = arm_obj.pose.bones[lower_name]
 
@@ -1418,8 +1530,16 @@ def _solve_two_bone_ik_world(
     _aim_bone_world(arm_obj, lower_name, lower_dir, roll_z_lower)
 
 
+_LAST_KEYED_QUAT: dict[str, Quaternion] = {}
+
+
 def _key_all_pose_bones(arm_obj, frame: int, key_scale: bool = False) -> None:
     for pb in arm_obj.pose.bones:
+        q = pb.rotation_quaternion.copy()
+        prev_q = _LAST_KEYED_QUAT.get(pb.name)
+        if prev_q is not None and prev_q.dot(q) < 0.0:
+            pb.rotation_quaternion = Quaternion((-q.w, -q.x, -q.y, -q.z))
+        _LAST_KEYED_QUAT[pb.name] = pb.rotation_quaternion.copy()
         pb.keyframe_insert(data_path="location", frame=frame)
         pb.keyframe_insert(data_path="rotation_quaternion", frame=frame)
         if key_scale:
@@ -1429,6 +1549,7 @@ def _key_all_pose_bones(arm_obj, frame: int, key_scale: bool = False) -> None:
 def _begin_action(arm_obj, action_name: str) -> None:
     import bpy  # type: ignore
 
+    _LAST_KEYED_QUAT.clear()
     if arm_obj.animation_data is None:
         arm_obj.animation_data_create()
     action = bpy.data.actions.new(name=action_name)
@@ -1487,22 +1608,27 @@ def _pose_barbell_bench_press(arm_obj, depth: float, bad_form: bool) -> None:
     # Good: ha don ve giua nguc duoi (Y=0.06, Z=0.66); Bad: don troi cao ve co/vai (Y=0.14, Z=0.66) + xoe khuyu 90 deg
     bar_y = 0.08 + (0.06 * depth if bad_form else -0.02 * depth)
     bar_z = 1.01 - 0.35 * depth
-    _set_bone_world_head(arm_obj, "Bone_Barbell", Vector((0.0, bar_y, bar_z)))
 
+    fists: list[Vector] = []
     for side, sx in (("L", 1.0), ("R", -1.0)):
-        # Dat co tay cach thanh don 5.2cm xuong duoi (-Z) de long ban tay om dung tam thanh don
-        grip_target = Vector((sx * 0.34, bar_y, bar_z - 0.052))
+        palm_pos = Vector((sx * 0.34, bar_y, bar_z))
         elbow_pole = Vector((sx * 0.96, 0.06, -0.26)) if bad_form else Vector((sx * 0.56, -0.68, -0.47))
-        _solve_two_bone_ik_world(
+        fist_pos = _solve_arm_grip_ik(
             arm_obj,
-            f"UpperArm_{side}",
-            f"Forearm_{side}",
-            grip_target,
+            side,
+            palm_pos,
+            Vector((0.0, 0.0, 1.0)),
+            Vector((-sx * 1.0, 0.0, 0.0)),
             elbow_pole,
             Vector((0.0, -1.0, 0.0)),
-            Vector((0.0, -1.0, 0.0)),
+            Vector((-sx * 1.0, -0.4, 0.0)).normalized(),
         )
-        _aim_bone_world(arm_obj, f"Hand_{side}", Vector((0.0, 0.0, 1.0)), Vector((sx * 1.0, 0.0, 0.0)))
+        fists.append(fist_pos)
+    _set_bone_world_head(
+        arm_obj,
+        "Bone_Barbell",
+        Vector((0.0, 0.5 * (fists[0].y + fists[1].y), max(0.65, 0.5 * (fists[0].z + fists[1].z)))),
+    )
 
 
 def _export_and_save_outputs(
@@ -1544,7 +1670,7 @@ def build_barbell_bench_press(
 ) -> dict:
     import bpy  # type: ignore
 
-    base_mod.build_mannequin(blend_path=None, glb_paths=[], keep_heatmap_preview=False)
+    base_mod.build_mannequin(blend_path=None, glb_paths=[], keep_heatmap_preview=False, grip_hands=True)
     col = bpy.data.collections.get("VigorAI_Mannequin") or bpy.context.scene.collection
     arm_obj = bpy.data.objects["Armature_GymHuman"]
 
@@ -1632,25 +1758,23 @@ def _pose_incline_dumbbell_press(arm_obj, depth: float, bad_form: bool) -> None:
             elbow_pole = Vector((sx * 0.56, -0.68, -0.46))
 
         db_pos = Vector((db_x, db_y, db_z))
+        # Dat co tay cach tam ta don 5.2cm xuong duoi (-Z) va khop tam nam tay vao ta don
+        fist_pos = _solve_arm_grip_ik(
+            arm_obj,
+            side,
+            db_pos,
+            Vector((0.0, 0.0, 1.0)),
+            Vector((-sx * 1.0, 0.0, 0.0)),
+            elbow_pole,
+            Vector((0.0, -1.0, 0.0)),
+            Vector((0.0, -1.0, 0.0)),
+        )
         # Xoay nhe ta don vao trong 18 deg cho tu nhien o co tay
         yaw = math.radians(-sx * 18.0)
         db_ax = Vector((math.cos(yaw), math.sin(yaw), 0.0))
         db_ay = Vector((-math.sin(yaw), math.cos(yaw), 0.0))
         db_az = Vector((0.0, 0.0, 1.0))
-        _set_bone_world_axes(arm_obj, f"Bone_Dumbbell_{side}", db_pos, db_ax, db_ay, db_az)
-
-        # Dat co tay cach tam ta don 5.2cm xuong duoi (-Z) de long ban tay nam gon thanh ta don
-        wrist_target = db_pos - Vector((0.0, 0.0, 0.052))
-        _solve_two_bone_ik_world(
-            arm_obj,
-            f"UpperArm_{side}",
-            f"Forearm_{side}",
-            wrist_target,
-            elbow_pole,
-            Vector((0.0, -1.0, 0.0)),
-            Vector((0.0, -1.0, 0.0)),
-        )
-        _aim_bone_world(arm_obj, f"Hand_{side}", Vector((0.0, 0.0, 1.0)), Vector((sx * 1.0, 0.0, 0.0)))
+        _set_bone_world_axes(arm_obj, f"Bone_Dumbbell_{side}", fist_pos, db_ax, db_ay, db_az)
 
 
 def build_incline_dumbbell_press(
@@ -1660,7 +1784,7 @@ def build_incline_dumbbell_press(
 ) -> dict:
     import bpy  # type: ignore
 
-    base_mod.build_mannequin(blend_path=None, glb_paths=[], keep_heatmap_preview=False)
+    base_mod.build_mannequin(blend_path=None, glb_paths=[], keep_heatmap_preview=False, grip_hands=True)
     col = bpy.data.collections.get("VigorAI_Mannequin") or bpy.context.scene.collection
     arm_obj = bpy.data.objects["Armature_GymHuman"]
 
@@ -1781,29 +1905,29 @@ def _pose_cable_chest_fly(
             elbow_pole = Vector((sx * 0.65, 0.72, -0.22))
 
         grip_dir = (Vector((0.0, hand_pos.y - 0.14, hand_pos.z)) - hand_pos).normalized()
-        wrist_pos = hand_pos - grip_dir * 0.045
-        _solve_two_bone_ik_world(
+        elbow_pole_adj = Vector((elbow_pole.x, elbow_pole.y * 0.45, min(-0.48, elbow_pole.z - 0.28))).normalized()
+        fist_pos = _solve_arm_grip_ik(
             arm_obj,
-            f"UpperArm_{side}",
-            f"Forearm_{side}",
-            wrist_pos,
-            elbow_pole,
+            side,
+            hand_pos,
+            grip_dir,
+            Vector((0.0, 0.0, 1.0)),
+            elbow_pole_adj,
             Vector((0.0, 0.0, 1.0)),
             Vector((0.0, 0.0, 1.0)),
         )
-        _aim_bone_world(arm_obj, f"Hand_{side}", grip_dir, Vector((0.0, 0.0, 1.0)))
 
-        # Dat D-Handle tai long ban tay va huong day deo ve phia rong roc
-        to_pulley = pulley_pos - hand_pos
+        # Dat D-Handle tai tam nam ban tay thuc te va huong day deo ve phia rong roc
+        to_pulley = pulley_pos - fist_pos
         cable_dir = to_pulley.normalized()
         hx = Vector((0.0, 0.0, 1.0)).cross(cable_dir)
         if hx.length < 1e-4:
             hx = Vector((1.0, 0.0, 0.0))
         hx.normalize()
         hz = hx.cross(cable_dir).normalized()
-        _set_bone_world_axes(arm_obj, f"Bone_Handle_{side}", hand_pos, hx, cable_dir, hz)
+        _set_bone_world_axes(arm_obj, f"Bone_Handle_{side}", fist_pos, hx, cable_dir, hz)
 
-        handle_anchor = hand_pos + cable_dir * 0.105
+        handle_anchor = fist_pos + cable_dir * 0.105
         cable_vec = handle_anchor - pulley_pos
         cable_len = max(0.05, cable_vec.length)
         _set_bone_world_head(arm_obj, f"Bone_Cable_{side}", pulley_pos)
@@ -1818,7 +1942,7 @@ def build_cable_chest_fly(
 ) -> dict:
     import bpy  # type: ignore
 
-    base_mod.build_mannequin(blend_path=None, glb_paths=[], keep_heatmap_preview=False)
+    base_mod.build_mannequin(blend_path=None, glb_paths=[], keep_heatmap_preview=False, grip_hands=True)
     col = bpy.data.collections.get("VigorAI_Mannequin") or bpy.context.scene.collection
     arm_obj = bpy.data.objects["Armature_GymHuman"]
 
@@ -1911,19 +2035,18 @@ def _pose_wide_grip_pullup(
     for side, sx in (("L", 1.0), ("R", -1.0)):
         palm_target = Vector((sx * 0.38, bar_y, bar_z))
         finger_dir = Vector((0.0, -0.35, 0.94)).normalized()
-        wrist_target = palm_target - finger_dir * 0.048 - Vector((0.0, -0.015, 0.0))
         elbow_pole = Vector((sx * 0.84, 0.12, -0.52))
         roll_arm = Vector((0.0, -0.65, 0.76)).normalized()
-        _solve_two_bone_ik_world(
+        _solve_arm_grip_ik(
             arm_obj,
-            f"UpperArm_{side}",
-            f"Forearm_{side}",
-            wrist_target,
+            side,
+            palm_target,
+            finger_dir,
+            Vector((-sx * 1.0, 0.0, 0.0)),
             elbow_pole,
             roll_arm,
             Vector((0.0, -0.82, 0.57)).normalized(),
         )
-        _aim_bone_world(arm_obj, f"Hand_{side}", finger_dir, Vector((-sx * 1.0, 0.0, 0.0)))
 
 
 def build_wide_grip_pullup(
@@ -1933,7 +2056,7 @@ def build_wide_grip_pullup(
 ) -> dict:
     import bpy  # type: ignore
 
-    base_mod.build_mannequin(blend_path=None, glb_paths=[], keep_heatmap_preview=False)
+    base_mod.build_mannequin(blend_path=None, glb_paths=[], keep_heatmap_preview=False, grip_hands=True)
     col = bpy.data.collections.get("VigorAI_Mannequin") or bpy.context.scene.collection
     arm_obj = bpy.data.objects["Armature_GymHuman"]
 
@@ -2023,23 +2146,27 @@ def _pose_lat_pulldown(
         Vector((0.0, 0.0, 1.0)),
     )
 
+    fists: list[Vector] = []
     for side, sx in (("L", 1.0), ("R", -1.0)):
         # Tay nam sap doi xung tren phan be cong ngoai cua Lat Bar (X=+-0.38, Z=-0.048)
         palm_pos = bar_pos + Vector((sx * 0.38, 0.0, -0.048))
         finger_dir = Vector((-sx * 0.18, -0.32, 0.93)).normalized()
-        wrist_target = palm_pos - finger_dir * 0.048
         elbow_pole = Vector((sx * 0.78, 0.35 if bad_form else 0.05, -0.52))
         roll_arm = Vector((0.0, -0.75, 0.66)).normalized()
-        _solve_two_bone_ik_world(
+        fist_pos = _solve_arm_grip_ik(
             arm_obj,
-            f"UpperArm_{side}",
-            f"Forearm_{side}",
-            wrist_target,
+            side,
+            palm_pos,
+            finger_dir,
+            Vector((-sx * 1.0, -0.25, 0.0)),
             elbow_pole,
             roll_arm,
             Vector((0.0, -0.85, 0.52)).normalized(),
         )
-        _aim_bone_world(arm_obj, f"Hand_{side}", finger_dir, Vector((-sx * 1.0, -0.25, 0.0)))
+        fists.append(fist_pos)
+
+    bar_pos = Vector((0.0, 0.5 * (fists[0].y + fists[1].y), 0.5 * (fists[0].z + fists[1].z) + 0.048))
+    _set_bone_world_head(arm_obj, "Bone_LatBar", bar_pos)
 
     # Cap dong noi tu rong roc tren (pulley_pos) xuong moc thanh don (bar_pos + (0,0,0.04))
     bar_anchor = bar_pos + Vector((0.0, 0.0, 0.040))
@@ -2057,7 +2184,7 @@ def build_lat_pulldown(
 ) -> dict:
     import bpy  # type: ignore
 
-    base_mod.build_mannequin(blend_path=None, glb_paths=[], keep_heatmap_preview=False)
+    base_mod.build_mannequin(blend_path=None, glb_paths=[], keep_heatmap_preview=False, grip_hands=True)
     col = bpy.data.collections.get("VigorAI_Mannequin") or bpy.context.scene.collection
     arm_obj = bpy.data.objects["Armature_GymHuman"]
 
@@ -2160,22 +2287,30 @@ def _pose_straight_arm_cable_pulldown(
     bar_y_ax = cable_dir.cross(bar_x).normalized()
     _set_bone_world_axes(arm_obj, "Bone_StraightBar", bar_pos, bar_x, bar_y_ax, cable_dir)
 
+    fists: list[Vector] = []
     for side, sx in (("L", 1.0), ("R", -1.0)):
         # Nam sap (overhand pronated) om phia tren Straight Bar (long ban tay huong xuong -Z, ngon cai huong vao trong)
         palm_pos = bar_pos + Vector((sx * 0.19, 0.0, 0.0))
         finger_dir = (reach_dir + Vector((0.0, -0.45, -0.35))).normalized()
-        wrist_target = palm_pos - finger_dir * 0.048
         side_pole = Vector((sx * 0.25, elbow_pole.y, elbow_pole.z)).normalized()
-        _solve_two_bone_ik_world(
+        roll_arm = Vector((-sx * 1.0, 0.0, 0.0))
+        fist_pos = _solve_arm_grip_ik(
             arm_obj,
-            f"UpperArm_{side}",
-            f"Forearm_{side}",
-            wrist_target,
+            side,
+            palm_pos,
+            finger_dir,
+            Vector((-sx * 1.0, 0.0, 0.0)),
             side_pole,
-            Vector((-sx * 0.25, -0.65, 0.72)).normalized(),
-            Vector((-sx * 0.25, -0.65, 0.72)).normalized(),
+            roll_arm,
+            roll_arm,
         )
-        _aim_bone_world(arm_obj, f"Hand_{side}", finger_dir, Vector((-sx * 1.0, 0.0, 0.0)))
+        fists.append(fist_pos)
+
+    bar_pos = Vector((0.0, 0.5 * (fists[0].y + fists[1].y), 0.5 * (fists[0].z + fists[1].z)))
+    cable_vec_bar = pulley_pos - bar_pos
+    cable_dir = cable_vec_bar.normalized()
+    bar_y_ax = cable_dir.cross(bar_x).normalized()
+    _set_bone_world_axes(arm_obj, "Bone_StraightBar", bar_pos, bar_x, bar_y_ax, cable_dir)
 
     bar_anchor = bar_pos + cable_dir * 0.036
     c_vec = bar_anchor - pulley_pos
@@ -2192,7 +2327,7 @@ def build_straight_arm_cable_pulldown(
 ) -> dict:
     import bpy  # type: ignore
 
-    base_mod.build_mannequin(blend_path=None, glb_paths=[], keep_heatmap_preview=False)
+    base_mod.build_mannequin(blend_path=None, glb_paths=[], keep_heatmap_preview=False, grip_hands=True)
     col = bpy.data.collections.get("VigorAI_Mannequin") or bpy.context.scene.collection
     arm_obj = bpy.data.objects["Armature_GymHuman"]
 
@@ -2284,22 +2419,28 @@ def _pose_barbell_bent_over_row(arm_obj, depth: float, bad_form: bool) -> None:
     bar_pos = Vector((0.0, bar_y, bar_z))
     _set_bone_world_head(arm_obj, "Bone_Barbell", bar_pos)
 
+    fists: list[Vector] = []
     for side, sx in (("L", 1.0), ("R", -1.0)):
         palm_pos = bar_pos + Vector((sx * 0.32, 0.0, 0.0))
         finger_dir = Vector((0.0, 0.15, -0.99)).normalized()
-        wrist_target = palm_pos - finger_dir * 0.048
         elbow_pole = Vector((sx * (0.78 if bad_form else 0.36), 0.65, 0.68))
         roll_arm = Vector((0.0, -0.85, -0.52)).normalized()
-        _solve_two_bone_ik_world(
+        fist_pos = _solve_arm_grip_ik(
             arm_obj,
-            f"UpperArm_{side}",
-            f"Forearm_{side}",
-            wrist_target,
+            side,
+            palm_pos,
+            finger_dir,
+            Vector((-sx * 1.0, 0.0, 0.0)),
             elbow_pole,
             roll_arm,
             roll_arm,
         )
-        _aim_bone_world(arm_obj, f"Hand_{side}", finger_dir, Vector((-sx * 1.0, 0.0, 0.0)))
+        fists.append(fist_pos)
+    _set_bone_world_head(
+        arm_obj,
+        "Bone_Barbell",
+        Vector((0.0, 0.5 * (fists[0].y + fists[1].y), 0.5 * (fists[0].z + fists[1].z))),
+    )
 
 
 def build_barbell_bent_over_row(
@@ -2309,7 +2450,7 @@ def build_barbell_bent_over_row(
 ) -> dict:
     import bpy  # type: ignore
 
-    base_mod.build_mannequin(blend_path=None, glb_paths=[], keep_heatmap_preview=False)
+    base_mod.build_mannequin(blend_path=None, glb_paths=[], keep_heatmap_preview=False, grip_hands=True)
     col = bpy.data.collections.get("VigorAI_Mannequin") or bpy.context.scene.collection
     arm_obj = bpy.data.objects["Armature_GymHuman"]
 
@@ -2405,23 +2546,34 @@ def _pose_seated_cable_row(
         Vector((0.0, 0.0, 1.0)),
     )
 
+    fists: list[Vector] = []
     for side, sx in (("L", 1.0), ("R", -1.0)):
         # Tay cam kieu neutral grip doi xung (long ban tay trai -X, phai +X; ngon cai huong +Z)
         palm_pos = handle_pos + Vector((sx * 0.085, 0.0, 0.0))
         finger_dir = Vector((0.0, -1.0, 0.0))
-        wrist_target = palm_pos - finger_dir * 0.048
         elbow_pole = Vector((sx * (0.65 if bad_form else 0.35), 0.80, -0.50))
         roll_arm = Vector((-sx * 0.55, 0.0, 0.83)).normalized()
-        _solve_two_bone_ik_world(
+        fist_pos = _solve_arm_grip_ik(
             arm_obj,
-            f"UpperArm_{side}",
-            f"Forearm_{side}",
-            wrist_target,
+            side,
+            palm_pos,
+            finger_dir,
+            Vector((0.0, 0.0, 1.0)),
             elbow_pole,
             roll_arm,
             roll_arm,
         )
-        _aim_bone_world(arm_obj, f"Hand_{side}", finger_dir, Vector((0.0, 0.0, 1.0)))
+        fists.append(fist_pos)
+
+    handle_pos = Vector((0.0, 0.5 * (fists[0].y + fists[1].y), 0.5 * (fists[0].z + fists[1].z)))
+    _set_bone_world_axes(
+        arm_obj,
+        "Bone_VHandle",
+        handle_pos,
+        Vector((1.0, 0.0, 0.0)),
+        Vector((0.0, 1.0, 0.0)),
+        Vector((0.0, 0.0, 1.0)),
+    )
 
     handle_anchor = handle_pos + Vector((0.0, -0.14, 0.0))
     cable_vec = handle_anchor - pulley_pos
@@ -2438,7 +2590,7 @@ def build_seated_cable_row(
 ) -> dict:
     import bpy  # type: ignore
 
-    base_mod.build_mannequin(blend_path=None, glb_paths=[], keep_heatmap_preview=False)
+    base_mod.build_mannequin(blend_path=None, glb_paths=[], keep_heatmap_preview=False, grip_hands=True)
     col = bpy.data.collections.get("VigorAI_Mannequin") or bpy.context.scene.collection
     arm_obj = bpy.data.objects["Armature_GymHuman"]
 
@@ -2483,11 +2635,11 @@ def _pose_barbell_deadlift(arm_obj, depth: float, bad_form: bool) -> None:
     _reset_pose(arm_obj)
 
     # depth=0 -> dung khoa khop dinh (lockout); depth=1 -> dat banh ta R=0.215m xuong san Z=0
-    hinge = depth ** 0.78
+    hinge = depth ** 0.72
     if bad_form:
         # Loi: hong cao, lung duoi & lung tren cong chu C ro ret, thanh don troi xa ong dong
-        pelvis_y = 0.04 + 0.16 * hinge
-        pelvis_z = 0.94 - 0.24 * (depth ** 0.90)
+        pelvis_y = 0.06 + 0.22 * hinge
+        pelvis_z = 0.94 - 0.38 * (depth ** 0.90)
         _set_bone_world_head(arm_obj, "Pelvis", Vector((0.0, pelvis_y, pelvis_z)))
         a1 = math.radians(2.0 + 53.0 * hinge)
         a2 = math.radians(2.0 + 76.0 * hinge)
@@ -2500,10 +2652,10 @@ def _pose_barbell_deadlift(arm_obj, depth: float, bad_form: bool) -> None:
         _aim_bone_world(arm_obj, "Head", Vector((0.0, -0.60, 0.80)).normalized(), Vector((1.0, 0.0, 0.0)))
     else:
         # Dung ky thuat: lung phang co dinh goc gap hong muot, vai luon o phia tren thanh don
-        pelvis_y = 0.04 + 0.28 * hinge
-        pelvis_z = 0.94 - 0.41 * (depth ** 0.90)
+        pelvis_y = 0.06 + 0.34 * hinge
+        pelvis_z = 0.94 - 0.44 * (depth ** 0.90)
         _set_bone_world_head(arm_obj, "Pelvis", Vector((0.0, pelvis_y, pelvis_z)))
-        torso_rad = math.radians(2.0 + 60.0 * hinge)
+        torso_rad = math.radians(2.0 + 62.0 * hinge)
         torso_dir = Vector((0.0, -math.sin(torso_rad), math.cos(torso_rad))).normalized()
         _aim_bone_world(arm_obj, "Pelvis", torso_dir, Vector((1.0, 0.0, 0.0)))
         for bname in ("Spine_01", "Spine_02", "Spine_03"):
@@ -2514,7 +2666,7 @@ def _pose_barbell_deadlift(arm_obj, depth: float, bad_form: bool) -> None:
         _aim_bone_world(arm_obj, "Head", Vector((0.0, -math.sin(head_rad), math.cos(head_rad))).normalized(), Vector((1.0, 0.0, 0.0)))
 
     for side, sx in (("L", 1.0), ("R", -1.0)):
-        ankle_target = Vector((sx * 0.14, 0.02, 0.092))
+        ankle_target = Vector((sx * 0.14, 0.06, 0.098))
         knee_pole = Vector((sx * 0.15, -0.88, 0.42))
         _solve_two_bone_ik_world(
             arm_obj,
@@ -2527,29 +2679,34 @@ def _pose_barbell_deadlift(arm_obj, depth: float, bad_form: bool) -> None:
         )
         _aim_bone_world(arm_obj, f"Foot_{side}", Vector((0.0, -0.94, -0.34)), Vector((1.0, 0.0, 0.0)))
 
-    # Banh ta ngoai R=0.215m -> tai depth=1 thanh don o Z=0.215m (cham san chuan xac!)
-    bar_y = -0.11 - (0.14 * depth if bad_form else 0.0)
-    bar_z = 0.885 - 0.670 * depth
+    bpy.context.view_layer.update()
+    knee_y = (arm_obj.matrix_world @ arm_obj.pose.bones["Calf_L"].matrix).translation.y
+
+    # Banh ta ngoai R=0.215m -> tai depth=1 thanh don o Z=0.215m va luon truot phia truoc goi/ong dong
+    bar_y = min(
+        -0.115 - (0.12 * depth if bad_form else 0.04 * depth),
+        knee_y - 0.076,
+    )
+    bar_z = 0.920 - 0.705 * depth
     bar_pos = Vector((0.0, bar_y, bar_z))
     _set_bone_world_head(arm_obj, "Bone_Barbell", bar_pos)
 
     for side, sx in (("L", 1.0), ("R", -1.0)):
-        # Tay nam ngoai cang chan (X=+-0.27), giu canh tay duoi thang keo sat ong dong
-        palm_pos = bar_pos + Vector((sx * 0.27, 0.0, 0.0))
+        # Tay nam ngoai cang chan (X=+-0.28), giu canh tay duoi thang keo sat phia truoc ong dong
+        palm_pos = bar_pos + Vector((sx * 0.28, 0.0, 0.0))
         finger_dir = Vector((0.0, 0.12, -0.99)).normalized()
-        wrist_target = palm_pos - finger_dir * 0.048
         elbow_pole = Vector((sx * 0.25, 0.85, 0.20))
         roll_arm = Vector((0.0, -0.95, 0.0)).normalized()
-        _solve_two_bone_ik_world(
+        _solve_arm_grip_ik(
             arm_obj,
-            f"UpperArm_{side}",
-            f"Forearm_{side}",
-            wrist_target,
+            side,
+            palm_pos,
+            finger_dir,
+            Vector((-sx * 1.0, 0.0, 0.0)),
             elbow_pole,
             roll_arm,
             roll_arm,
         )
-        _aim_bone_world(arm_obj, f"Hand_{side}", finger_dir, Vector((-sx * 1.0, 0.0, 0.0)))
 
 
 def build_barbell_deadlift(
@@ -2559,7 +2716,7 @@ def build_barbell_deadlift(
 ) -> dict:
     import bpy  # type: ignore
 
-    base_mod.build_mannequin(blend_path=None, glb_paths=[], keep_heatmap_preview=False)
+    base_mod.build_mannequin(blend_path=None, glb_paths=[], keep_heatmap_preview=False, grip_hands=True)
     col = bpy.data.collections.get("VigorAI_Mannequin") or bpy.context.scene.collection
     arm_obj = bpy.data.objects["Armature_GymHuman"]
 
@@ -2607,13 +2764,17 @@ def _pose_dumbbell_shoulder_press(arm_obj, depth: float, bad_form: bool) -> None
     pelvis_pos = Vector((0.0, -0.165, 0.58)) + arch_fwd
     _set_bone_world_head(arm_obj, "Pelvis", pelvis_pos)
 
-    back_tilt = math.radians(72.0 if bad_form else 80.0)
+    back_tilt = math.radians(74.0 if bad_form else 80.0)
     torso_dir = Vector((0.0, math.cos(back_tilt), math.sin(back_tilt))).normalized()
     _aim_bone_world(arm_obj, "Pelvis", torso_dir, Vector((1.0, 0.0, 0.0)))
     for bname in ("Spine_01", "Spine_02", "Spine_03"):
         _aim_bone_world(arm_obj, bname, torso_dir, Vector((1.0, 0.0, 0.0)))
-    _aim_bone_world(arm_obj, "Neck", Vector((0.0, 0.04, 1.0)).normalized(), Vector((1.0, 0.0, 0.0)))
-    _aim_bone_world(arm_obj, "Head", Vector((0.0, -0.04, 1.0)).normalized(), Vector((1.0, 0.0, 0.0)))
+    if bad_form:
+        _aim_bone_world(arm_obj, "Neck", Vector((0.0, -0.06, 0.998)).normalized(), Vector((1.0, 0.0, 0.0)))
+        _aim_bone_world(arm_obj, "Head", Vector((0.0, -0.08, 0.996)).normalized(), Vector((1.0, 0.0, 0.0)))
+    else:
+        _aim_bone_world(arm_obj, "Neck", Vector((0.0, 0.04, 1.0)).normalized(), Vector((1.0, 0.0, 0.0)))
+        _aim_bone_world(arm_obj, "Head", Vector((0.0, -0.04, 1.0)).normalized(), Vector((1.0, 0.0, 0.0)))
 
     for side, sx in (("L", 1.0), ("R", -1.0)):
         ankle_target = Vector((sx * 0.21, -0.44, 0.092))
@@ -2647,24 +2808,23 @@ def _pose_dumbbell_shoulder_press(arm_obj, depth: float, bad_form: bool) -> None
             elbow_pole = Vector((sx * 0.85, -0.38, -0.35))
 
         finger_dir = Vector((0.0, -0.18, 0.98)).normalized()
-        wrist_target = db_pos - finger_dir * 0.048
-        roll_arm = Vector((0.0, -0.82, 0.57)).normalized()
-        _solve_two_bone_ik_world(
+        roll_arm = Vector((-sx * 1.0, 0.0, 0.0))
+        fist_pos = _solve_arm_grip_ik(
             arm_obj,
-            f"UpperArm_{side}",
-            f"Forearm_{side}",
-            wrist_target,
+            side,
+            db_pos,
+            finger_dir,
+            Vector((-sx * 1.0, 0.0, 0.0)),
             elbow_pole,
             roll_arm,
             roll_arm,
         )
-        _aim_bone_world(arm_obj, f"Hand_{side}", finger_dir, Vector((-sx * 1.0, 0.0, 0.0)))
 
         # Dat ta don trong long ban tay xoay nhe theo mat phang xuong ba vai
         db_x = Vector((1.0, sx * 0.25, 0.0)).normalized()
         db_y = Vector((-sx * 0.25, 1.0, 0.0)).normalized()
         db_z = db_x.cross(db_y).normalized()
-        _set_bone_world_axes(arm_obj, f"Bone_Dumbbell_{side}", db_pos, db_x, db_y, db_z)
+        _set_bone_world_axes(arm_obj, f"Bone_Dumbbell_{side}", fist_pos, db_x, db_y, db_z)
 
 
 def build_dumbbell_shoulder_press(
@@ -2674,7 +2834,7 @@ def build_dumbbell_shoulder_press(
 ) -> dict:
     import bpy  # type: ignore
 
-    base_mod.build_mannequin(blend_path=None, glb_paths=[], keep_heatmap_preview=False)
+    base_mod.build_mannequin(blend_path=None, glb_paths=[], keep_heatmap_preview=False, grip_hands=True)
     col = bpy.data.collections.get("VigorAI_Mannequin") or bpy.context.scene.collection
     arm_obj = bpy.data.objects["Armature_GymHuman"]
 
@@ -2789,12 +2949,13 @@ def _pose_dumbbell_lateral_raise(arm_obj, depth: float, bad_form: bool) -> None:
             roll_arm,
         )
         _aim_bone_world(arm_obj, f"Hand_{side}", finger_dir, thumb_dir)
+        fist_pos, _, _ = _get_posed_fist_center(arm_obj, side)
 
         # Thanh ta don nam doc truoc-sau trong long ban tay (axis_x = thumb_dir)
         db_x = thumb_dir
         db_y = finger_dir.cross(db_x).normalized()
         db_z = db_x.cross(db_y).normalized()
-        _set_bone_world_axes(arm_obj, f"Bone_Dumbbell_{side}", db_pos, db_x, db_y, db_z)
+        _set_bone_world_axes(arm_obj, f"Bone_Dumbbell_{side}", fist_pos, db_x, db_y, db_z)
 
 
 def build_dumbbell_lateral_raise(
@@ -2804,7 +2965,7 @@ def build_dumbbell_lateral_raise(
 ) -> dict:
     import bpy  # type: ignore
 
-    base_mod.build_mannequin(blend_path=None, glb_paths=[], keep_heatmap_preview=False)
+    base_mod.build_mannequin(blend_path=None, glb_paths=[], keep_heatmap_preview=False, grip_hands=True)
     col = bpy.data.collections.get("VigorAI_Mannequin") or bpy.context.scene.collection
     arm_obj = bpy.data.objects["Armature_GymHuman"]
 
@@ -2886,13 +3047,13 @@ def _pose_cable_face_pull(
 
     # depth=0 -> keo xoay ngoai cao ngang tran/tai; depth=1 -> duoi tay ve phia rong roc
     if bad_form:
-        hand_x_abs = 0.22 - 0.12 * depth
+        hand_x_abs = 0.22 - 0.10 * depth
         hand_y = -0.06 - 0.30 * depth
         hand_z = 1.44 + 0.10 * depth
     else:
-        hand_x_abs = 0.31 - 0.21 * depth
-        hand_y = 0.07 - 0.43 * depth
-        hand_z = 1.62 - 0.08 * depth
+        hand_x_abs = 0.31 - 0.15 * depth
+        hand_y = 0.04 - 0.38 * depth
+        hand_z = 1.60 - 0.10 * depth
 
     # Tinh giao diem chia nhanh day thung co chieu dai nhanh co dinh L_rope = 0.42m
     mid = Vector((0.0, hand_y, hand_z))
@@ -2913,9 +3074,7 @@ def _pose_cable_face_pull(
     for side, sx in (("L", 1.0), ("R", -1.0)):
         hand_pos = Vector((sx * hand_x_abs, hand_y, hand_z))
         to_split = (split_pos - hand_pos).normalized()
-        finger_dir = to_split
-        thumb_dir = Vector((0.0, 0.35 * (1.0 - depth), 1.0)).normalized()
-        wrist_target = hand_pos - finger_dir * 0.048
+        wrist_target = hand_pos - to_split * 0.048
 
         if bad_form:
             # Loi: khuyu tay tut thap hon co tay (< vai)
@@ -2923,8 +3082,8 @@ def _pose_cable_face_pull(
             roll_arm = Vector((0.0, -0.88, -0.45)).normalized()
         else:
             # Dung ky thuat: keo khuyu rong ra sau ngang vai va xoay ngoai cang tay ben thai duong
-            elbow_pole = Vector((sx * 0.92, 0.48, 0.12))
-            roll_arm = Vector((0.0, -0.78, 0.62)).normalized()
+            elbow_pole = Vector((sx * 0.90, 0.38, -0.22)).normalized()
+            roll_arm = Vector((0.0, 0.25, 0.97)).normalized()
 
         _solve_two_bone_ik_world(
             arm_obj,
@@ -2935,18 +3094,22 @@ def _pose_cable_face_pull(
             roll_arm,
             roll_arm,
         )
-        _aim_bone_world(arm_obj, f"Hand_{side}", finger_dir, thumb_dir)
+        actual_fa = (arm_obj.matrix_world @ arm_obj.pose.bones[f"Forearm_{side}"].matrix).col[1].to_3d().normalized()
+        thumb_dir = (-to_split * 0.65 + Vector((0.0, 0.0, 0.76))).normalized()
+        _aim_bone_world(arm_obj, f"Hand_{side}", actual_fa, thumb_dir)
+        fist_pos, _, _ = _get_posed_fist_center(arm_obj, side)
 
-        rope_end = hand_pos - to_split * 0.055
+        to_split_g = (split_pos - fist_pos).normalized()
+        rope_end = fist_pos - to_split_g * 0.030
         b_vec = rope_end - split_pos
         b_len = max(0.05, b_vec.length)
         _set_bone_world_head(arm_obj, f"Bone_RopeBranch_{side}", split_pos)
         _aim_bone_world(arm_obj, f"Bone_RopeBranch_{side}", b_vec.normalized(), Vector((0.0, 0.0, 1.0)))
         arm_obj.pose.bones[f"Bone_RopeBranch_{side}"].scale = Vector((1.0, b_len, 1.0))
 
-        knob_pos = hand_pos - to_split * 0.062
+        knob_pos = fist_pos - to_split_g * 0.038
         _set_bone_world_head(arm_obj, f"Bone_RopeKnob_{side}", knob_pos)
-        _aim_bone_world(arm_obj, f"Bone_RopeKnob_{side}", (-to_split).normalized(), Vector((0.0, 0.0, 1.0)))
+        _aim_bone_world(arm_obj, f"Bone_RopeKnob_{side}", (-to_split_g).normalized(), Vector((0.0, 0.0, 1.0)))
 
 
 def build_cable_face_pull(
@@ -2956,7 +3119,7 @@ def build_cable_face_pull(
 ) -> dict:
     import bpy  # type: ignore
 
-    base_mod.build_mannequin(blend_path=None, glb_paths=[], keep_heatmap_preview=False)
+    base_mod.build_mannequin(blend_path=None, glb_paths=[], keep_heatmap_preview=False, grip_hands=True)
     col = bpy.data.collections.get("VigorAI_Mannequin") or bpy.context.scene.collection
     arm_obj = bpy.data.objects["Armature_GymHuman"]
 
@@ -3056,7 +3219,7 @@ def _pose_barbell_bicep_curl(arm_obj, depth: float, bad_form: bool) -> None:
         elbow_y = -0.15 + 0.12 * depth
         elbow_z = 1.24 - 0.10 * depth
         bar_pos = Vector((0.0, elbow_y, elbow_z)) + forearm_dir * 0.295
-        elbow_pole = Vector((0.0, -0.65, -0.72))
+        elbow_pole = Vector((0.0, 0.65, -0.75))
     else:
         elbow_y, elbow_z = -0.03, 1.145
         bar_pos = Vector((0.0, elbow_y, elbow_z)) + forearm_dir * 0.295
@@ -3066,20 +3229,26 @@ def _pose_barbell_bicep_curl(arm_obj, depth: float, bad_form: bool) -> None:
 
     roll_upper = Vector((0.0, -1.0, 0.15)).normalized()
     roll_lower = forearm_dir.cross(Vector((1.0, 0.0, 0.0))).normalized()
+    fists: list[Vector] = []
     for side, sx in (("L", 1.0), ("R", -1.0)):
         palm_pos = bar_pos + Vector((sx * 0.22, 0.0, 0.0))
-        wrist_target = palm_pos - forearm_dir * 0.048
         side_pole = Vector((sx * 0.18, elbow_pole.y, elbow_pole.z)).normalized()
-        _solve_two_bone_ik_world(
+        fist_pos = _solve_arm_grip_ik(
             arm_obj,
-            f"UpperArm_{side}",
-            f"Forearm_{side}",
-            wrist_target,
+            side,
+            palm_pos,
+            forearm_dir,
+            Vector((sx * 1.0, 0.0, 0.0)),
             side_pole,
             roll_upper,
             roll_lower,
         )
-        _aim_bone_world(arm_obj, f"Hand_{side}", forearm_dir, Vector((sx * 1.0, 0.0, 0.0)))
+        fists.append(fist_pos)
+    _set_bone_world_head(
+        arm_obj,
+        "Bone_Barbell",
+        Vector((0.0, 0.5 * (fists[0].y + fists[1].y), 0.5 * (fists[0].z + fists[1].z))),
+    )
 
 
 def build_barbell_bicep_curl(
@@ -3089,7 +3258,7 @@ def build_barbell_bicep_curl(
 ) -> dict:
     import bpy  # type: ignore
 
-    base_mod.build_mannequin(blend_path=None, glb_paths=[], keep_heatmap_preview=False)
+    base_mod.build_mannequin(blend_path=None, glb_paths=[], keep_heatmap_preview=False, grip_hands=True)
     col = bpy.data.collections.get("VigorAI_Mannequin") or bpy.context.scene.collection
     arm_obj = bpy.data.objects["Armature_GymHuman"]
 
@@ -3193,12 +3362,13 @@ def _pose_dumbbell_hammer_curl(
             hinge_inside,
         )
         _aim_bone_world(arm_obj, f"Hand_{side}", forearm_dir, hinge_inside)
+        fist_pos, _, _ = _get_posed_fist_center(arm_obj, side)
 
         # Dat ta don theo kieu Hammer (axis_x = hinge_inside doc theo ngon cai - ngon ut)
         db_x = hinge_inside
         db_y = Vector((1.0, 0.0, 0.0))
         db_z = db_x.cross(db_y).normalized()
-        _set_bone_world_axes(arm_obj, f"Bone_Dumbbell_{side}", db_pos, db_x, db_y, db_z)
+        _set_bone_world_axes(arm_obj, f"Bone_Dumbbell_{side}", fist_pos, db_x, db_y, db_z)
 
 
 def build_dumbbell_hammer_curl(
@@ -3208,7 +3378,7 @@ def build_dumbbell_hammer_curl(
 ) -> dict:
     import bpy  # type: ignore
 
-    base_mod.build_mannequin(blend_path=None, glb_paths=[], keep_heatmap_preview=False)
+    base_mod.build_mannequin(blend_path=None, glb_paths=[], keep_heatmap_preview=False, grip_hands=True)
     col = bpy.data.collections.get("VigorAI_Mannequin") or bpy.context.scene.collection
     arm_obj = bpy.data.objects["Armature_GymHuman"]
 
@@ -3304,12 +3474,13 @@ def _pose_incline_dumbbell_curl(arm_obj, depth: float, bad_form: bool) -> None:
             roll_lower,
         )
         _aim_bone_world(arm_obj, f"Hand_{side}", forearm_dir, Vector((sx * 1.0, 0.0, 0.0)))
+        fist_pos, _, _ = _get_posed_fist_center(arm_obj, side)
 
         # Dat ta don nam ngang (supinated grip, axis_x = +X)
         db_x = Vector((1.0, 0.0, 0.0))
         db_y = roll_lower
         db_z = db_x.cross(db_y).normalized()
-        _set_bone_world_axes(arm_obj, f"Bone_Dumbbell_{side}", db_pos, db_x, db_y, db_z)
+        _set_bone_world_axes(arm_obj, f"Bone_Dumbbell_{side}", fist_pos, db_x, db_y, db_z)
 
 
 def build_incline_dumbbell_curl(
@@ -3319,7 +3490,7 @@ def build_incline_dumbbell_curl(
 ) -> dict:
     import bpy  # type: ignore
 
-    base_mod.build_mannequin(blend_path=None, glb_paths=[], keep_heatmap_preview=False)
+    base_mod.build_mannequin(blend_path=None, glb_paths=[], keep_heatmap_preview=False, grip_hands=True)
     col = bpy.data.collections.get("VigorAI_Mannequin") or bpy.context.scene.collection
     arm_obj = bpy.data.objects["Armature_GymHuman"]
 
@@ -3441,18 +3612,19 @@ def _pose_cable_tricep_pushdown(
             hinge_inside,
         )
         _aim_bone_world(arm_obj, f"Hand_{side}", forearm_dir, hinge_inside)
+        fist_pos, _, _ = _get_posed_fist_center(arm_obj, side)
 
-        to_split = (split_pos - hand_pos).normalized()
-        rope_end = hand_pos - to_split * 0.055
+        to_split_g = (split_pos - fist_pos).normalized()
+        rope_end = fist_pos - to_split_g * 0.030
         b_vec = rope_end - split_pos
         b_len = max(0.05, b_vec.length)
         _set_bone_world_head(arm_obj, f"Bone_RopeBranch_{side}", split_pos)
         _aim_bone_world(arm_obj, f"Bone_RopeBranch_{side}", b_vec.normalized(), Vector((0.0, 0.0, 1.0)))
         arm_obj.pose.bones[f"Bone_RopeBranch_{side}"].scale = Vector((1.0, b_len, 1.0))
 
-        knob_pos = hand_pos - to_split * 0.062
+        knob_pos = fist_pos - to_split_g * 0.038
         _set_bone_world_head(arm_obj, f"Bone_RopeKnob_{side}", knob_pos)
-        _aim_bone_world(arm_obj, f"Bone_RopeKnob_{side}", (-to_split).normalized(), Vector((0.0, 0.0, 1.0)))
+        _aim_bone_world(arm_obj, f"Bone_RopeKnob_{side}", (-to_split_g).normalized(), Vector((0.0, 0.0, 1.0)))
 
 
 def build_cable_tricep_pushdown(
@@ -3462,7 +3634,7 @@ def build_cable_tricep_pushdown(
 ) -> dict:
     import bpy  # type: ignore
 
-    base_mod.build_mannequin(blend_path=None, glb_paths=[], keep_heatmap_preview=False)
+    base_mod.build_mannequin(blend_path=None, glb_paths=[], keep_heatmap_preview=False, grip_hands=True)
     col = bpy.data.collections.get("VigorAI_Mannequin") or bpy.context.scene.collection
     arm_obj = bpy.data.objects["Armature_GymHuman"]
 
@@ -3551,21 +3723,27 @@ def _pose_skull_crusher(arm_obj, depth: float, bad_form: bool) -> None:
 
     _set_bone_world_head(arm_obj, "Bone_Barbell", bar_pos)
 
-    roll_arm = Vector((0.0, -math.cos(ext_rad), math.sin(ext_rad))).normalized()
+    fists: list[Vector] = []
     for side, sx in (("L", 1.0), ("R", -1.0)):
         palm_pos = bar_pos + Vector((sx * 0.19, 0.0, 0.0))
-        wrist_target = palm_pos - forearm_dir * 0.048
         side_pole = Vector((sx * (0.95 if bad_form else 0.14), elbow_pole_base.y, elbow_pole_base.z)).normalized()
-        _solve_two_bone_ik_world(
+        roll_arm = Vector((-sx * 1.0, 0.0, 0.0))
+        fist_pos = _solve_arm_grip_ik(
             arm_obj,
-            f"UpperArm_{side}",
-            f"Forearm_{side}",
-            wrist_target,
+            side,
+            palm_pos,
+            forearm_dir,
+            Vector((-sx * 1.0, 0.0, 0.0)),
             side_pole,
             roll_arm,
             roll_arm,
         )
-        _aim_bone_world(arm_obj, f"Hand_{side}", forearm_dir, Vector((-sx * 1.0, 0.0, 0.0)))
+        fists.append(fist_pos)
+    _set_bone_world_head(
+        arm_obj,
+        "Bone_Barbell",
+        Vector((0.0, 0.5 * (fists[0].y + fists[1].y), 0.5 * (fists[0].z + fists[1].z))),
+    )
 
 
 def build_skull_crusher(
@@ -3575,7 +3753,7 @@ def build_skull_crusher(
 ) -> dict:
     import bpy  # type: ignore
 
-    base_mod.build_mannequin(blend_path=None, glb_paths=[], keep_heatmap_preview=False)
+    base_mod.build_mannequin(blend_path=None, glb_paths=[], keep_heatmap_preview=False, grip_hands=True)
     col = bpy.data.collections.get("VigorAI_Mannequin") or bpy.context.scene.collection
     arm_obj = bpy.data.objects["Armature_GymHuman"]
 
@@ -3661,6 +3839,7 @@ def _pose_overhead_dumbbell_tricep_ext(arm_obj, depth: float, bad_form: bool) ->
         Vector((-1.0, 0.0, 0.0)),
     )
 
+    fists: list[Vector] = []
     for side, sx in (("L", 1.0), ("R", -1.0)):
         # Hai ban tay om phia duoi banh ta tren (+Z+0.065)
         palm_pos = db_pos + Vector((sx * 0.048, 0.0, 0.065))
@@ -3677,7 +3856,16 @@ def _pose_overhead_dumbbell_tricep_ext(arm_obj, depth: float, bad_form: bool) ->
             roll_arm,
             roll_arm,
         )
-        _aim_bone_world(arm_obj, f"Hand_{side}", finger_dir, Vector((0.0, 1.0, 0.0)))
+        actual_fa = (arm_obj.matrix_world @ arm_obj.pose.bones[f"Forearm_{side}"].matrix).col[1].to_3d().normalized()
+        n_palm = Vector((-sx * 0.35, -0.15, 0.92)).normalized()
+        thumb_roll_z = (n_palm * sx).cross(actual_fa).normalized()
+        _aim_bone_world(arm_obj, f"Forearm_{side}", actual_fa, thumb_roll_z)
+        _aim_bone_world(arm_obj, f"Hand_{side}", actual_fa, thumb_roll_z)
+        fist_pos, _, _ = _get_posed_fist_center(arm_obj, side)
+        fists.append(fist_pos)
+
+    db_center = Vector((0.0, 0.5 * (fists[0].y + fists[1].y), 0.5 * (fists[0].z + fists[1].z) - 0.038))
+    _set_bone_world_head(arm_obj, "Bone_Dumbbell", db_center)
 
 
 def build_overhead_dumbbell_tricep_ext(
@@ -3687,7 +3875,7 @@ def build_overhead_dumbbell_tricep_ext(
 ) -> dict:
     import bpy  # type: ignore
 
-    base_mod.build_mannequin(blend_path=None, glb_paths=[], keep_heatmap_preview=False)
+    base_mod.build_mannequin(blend_path=None, glb_paths=[], keep_heatmap_preview=False, grip_hands=True)
     col = bpy.data.collections.get("VigorAI_Mannequin") or bpy.context.scene.collection
     arm_obj = bpy.data.objects["Armature_GymHuman"]
 
@@ -3763,9 +3951,9 @@ def _pose_barbell_squat(arm_obj, depth: float, bad_form: bool) -> None:
 
     for side, sx in (("L", 1.0), ("R", -1.0)):
         if bad_form:
-            ankle_target = Vector((sx * 0.175, 0.06 - 0.05 * depth, 0.092 + 0.075 * depth))
+            ankle_target = Vector((sx * 0.175, 0.06 - 0.05 * depth, 0.106 + 0.065 * depth))
             knee_pole = Vector((-sx * 0.65 * depth, -0.75, 0.10)).normalized()
-            foot_dir = Vector((sx * 0.08, -0.82, -0.57)).normalized()
+            foot_dir = Vector((sx * 0.14, -0.94, -0.34)).normalized()
         else:
             ankle_target = Vector((sx * 0.175, 0.06, 0.092))
             knee_pole = Vector((sx * 0.28, -0.95, 0.14)).normalized()
@@ -3794,19 +3982,18 @@ def _pose_barbell_squat(arm_obj, depth: float, bad_form: bool) -> None:
     for side, sx in (("L", 1.0), ("R", -1.0)):
         palm_pos = bar_pos + Vector((sx * 0.35, -0.01, -0.01))
         finger_dir = Vector((-sx * 0.10, -0.82, 0.56)).normalized()
-        wrist_target = palm_pos - finger_dir * 0.048
         elbow_pole = Vector((sx * 0.42, 0.86, -0.28)).normalized()
         roll_arm = Vector((0.0, 1.0, 0.0))
-        _solve_two_bone_ik_world(
+        _solve_arm_grip_ik(
             arm_obj,
-            f"UpperArm_{side}",
-            f"Forearm_{side}",
-            wrist_target,
+            side,
+            palm_pos,
+            finger_dir,
+            Vector((-sx * 1.0, 0.0, 0.0)),
             elbow_pole,
             roll_arm,
             roll_arm,
         )
-        _aim_bone_world(arm_obj, f"Hand_{side}", finger_dir, Vector((sx * 1.0, 0.0, 0.0)))
 
 
 def build_barbell_squat(
@@ -3816,7 +4003,7 @@ def build_barbell_squat(
 ) -> dict:
     import bpy  # type: ignore
 
-    base_mod.build_mannequin(blend_path=None, glb_paths=[], keep_heatmap_preview=False)
+    base_mod.build_mannequin(blend_path=None, glb_paths=[], keep_heatmap_preview=False, grip_hands=True)
     col = bpy.data.collections.get("VigorAI_Mannequin") or bpy.context.scene.collection
     arm_obj = bpy.data.objects["Armature_GymHuman"]
 
@@ -3942,7 +4129,7 @@ def build_leg_press(
 ) -> dict:
     import bpy  # type: ignore
 
-    base_mod.build_mannequin(blend_path=None, glb_paths=[], keep_heatmap_preview=False)
+    base_mod.build_mannequin(blend_path=None, glb_paths=[], keep_heatmap_preview=False, grip_hands=True)
     col = bpy.data.collections.get("VigorAI_Mannequin") or bpy.context.scene.collection
     arm_obj = bpy.data.objects["Armature_GymHuman"]
 
@@ -4051,7 +4238,7 @@ def build_leg_extension(
 ) -> dict:
     import bpy  # type: ignore
 
-    base_mod.build_mannequin(blend_path=None, glb_paths=[], keep_heatmap_preview=False)
+    base_mod.build_mannequin(blend_path=None, glb_paths=[], keep_heatmap_preview=False, grip_hands=True)
     col = bpy.data.collections.get("VigorAI_Mannequin") or bpy.context.scene.collection
     arm_obj = bpy.data.objects["Armature_GymHuman"]
 
@@ -4143,22 +4330,28 @@ def _pose_romanian_deadlift(arm_obj, depth: float, bad_form: bool) -> None:
     bar_pos = Vector((0.0, bar_y, bar_z))
     _set_bone_world_head(arm_obj, "Bone_Barbell", bar_pos)
 
+    fists: list[Vector] = []
     for side, sx in (("L", 1.0), ("R", -1.0)):
         palm_pos = bar_pos + Vector((sx * 0.26, 0.0, 0.0))
         finger_dir = Vector((0.0, 0.12, -0.99)).normalized()
-        wrist_target = palm_pos - finger_dir * 0.048
         elbow_pole = Vector((sx * 0.24, 0.86, 0.18)).normalized()
         roll_arm = Vector((0.0, -0.95, 0.0)).normalized()
-        _solve_two_bone_ik_world(
+        fist_pos = _solve_arm_grip_ik(
             arm_obj,
-            f"UpperArm_{side}",
-            f"Forearm_{side}",
-            wrist_target,
+            side,
+            palm_pos,
+            finger_dir,
+            Vector((-sx * 1.0, 0.0, 0.0)),
             elbow_pole,
             roll_arm,
             roll_arm,
         )
-        _aim_bone_world(arm_obj, f"Hand_{side}", finger_dir, Vector((-sx * 1.0, 0.0, 0.0)))
+        fists.append(fist_pos)
+    _set_bone_world_head(
+        arm_obj,
+        "Bone_Barbell",
+        Vector((0.0, 0.5 * (fists[0].y + fists[1].y), 0.5 * (fists[0].z + fists[1].z))),
+    )
 
 
 def build_romanian_deadlift(
@@ -4168,7 +4361,7 @@ def build_romanian_deadlift(
 ) -> dict:
     import bpy  # type: ignore
 
-    base_mod.build_mannequin(blend_path=None, glb_paths=[], keep_heatmap_preview=False)
+    base_mod.build_mannequin(blend_path=None, glb_paths=[], keep_heatmap_preview=False, grip_hands=True)
     col = bpy.data.collections.get("VigorAI_Mannequin") or bpy.context.scene.collection
     arm_obj = bpy.data.objects["Armature_GymHuman"]
 
@@ -4279,7 +4472,7 @@ def build_leg_curl_machine(
 ) -> dict:
     import bpy  # type: ignore
 
-    base_mod.build_mannequin(blend_path=None, glb_paths=[], keep_heatmap_preview=False)
+    base_mod.build_mannequin(blend_path=None, glb_paths=[], keep_heatmap_preview=False, grip_hands=True)
     col = bpy.data.collections.get("VigorAI_Mannequin") or bpy.context.scene.collection
     arm_obj = bpy.data.objects["Armature_GymHuman"]
 
@@ -4384,7 +4577,7 @@ def build_seated_leg_curl(
 ) -> dict:
     import bpy  # type: ignore
 
-    base_mod.build_mannequin(blend_path=None, glb_paths=[], keep_heatmap_preview=False)
+    base_mod.build_mannequin(blend_path=None, glb_paths=[], keep_heatmap_preview=False, grip_hands=True)
     col = bpy.data.collections.get("VigorAI_Mannequin") or bpy.context.scene.collection
     arm_obj = bpy.data.objects["Armature_GymHuman"]
 
@@ -4440,8 +4633,8 @@ def _pose_barbell_hip_thrust(arm_obj, depth: float, bad_form: bool) -> None:
         _aim_bone_world(arm_obj, "Spine_01", Vector((0.0, math.cos(a_sp1), math.sin(a_sp1))).normalized(), Vector((1.0, 0.0, 0.0)))
         _aim_bone_world(arm_obj, "Spine_02", Vector((0.0, math.cos(a_sp2), math.sin(a_sp2))).normalized(), Vector((1.0, 0.0, 0.0)))
         _aim_bone_world(arm_obj, "Spine_03", Vector((0.0, math.cos(a_sp3), math.sin(a_sp3))).normalized(), Vector((1.0, 0.0, 0.0)))
-        neck_dir = Vector((0.0, 0.94, -0.34 if depth > 0.3 else 0.34)).normalized()
-        head_dir = Vector((0.0, 0.78, -0.62 if depth > 0.3 else 0.62)).normalized()
+        neck_dir = Vector((0.0, 0.96, 0.24)).normalized()
+        head_dir = Vector((0.0, 0.90, 0.42)).normalized()
         _aim_bone_world(arm_obj, "Neck", neck_dir, Vector((1.0, 0.0, 0.0)))
         _aim_bone_world(arm_obj, "Head", head_dir, Vector((1.0, 0.0, 0.0)))
     else:
@@ -4482,22 +4675,28 @@ def _pose_barbell_hip_thrust(arm_obj, depth: float, bad_form: bool) -> None:
     bar_pos = pel_head + pel_ant * 0.120 + pel_up * 0.025
     _set_bone_world_head(arm_obj, "Bone_Barbell", bar_pos)
 
+    fists: list[Vector] = []
     for side, sx in (("L", 1.0), ("R", -1.0)):
         palm_pos = bar_pos + Vector((sx * 0.30, 0.0, 0.0))
         finger_dir = Vector((0.0, -0.62, -0.78)).normalized()
-        wrist_target = palm_pos - finger_dir * 0.048
         elbow_pole = Vector((sx * 0.55, 0.65, -0.52)).normalized()
         roll_arm = Vector((0.0, 1.0, 0.0))
-        _solve_two_bone_ik_world(
+        fist_pos = _solve_arm_grip_ik(
             arm_obj,
-            f"UpperArm_{side}",
-            f"Forearm_{side}",
-            wrist_target,
+            side,
+            palm_pos,
+            finger_dir,
+            Vector((-sx * 1.0, 0.0, 0.0)),
             elbow_pole,
             roll_arm,
             roll_arm,
         )
-        _aim_bone_world(arm_obj, f"Hand_{side}", finger_dir, Vector((-sx * 1.0, 0.0, 0.0)))
+        fists.append(fist_pos)
+    _set_bone_world_head(
+        arm_obj,
+        "Bone_Barbell",
+        Vector((0.0, 0.5 * (fists[0].y + fists[1].y), max(bar_pos.z, 0.5 * (fists[0].z + fists[1].z)))),
+    )
 
 
 def build_barbell_hip_thrust(
@@ -4507,7 +4706,7 @@ def build_barbell_hip_thrust(
 ) -> dict:
     import bpy  # type: ignore
 
-    base_mod.build_mannequin(blend_path=None, glb_paths=[], keep_heatmap_preview=False)
+    base_mod.build_mannequin(blend_path=None, glb_paths=[], keep_heatmap_preview=False, grip_hands=True)
     col = bpy.data.collections.get("VigorAI_Mannequin") or bpy.context.scene.collection
     arm_obj = bpy.data.objects["Armature_GymHuman"]
 
@@ -4559,12 +4758,12 @@ def _pose_walking_lunge(arm_obj, depth: float, bad_form: bool) -> None:
         _aim_bone_world(arm_obj, "Head", Vector((0.0, -0.14, 0.99)).normalized(), Vector((1.0, 0.0, 0.0)))
 
         # Chan trai buoc truoc ngan + nhac got; chan phai sau
-        ankle_l = Vector((0.135, -0.22, 0.092 + 0.055 * depth))
+        ankle_l = Vector((0.135, -0.22, 0.100 + 0.055 * depth))
         pole_l = Vector((-0.55 * depth, -0.82, 0.10)).normalized()
         _solve_two_bone_ik_world(arm_obj, "Thigh_L", "Calf_L", ankle_l, pole_l, Vector((1.0, 0.0, 0.0)), Vector((1.0, 0.0, 0.0)))
-        _aim_bone_world(arm_obj, "Foot_L", Vector((0.0, -0.84, -0.54)).normalized(), Vector((1.0, 0.0, 0.0)))
+        _aim_bone_world(arm_obj, "Foot_L", Vector((0.0, -0.92, -0.36)).normalized(), Vector((1.0, 0.0, 0.0)))
 
-        ankle_r = Vector((-0.135, 0.28, 0.145))
+        ankle_r = Vector((-0.135, 0.28, 0.172))
         pole_r = Vector((-0.08, -0.88, -0.46)).normalized()
         _solve_two_bone_ik_world(arm_obj, "Thigh_R", "Calf_R", ankle_r, pole_r, Vector((1.0, 0.0, 0.0)), Vector((1.0, 0.0, 0.0)))
         _aim_bone_world(arm_obj, "Foot_R", Vector((0.0, -0.60, -0.80)).normalized(), Vector((1.0, 0.0, 0.0)))
@@ -4585,7 +4784,7 @@ def _pose_walking_lunge(arm_obj, depth: float, bad_form: bool) -> None:
         _solve_two_bone_ik_world(arm_obj, "Thigh_L", "Calf_L", ankle_l, pole_l, Vector((1.0, 0.0, 0.0)), Vector((1.0, 0.0, 0.0)))
         _aim_bone_world(arm_obj, "Foot_L", Vector((0.0, -0.94, -0.34)), Vector((1.0, 0.0, 0.0)))
 
-        ankle_r = Vector((-0.145, 0.34, 0.145))
+        ankle_r = Vector((-0.145, 0.34, 0.172))
         pole_r = Vector((-0.08, -0.88, -0.46)).normalized()
         _solve_two_bone_ik_world(arm_obj, "Thigh_R", "Calf_R", ankle_r, pole_r, Vector((1.0, 0.0, 0.0)), Vector((1.0, 0.0, 0.0)))
         _aim_bone_world(arm_obj, "Foot_R", Vector((0.0, -0.60, -0.80)).normalized(), Vector((1.0, 0.0, 0.0)))
@@ -4595,14 +4794,6 @@ def _pose_walking_lunge(arm_obj, depth: float, bad_form: bool) -> None:
         db_y = pelvis_pos.y - (0.20 * depth if bad_form else 0.03)
         db_z = pelvis_pos.z - (0.04 if bad_form else 0.01)
         db_pos = Vector((sx * 0.275, db_y, db_z))
-        _set_bone_world_axes(
-            arm_obj,
-            f"Bone_Dumbbell_{side}",
-            db_pos,
-            Vector((0.0, 1.0, 0.0)),
-            Vector((-sx * 1.0, 0.0, 0.0)),
-            Vector((0.0, 0.0, 1.0)),
-        )
         wrist_target = db_pos + Vector((0.0, 0.0, 0.045))
         elbow_pole = Vector((sx * 0.65, 0.72, 0.22)).normalized()
         roll_arm = Vector((0.0, -0.85, 0.52)).normalized()
@@ -4615,7 +4806,16 @@ def _pose_walking_lunge(arm_obj, depth: float, bad_form: bool) -> None:
             roll_arm,
             roll_arm,
         )
-        _aim_bone_world(arm_obj, f"Hand_{side}", Vector((0.0, 0.0, -1.0)), Vector((0.0, 1.0, 0.0)))
+        _aim_bone_world(arm_obj, f"Hand_{side}", Vector((0.0, 0.0, -1.0)), Vector((0.0, -1.0, 0.0)))
+        fist_pos, _, _ = _get_posed_fist_center(arm_obj, side)
+        _set_bone_world_axes(
+            arm_obj,
+            f"Bone_Dumbbell_{side}",
+            fist_pos,
+            Vector((0.0, 1.0, 0.0)),
+            Vector((-sx * 1.0, 0.0, 0.0)),
+            Vector((0.0, 0.0, 1.0)),
+        )
 
 
 def build_walking_lunge(
@@ -4625,7 +4825,7 @@ def build_walking_lunge(
 ) -> dict:
     import bpy  # type: ignore
 
-    base_mod.build_mannequin(blend_path=None, glb_paths=[], keep_heatmap_preview=False)
+    base_mod.build_mannequin(blend_path=None, glb_paths=[], keep_heatmap_preview=False, grip_hands=True)
     col = bpy.data.collections.get("VigorAI_Mannequin") or bpy.context.scene.collection
     arm_obj = bpy.data.objects["Armature_GymHuman"]
 
@@ -4710,11 +4910,11 @@ def _pose_cable_glute_kickback(
 
     # Chan da phai (R) duoi thang co kiem soat ra sau (BadForm vong that lung qua muc & vang thang ra xa Y=+0.66, Z=0.50)
     if bad_form:
-        ankle_r = Vector((-0.14, -0.14 + 0.80 * depth, 0.14 + 0.36 * depth))
-        foot_r_dir = Vector((0.0, -0.62, -0.78)).normalized()
+        ankle_r = Vector((-0.14, -0.14 + 0.80 * depth, 0.180 + 0.32 * depth))
+        foot_r_dir = Vector((0.0, -0.84 + 0.22 * depth, -0.54 - 0.24 * depth)).normalized()
     else:
-        ankle_r = Vector((-0.14, -0.16 + 0.68 * depth, 0.14 + 0.30 * depth))
-        foot_r_dir = Vector((0.0, -0.82 + 0.24 * depth, -0.57 - 0.10 * depth)).normalized()
+        ankle_r = Vector((-0.14, -0.16 + 0.68 * depth, 0.180 + 0.26 * depth))
+        foot_r_dir = Vector((0.0, -0.86 + 0.28 * depth, -0.51 - 0.16 * depth)).normalized()
 
     _solve_two_bone_ik_world(
         arm_obj,
@@ -4729,21 +4929,20 @@ def _pose_cable_glute_kickback(
 
     # Hai tay nam thanh vin truoc nguc (Y=-0.64, Z=1.18)
     for side, sx in (("L", 1.0), ("R", -1.0)):
-        palm_pos = Vector((sx * 0.17, -0.64, 1.195))
+        palm_pos = Vector((sx * 0.17, -0.64, 1.18))
         finger_dir = Vector((0.0, -0.58, -0.81)).normalized()
-        wrist_target = palm_pos - finger_dir * 0.045
         elbow_pole = Vector((sx * 0.45, 0.50, -0.74)).normalized()
         roll_arm = Vector((0.0, 1.0, 0.0))
-        _solve_two_bone_ik_world(
+        _solve_arm_grip_ik(
             arm_obj,
-            f"UpperArm_{side}",
-            f"Forearm_{side}",
-            wrist_target,
+            side,
+            palm_pos,
+            finger_dir,
+            Vector((-sx * 1.0, 0.0, 0.0)),
             elbow_pole,
             roll_arm,
             roll_arm,
         )
-        _aim_bone_world(arm_obj, f"Hand_{side}", finger_dir, Vector((-sx * 1.0, 0.0, 0.0)))
 
     # Dai co chan (AnkleStrap) om co chan phai (R) & day cap dong toi rong roc thap (pulley_pos)
     bpy.context.view_layer.update()
@@ -4771,7 +4970,7 @@ def build_cable_glute_kickback(
 ) -> dict:
     import bpy  # type: ignore
 
-    base_mod.build_mannequin(blend_path=None, glb_paths=[], keep_heatmap_preview=False)
+    base_mod.build_mannequin(blend_path=None, glb_paths=[], keep_heatmap_preview=False, grip_hands=True)
     col = bpy.data.collections.get("VigorAI_Mannequin") or bpy.context.scene.collection
     arm_obj = bpy.data.objects["Armature_GymHuman"]
 
@@ -4821,6 +5020,8 @@ def _pose_hanging_leg_raise(
     bar_y: float = -0.02,
     bar_z: float = 2.28,
 ) -> None:
+    import bpy  # type: ignore
+
     _reset_pose(arm_obj)
 
     if bad_form:
@@ -4848,7 +5049,11 @@ def _pose_hanging_leg_raise(
                 Vector((1.0, 0.0, 0.0)),
                 Vector((1.0, 0.0, 0.0)),
             )
-            _aim_bone_world(arm_obj, f"Foot_{side}", Vector((0.0, -0.65, -0.76)).normalized(), Vector((1.0, 0.0, 0.0)))
+            bpy.context.view_layer.update()
+            calf_y = (arm_obj.matrix_world @ arm_obj.pose.bones[f"Calf_{side}"].matrix).col[1].to_3d().normalized()
+            front_shin = calf_y.cross(Vector((1.0, 0.0, 0.0))).normalized()
+            foot_dir = (front_shin * 0.55 + calf_y * 0.83).normalized()
+            _aim_bone_world(arm_obj, f"Foot_{side}", foot_dir, Vector((1.0, 0.0, 0.0)))
     else:
         # Dung ky thuat: treo on dinh khong dung dua, cuon xuong chau nhe (+22 deg) & nang thang hai chan cao qua ngang
         pelvis_pos = Vector((0.0, -0.05 * depth, 1.18 + 0.03 * depth))
@@ -4883,26 +5088,28 @@ def _pose_hanging_leg_raise(
                 Vector((1.0, 0.0, 0.0)),
                 Vector((1.0, 0.0, 0.0)),
             )
-            foot_dir = Vector((0.0, -0.45 * (1.0 - depth) + 0.65 * depth, -0.89 + 0.25 * depth)).normalized()
+            bpy.context.view_layer.update()
+            calf_y = (arm_obj.matrix_world @ arm_obj.pose.bones[f"Calf_{side}"].matrix).col[1].to_3d().normalized()
+            front_shin = calf_y.cross(Vector((1.0, 0.0, 0.0))).normalized()
+            foot_dir = (front_shin * 0.55 + calf_y * 0.83).normalized()
             _aim_bone_world(arm_obj, f"Foot_{side}", foot_dir, Vector((1.0, 0.0, 0.0)))
 
     # Hai tay nam chac thanh xa rong bang vai (X=+-0.24, bar_y=-0.02, bar_z=2.28)
     for side, sx in (("L", 1.0), ("R", -1.0)):
         palm_pos = Vector((sx * 0.24, bar_y, bar_z))
         finger_dir = Vector((0.0, -0.35, 0.94)).normalized()
-        wrist_target = palm_pos - finger_dir * 0.048
         elbow_pole = Vector((sx * 0.72, 0.16, -0.67)).normalized()
         roll_arm = Vector((0.0, -0.75, 0.66)).normalized()
-        _solve_two_bone_ik_world(
+        _solve_arm_grip_ik(
             arm_obj,
-            f"UpperArm_{side}",
-            f"Forearm_{side}",
-            wrist_target,
+            side,
+            palm_pos,
+            finger_dir,
+            Vector((-sx * 1.0, 0.0, 0.0)),
             elbow_pole,
             roll_arm,
             roll_arm,
         )
-        _aim_bone_world(arm_obj, f"Hand_{side}", finger_dir, Vector((-sx * 1.0, 0.0, 0.0)))
 
 
 def build_hanging_leg_raise(
@@ -4912,7 +5119,7 @@ def build_hanging_leg_raise(
 ) -> dict:
     import bpy  # type: ignore
 
-    base_mod.build_mannequin(blend_path=None, glb_paths=[], keep_heatmap_preview=False)
+    base_mod.build_mannequin(blend_path=None, glb_paths=[], keep_heatmap_preview=False, grip_hands=True)
     col = bpy.data.collections.get("VigorAI_Mannequin") or bpy.context.scene.collection
     arm_obj = bpy.data.objects["Armature_GymHuman"]
 
@@ -4957,8 +5164,8 @@ def _pose_cable_crunch(
     _reset_pose(arm_obj)
 
     if bad_form:
-        # Loi: giu lung thang do, gap khop hong ha mong ngoi lui ve sau (Pelvis Y=+0.24, Z=0.31)
-        pelvis_pos = Vector((0.0, 0.00 + 0.24 * depth, 0.465 - 0.155 * depth))
+        # Loi: giu lung thang do, gap khop hong ha mong lui ve sau nhung goi van tua dung tren mat tham
+        pelvis_pos = Vector((0.0, 0.03 + 0.10 * depth, 0.50 - 0.06 * depth))
         _set_bone_world_head(arm_obj, "Pelvis", pelvis_pos)
         torso_rad = math.radians(22.0 + 36.0 * depth)
         torso_dir = Vector((0.0, -math.sin(torso_rad), math.cos(torso_rad))).normalized()
@@ -4986,8 +5193,8 @@ def _pose_cable_crunch(
 
     # Quy hai goi tren mat tham (Z >= 0.018), mui chan bam tham o Y=+0.30
     for side, sx in (("L", 1.0), ("R", -1.0)):
-        ankle_target = Vector((sx * 0.15, 0.30, 0.195))
-        knee_pole = Vector((sx * 0.12, -0.96, -0.25)).normalized()
+        ankle_target = Vector((sx * 0.15, 0.30, 0.215 if bad_form else 0.195))
+        knee_pole = Vector((sx * 0.06, -0.92, -0.38)).normalized() if bad_form else Vector((sx * 0.12, -0.96, -0.25)).normalized()
         _solve_two_bone_ik_world(
             arm_obj,
             f"Thigh_{side}",
@@ -4999,17 +5206,21 @@ def _pose_cable_crunch(
         )
         _aim_bone_world(arm_obj, f"Foot_{side}", Vector((0.0, -0.42, -0.91)).normalized(), Vector((1.0, 0.0, 0.0)))
 
-    # Cap nhat ma tran Head de khoa hai dau day thung & tay ngay hai ben thai duong
+    # Dat tay va RopeHub phia truoc & tren dinh so (Head sphere) de day cap khong bao gio xuyen dau
     bpy.context.view_layer.update()
     head_mat = arm_obj.matrix_world @ arm_obj.pose.bones["Head"].matrix
     head_base = head_mat.translation
     head_up = head_mat.col[1].to_3d().normalized()
-    head_front = (-head_mat.col[0].to_3d()).normalized()
+    head_front = (-head_mat.col[2].to_3d()).normalized()
+    skull_center = head_base + head_up * 0.105
 
-    mid_grip = head_base + head_up * 0.095 + head_front * 0.045
+    mid_grip = skull_center + head_up * 0.055 + head_front * 0.035 + Vector((0.0, -0.075, 0.045))
     to_pulley = (pulley_pos - mid_grip).normalized()
-    split_pos = mid_grip + to_pulley * 0.25
+    split_pos = mid_grip + to_pulley * 0.26
+    split_pos.z = max(split_pos.z, skull_center.z + 0.14)
+    split_pos.y = min(split_pos.y, skull_center.y - 0.12)
 
+    to_pulley = (pulley_pos - split_pos).normalized()
     hub_x = Vector((1.0, 0.0, 0.0))
     hub_z = hub_x.cross(to_pulley).normalized()
     _set_bone_world_axes(arm_obj, "Bone_RopeHub", split_pos, hub_x, to_pulley, hub_z)
@@ -5021,32 +5232,37 @@ def _pose_cable_crunch(
     arm_obj.pose.bones["Bone_Cable_FacePull"].scale = Vector((1.0, cable_len, 1.0))
 
     for side, sx in (("L", 1.0), ("R", -1.0)):
-        hand_pos = mid_grip + Vector((sx * 0.145, 0.0, 0.0))
-        to_split = (split_pos - hand_pos).normalized()
-        wrist_target = hand_pos - to_split * 0.045
-        elbow_pole = Vector((sx * 0.42, -0.86, -0.28)).normalized()
-        roll_arm = Vector((0.0, -0.75, 0.65)).normalized()
+        hand_pos = mid_grip + Vector((sx * 0.165, 0.0, 0.0))
+        wrist_target = hand_pos + Vector((0.0, -0.018, -0.038))
+        elbow_pole = Vector((sx * 0.34, -0.90, -0.26)).normalized()
+        n_palm = (Vector((-sx * 0.88, 0.0, 0.0)) - head_front * 0.46).normalized()
         _solve_two_bone_ik_world(
             arm_obj,
             f"UpperArm_{side}",
             f"Forearm_{side}",
             wrist_target,
             elbow_pole,
-            roll_arm,
-            roll_arm,
+            Vector((0.0, -0.75, 0.65)).normalized(),
+            Vector((0.0, -0.75, 0.65)).normalized(),
         )
-        _aim_bone_world(arm_obj, f"Hand_{side}", to_split, Vector((-sx * 1.0, 0.0, 0.0)))
+        forearm_dir = (arm_obj.matrix_world @ arm_obj.pose.bones[f"Forearm_{side}"].matrix).col[1].to_3d().normalized()
+        thumb_roll_z = (n_palm * sx).cross(forearm_dir).normalized()
+        _aim_bone_world(arm_obj, f"Forearm_{side}", forearm_dir, thumb_roll_z)
+        _aim_bone_world(arm_obj, f"Hand_{side}", forearm_dir, thumb_roll_z)
 
-        rope_end = hand_pos - to_split * 0.055
+        hand_mat = arm_obj.matrix_world @ arm_obj.pose.bones[f"Hand_{side}"].matrix
+        hand_head = hand_mat.translation
+        grip_center = hand_head + forearm_dir * 0.045 + n_palm * 0.012
+        to_split_g = (split_pos - grip_center).normalized()
+        rope_end = grip_center - to_split_g * 0.030
         b_vec = rope_end - split_pos
         b_len = max(0.05, b_vec.length)
         _set_bone_world_head(arm_obj, f"Bone_RopeBranch_{side}", split_pos)
         _aim_bone_world(arm_obj, f"Bone_RopeBranch_{side}", b_vec.normalized(), Vector((0.0, 0.0, 1.0)))
         arm_obj.pose.bones[f"Bone_RopeBranch_{side}"].scale = Vector((1.0, b_len, 1.0))
 
-        knob_pos = hand_pos - to_split * 0.062
-        _set_bone_world_head(arm_obj, f"Bone_RopeKnob_{side}", knob_pos)
-        _aim_bone_world(arm_obj, f"Bone_RopeKnob_{side}", (-to_split).normalized(), Vector((0.0, 0.0, 1.0)))
+        _set_bone_world_head(arm_obj, f"Bone_RopeKnob_{side}", rope_end)
+        _aim_bone_world(arm_obj, f"Bone_RopeKnob_{side}", to_split_g, Vector((0.0, 0.0, 1.0)))
 
 
 def build_cable_crunch(
@@ -5056,7 +5272,7 @@ def build_cable_crunch(
 ) -> dict:
     import bpy  # type: ignore
 
-    base_mod.build_mannequin(blend_path=None, glb_paths=[], keep_heatmap_preview=False)
+    base_mod.build_mannequin(blend_path=None, glb_paths=[], keep_heatmap_preview=False, grip_hands=True)
     col = bpy.data.collections.get("VigorAI_Mannequin") or bpy.context.scene.collection
     arm_obj = bpy.data.objects["Armature_GymHuman"]
 
@@ -5139,7 +5355,7 @@ def _pose_plank(arm_obj, depth: float, bad_form: bool) -> None:
 
     # Chan duoi thang ra sau, mui chan chong dung tren mat tham (khong xuyen xuong duoi Z=0.018)
     for side, sx in (("L", 1.0), ("R", -1.0)):
-        ankle_target = Vector((sx * 0.13, 0.72, 0.17))
+        ankle_target = Vector((sx * 0.13, 0.72, 0.182))
         knee_pole = Vector((sx * 0.06, 0.0, -1.0)).normalized()
         _solve_two_bone_ik_world(
             arm_obj,
@@ -5176,7 +5392,7 @@ def build_plank(
 ) -> dict:
     import bpy  # type: ignore
 
-    base_mod.build_mannequin(blend_path=None, glb_paths=[], keep_heatmap_preview=False)
+    base_mod.build_mannequin(blend_path=None, glb_paths=[], keep_heatmap_preview=False, grip_hands=False)
     col = bpy.data.collections.get("VigorAI_Mannequin") or bpy.context.scene.collection
     arm_obj = bpy.data.objects["Armature_GymHuman"]
 
@@ -5227,7 +5443,7 @@ EXERCISE_SPECS: dict[str, dict] = {
         "file_name": "incline_dumbbell_press.glb",
         "blend_name": "chest_incline_dumbbell_press.blend",
         "builder": build_incline_dumbbell_press,
-        "bundled": True,
+        "bundled": False,
         "phase_keyframes": {
             "eccentric": [0, 45],
             "isometric": [45, 55],
@@ -5238,7 +5454,7 @@ EXERCISE_SPECS: dict[str, dict] = {
         "file_name": "cable_chest_fly.glb",
         "blend_name": "chest_cable_chest_fly.blend",
         "builder": build_cable_chest_fly,
-        "bundled": True,
+        "bundled": False,
         "phase_keyframes": {
             "eccentric": [0, 45],
             "isometric": [45, 55],
@@ -5249,7 +5465,7 @@ EXERCISE_SPECS: dict[str, dict] = {
         "file_name": "wide_grip_pullup.glb",
         "blend_name": "lats_wide_grip_pullup.blend",
         "builder": build_wide_grip_pullup,
-        "bundled": True,
+        "bundled": False,
         "phase_keyframes": {
             "eccentric": [0, 45],
             "isometric": [45, 55],
@@ -5260,7 +5476,7 @@ EXERCISE_SPECS: dict[str, dict] = {
         "file_name": "lat_pulldown.glb",
         "blend_name": "lats_lat_pulldown.blend",
         "builder": build_lat_pulldown,
-        "bundled": True,
+        "bundled": False,
         "phase_keyframes": {
             "eccentric": [0, 45],
             "isometric": [45, 55],
@@ -5271,7 +5487,7 @@ EXERCISE_SPECS: dict[str, dict] = {
         "file_name": "straight_arm_cable_pulldown.glb",
         "blend_name": "lats_straight_arm_cable_pulldown.blend",
         "builder": build_straight_arm_cable_pulldown,
-        "bundled": True,
+        "bundled": False,
         "phase_keyframes": {
             "eccentric": [0, 45],
             "isometric": [45, 55],
@@ -5282,7 +5498,7 @@ EXERCISE_SPECS: dict[str, dict] = {
         "file_name": "barbell_bent_over_row.glb",
         "blend_name": "back_barbell_bent_over_row.blend",
         "builder": build_barbell_bent_over_row,
-        "bundled": True,
+        "bundled": False,
         "phase_keyframes": {
             "eccentric": [0, 45],
             "isometric": [45, 55],
@@ -5293,7 +5509,7 @@ EXERCISE_SPECS: dict[str, dict] = {
         "file_name": "seated_cable_row.glb",
         "blend_name": "back_seated_cable_row.blend",
         "builder": build_seated_cable_row,
-        "bundled": True,
+        "bundled": False,
         "phase_keyframes": {
             "eccentric": [0, 45],
             "isometric": [45, 55],
@@ -5304,7 +5520,7 @@ EXERCISE_SPECS: dict[str, dict] = {
         "file_name": "barbell_deadlift.glb",
         "blend_name": "back_barbell_deadlift.blend",
         "builder": build_barbell_deadlift,
-        "bundled": True,
+        "bundled": False,
         "phase_keyframes": {
             "eccentric": [0, 45],
             "isometric": [45, 55],
@@ -5315,7 +5531,7 @@ EXERCISE_SPECS: dict[str, dict] = {
         "file_name": "dumbbell_shoulder_press.glb",
         "blend_name": "shoulders_dumbbell_shoulder_press.blend",
         "builder": build_dumbbell_shoulder_press,
-        "bundled": True,
+        "bundled": False,
         "phase_keyframes": {
             "eccentric": [0, 45],
             "isometric": [45, 55],
@@ -5326,7 +5542,7 @@ EXERCISE_SPECS: dict[str, dict] = {
         "file_name": "dumbbell_lateral_raise.glb",
         "blend_name": "shoulders_dumbbell_lateral_raise.blend",
         "builder": build_dumbbell_lateral_raise,
-        "bundled": True,
+        "bundled": False,
         "phase_keyframes": {
             "eccentric": [0, 45],
             "isometric": [45, 55],
@@ -5337,7 +5553,7 @@ EXERCISE_SPECS: dict[str, dict] = {
         "file_name": "cable_face_pull.glb",
         "blend_name": "shoulders_cable_face_pull.blend",
         "builder": build_cable_face_pull,
-        "bundled": True,
+        "bundled": False,
         "phase_keyframes": {
             "eccentric": [0, 45],
             "isometric": [45, 55],
@@ -5348,7 +5564,7 @@ EXERCISE_SPECS: dict[str, dict] = {
         "file_name": "barbell_bicep_curl.glb",
         "blend_name": "biceps_barbell_bicep_curl.blend",
         "builder": build_barbell_bicep_curl,
-        "bundled": True,
+        "bundled": False,
         "phase_keyframes": {
             "eccentric": [0, 45],
             "isometric": [45, 55],
@@ -5359,7 +5575,7 @@ EXERCISE_SPECS: dict[str, dict] = {
         "file_name": "dumbbell_hammer_curl.glb",
         "blend_name": "biceps_dumbbell_hammer_curl.blend",
         "builder": build_dumbbell_hammer_curl,
-        "bundled": True,
+        "bundled": False,
         "phase_keyframes": {
             "eccentric": [0, 45],
             "isometric": [45, 55],
@@ -5370,7 +5586,7 @@ EXERCISE_SPECS: dict[str, dict] = {
         "file_name": "incline_dumbbell_curl.glb",
         "blend_name": "biceps_incline_dumbbell_curl.blend",
         "builder": build_incline_dumbbell_curl,
-        "bundled": True,
+        "bundled": False,
         "phase_keyframes": {
             "eccentric": [0, 45],
             "isometric": [45, 55],
@@ -5381,7 +5597,7 @@ EXERCISE_SPECS: dict[str, dict] = {
         "file_name": "cable_tricep_pushdown.glb",
         "blend_name": "triceps_cable_tricep_pushdown.blend",
         "builder": build_cable_tricep_pushdown,
-        "bundled": True,
+        "bundled": False,
         "phase_keyframes": {
             "eccentric": [0, 45],
             "isometric": [45, 55],
@@ -5392,7 +5608,7 @@ EXERCISE_SPECS: dict[str, dict] = {
         "file_name": "skull_crusher.glb",
         "blend_name": "triceps_skull_crusher.blend",
         "builder": build_skull_crusher,
-        "bundled": True,
+        "bundled": False,
         "phase_keyframes": {
             "eccentric": [0, 45],
             "isometric": [45, 55],
@@ -5403,7 +5619,7 @@ EXERCISE_SPECS: dict[str, dict] = {
         "file_name": "overhead_dumbbell_tricep_ext.glb",
         "blend_name": "triceps_overhead_dumbbell_tricep_ext.blend",
         "builder": build_overhead_dumbbell_tricep_ext,
-        "bundled": True,
+        "bundled": False,
         "phase_keyframes": {
             "eccentric": [0, 45],
             "isometric": [45, 55],
@@ -5425,7 +5641,7 @@ EXERCISE_SPECS: dict[str, dict] = {
         "file_name": "leg_press.glb",
         "blend_name": "quads_leg_press.blend",
         "builder": build_leg_press,
-        "bundled": True,
+        "bundled": False,
         "phase_keyframes": {
             "eccentric": [0, 45],
             "isometric": [45, 55],
@@ -5436,7 +5652,7 @@ EXERCISE_SPECS: dict[str, dict] = {
         "file_name": "leg_extension.glb",
         "blend_name": "quads_leg_extension.blend",
         "builder": build_leg_extension,
-        "bundled": True,
+        "bundled": False,
         "phase_keyframes": {
             "eccentric": [0, 45],
             "isometric": [45, 55],
@@ -5447,7 +5663,7 @@ EXERCISE_SPECS: dict[str, dict] = {
         "file_name": "romanian_deadlift.glb",
         "blend_name": "hamstrings_romanian_deadlift.blend",
         "builder": build_romanian_deadlift,
-        "bundled": True,
+        "bundled": False,
         "phase_keyframes": {
             "eccentric": [0, 45],
             "isometric": [45, 55],
@@ -5458,7 +5674,7 @@ EXERCISE_SPECS: dict[str, dict] = {
         "file_name": "leg_curl_machine.glb",
         "blend_name": "hamstrings_leg_curl_machine.blend",
         "builder": build_leg_curl_machine,
-        "bundled": True,
+        "bundled": False,
         "phase_keyframes": {
             "eccentric": [0, 45],
             "isometric": [45, 55],
@@ -5469,7 +5685,7 @@ EXERCISE_SPECS: dict[str, dict] = {
         "file_name": "seated_leg_curl.glb",
         "blend_name": "hamstrings_seated_leg_curl.blend",
         "builder": build_seated_leg_curl,
-        "bundled": True,
+        "bundled": False,
         "phase_keyframes": {
             "eccentric": [0, 45],
             "isometric": [45, 55],
@@ -5480,7 +5696,7 @@ EXERCISE_SPECS: dict[str, dict] = {
         "file_name": "barbell_hip_thrust.glb",
         "blend_name": "glutes_barbell_hip_thrust.blend",
         "builder": build_barbell_hip_thrust,
-        "bundled": True,
+        "bundled": False,
         "phase_keyframes": {
             "eccentric": [0, 45],
             "isometric": [45, 55],
@@ -5491,7 +5707,7 @@ EXERCISE_SPECS: dict[str, dict] = {
         "file_name": "walking_lunge.glb",
         "blend_name": "glutes_walking_lunge.blend",
         "builder": build_walking_lunge,
-        "bundled": True,
+        "bundled": False,
         "phase_keyframes": {
             "eccentric": [0, 45],
             "isometric": [45, 55],
@@ -5502,7 +5718,7 @@ EXERCISE_SPECS: dict[str, dict] = {
         "file_name": "cable_glute_kickback.glb",
         "blend_name": "glutes_cable_glute_kickback.blend",
         "builder": build_cable_glute_kickback,
-        "bundled": True,
+        "bundled": False,
         "phase_keyframes": {
             "eccentric": [0, 45],
             "isometric": [45, 55],
@@ -5513,7 +5729,7 @@ EXERCISE_SPECS: dict[str, dict] = {
         "file_name": "hanging_leg_raise.glb",
         "blend_name": "abs_hanging_leg_raise.blend",
         "builder": build_hanging_leg_raise,
-        "bundled": True,
+        "bundled": False,
         "phase_keyframes": {
             "eccentric": [0, 45],
             "isometric": [45, 55],
@@ -5524,7 +5740,7 @@ EXERCISE_SPECS: dict[str, dict] = {
         "file_name": "cable_crunch.glb",
         "blend_name": "abs_cable_crunch.blend",
         "builder": build_cable_crunch,
-        "bundled": True,
+        "bundled": False,
         "phase_keyframes": {
             "eccentric": [0, 45],
             "isometric": [45, 55],
@@ -5535,7 +5751,7 @@ EXERCISE_SPECS: dict[str, dict] = {
         "file_name": "plank.glb",
         "blend_name": "abs_plank.blend",
         "builder": build_plank,
-        "bundled": True,
+        "bundled": False,
         "phase_keyframes": {
             "eccentric": [0, 45],
             "isometric": [45, 55],
@@ -5596,169 +5812,169 @@ def sync_manifest_and_mock_json(repo_root: Path) -> dict:
         (
             "INCLINE_DUMBBELL_PRESS",
             "incline_dumbbell_press.glb",
-            True,
+            False,
             {"eccentric": [0, 45], "isometric": [45, 55], "concentric": [55, 100]},
         ),
         (
             "CABLE_CHEST_FLY",
             "cable_chest_fly.glb",
-            True,
+            False,
             {"eccentric": [0, 45], "isometric": [45, 55], "concentric": [55, 100]},
         ),
         (
             "WIDE_GRIP_PULLUP",
             "wide_grip_pullup.glb",
-            True,
+            False,
             {"eccentric": [0, 45], "isometric": [45, 55], "concentric": [55, 100]},
         ),
         (
             "LAT_PULLDOWN",
             "lat_pulldown.glb",
-            True,
+            False,
             {"eccentric": [0, 45], "isometric": [45, 55], "concentric": [55, 100]},
         ),
         (
             "STRAIGHT_ARM_CABLE_PULLDOWN",
             "straight_arm_cable_pulldown.glb",
-            True,
+            False,
             {"eccentric": [0, 45], "isometric": [45, 55], "concentric": [55, 100]},
         ),
         (
             "BARBELL_BENT_OVER_ROW",
             "barbell_bent_over_row.glb",
-            True,
+            False,
             {"eccentric": [0, 45], "isometric": [45, 55], "concentric": [55, 100]},
         ),
         (
             "SEATED_CABLE_ROW",
             "seated_cable_row.glb",
-            True,
+            False,
             {"eccentric": [0, 45], "isometric": [45, 55], "concentric": [55, 100]},
         ),
         (
             "BARBELL_DEADLIFT",
             "barbell_deadlift.glb",
-            True,
+            False,
             {"eccentric": [0, 45], "isometric": [45, 55], "concentric": [55, 100]},
         ),
         (
             "DUMBBELL_SHOULDER_PRESS",
             "dumbbell_shoulder_press.glb",
-            True,
+            False,
             {"eccentric": [0, 45], "isometric": [45, 55], "concentric": [55, 100]},
         ),
         (
             "DUMBBELL_LATERAL_RAISE",
             "dumbbell_lateral_raise.glb",
-            True,
+            False,
             {"eccentric": [0, 45], "isometric": [45, 55], "concentric": [55, 100]},
         ),
         (
             "CABLE_FACE_PULL",
             "cable_face_pull.glb",
-            True,
+            False,
             {"eccentric": [0, 45], "isometric": [45, 55], "concentric": [55, 100]},
         ),
         (
             "BARBELL_BICEP_CURL",
             "barbell_bicep_curl.glb",
-            True,
+            False,
             {"eccentric": [0, 45], "isometric": [45, 55], "concentric": [55, 100]},
         ),
         (
             "DUMBBELL_HAMMER_CURL",
             "dumbbell_hammer_curl.glb",
-            True,
+            False,
             {"eccentric": [0, 45], "isometric": [45, 55], "concentric": [55, 100]},
         ),
         (
             "INCLINE_DUMBBELL_CURL",
             "incline_dumbbell_curl.glb",
-            True,
+            False,
             {"eccentric": [0, 45], "isometric": [45, 55], "concentric": [55, 100]},
         ),
         (
             "CABLE_TRICEP_PUSHDOWN",
             "cable_tricep_pushdown.glb",
-            True,
+            False,
             {"eccentric": [0, 45], "isometric": [45, 55], "concentric": [55, 100]},
         ),
         (
             "SKULL_CRUSHER",
             "skull_crusher.glb",
-            True,
+            False,
             {"eccentric": [0, 45], "isometric": [45, 55], "concentric": [55, 100]},
         ),
         (
             "OVERHEAD_DUMBBELL_TRICEP_EXT",
             "overhead_dumbbell_tricep_ext.glb",
-            True,
+            False,
             {"eccentric": [0, 45], "isometric": [45, 55], "concentric": [55, 100]},
         ),
         (
             "LEG_PRESS",
             "leg_press.glb",
-            True,
+            False,
             {"eccentric": [0, 45], "isometric": [45, 55], "concentric": [55, 100]},
         ),
         (
             "LEG_EXTENSION",
             "leg_extension.glb",
-            True,
+            False,
             {"eccentric": [0, 45], "isometric": [45, 55], "concentric": [55, 100]},
         ),
         (
             "ROMANIAN_DEADLIFT",
             "romanian_deadlift.glb",
-            True,
+            False,
             {"eccentric": [0, 45], "isometric": [45, 55], "concentric": [55, 100]},
         ),
         (
             "LEG_CURL_MACHINE",
             "leg_curl_machine.glb",
-            True,
+            False,
             {"eccentric": [0, 45], "isometric": [45, 55], "concentric": [55, 100]},
         ),
         (
             "SEATED_LEG_CURL",
             "seated_leg_curl.glb",
-            True,
+            False,
             {"eccentric": [0, 45], "isometric": [45, 55], "concentric": [55, 100]},
         ),
         (
             "BARBELL_HIP_THRUST",
             "barbell_hip_thrust.glb",
-            True,
+            False,
             {"eccentric": [0, 45], "isometric": [45, 55], "concentric": [55, 100]},
         ),
         (
             "WALKING_LUNGE",
             "walking_lunge.glb",
-            True,
+            False,
             {"eccentric": [0, 45], "isometric": [45, 55], "concentric": [55, 100]},
         ),
         (
             "CABLE_GLUTE_KICKBACK",
             "cable_glute_kickback.glb",
-            True,
+            False,
             {"eccentric": [0, 45], "isometric": [45, 55], "concentric": [55, 100]},
         ),
         (
             "HANGING_LEG_RAISE",
             "hanging_leg_raise.glb",
-            True,
+            False,
             {"eccentric": [0, 45], "isometric": [45, 55], "concentric": [55, 100]},
         ),
         (
             "CABLE_CRUNCH",
             "cable_crunch.glb",
-            True,
+            False,
             {"eccentric": [0, 45], "isometric": [45, 55], "concentric": [55, 100]},
         ),
         (
             "PLANK",
             "plank.glb",
-            True,
+            False,
             {"eccentric": [0, 45], "isometric": [45, 55], "concentric": [55, 100]},
         ),
     ]
@@ -5806,10 +6022,11 @@ def sync_manifest_and_mock_json(repo_root: Path) -> dict:
     manifest_path.write_text(json.dumps(manifest, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
     print(f"[VigorAI] Updated {manifest_path} (total bundled: {total_bundled_bytes / 1024:.1f} KB)")
 
-    # Sync bundled Chest & MVP exercises in mobile/assets/mock_json/mock_m2_exercises.json
+    # Sync bundled & Railway-CDN exercises in mobile/assets/mock_json/mock_m2_exercises.json
     mock_path = repo_root / "mobile" / "assets" / "mock_json" / "mock_m2_exercises.json"
     if mock_path.exists():
         mock_data = json.loads(mock_path.read_text(encoding="utf-8"))
+        base_mannequin_info = bundled_info_by_code.get("BASE_MANNEQUIN")
         for ex in mock_data.get("exercises", []):
             code = ex.get("code")
             info = bundled_info_by_code.get(code)
@@ -5818,6 +6035,13 @@ def sync_manifest_and_mock_json(repo_root: Path) -> dict:
                 ex["asset_checksum"] = info["sha256"]
                 ex["bundled"] = True
                 ex["clips"] = info.get("clips", ["Anim_GoodForm", "Anim_BadForm"])
+            elif info:
+                ex["model_3d_glb_url"] = f"https://vigorai-production.up.railway.app/api/v1/exercises/{code}/glb"
+                ex["asset_checksum"] = info["sha256"]
+                ex["bundled"] = False
+                ex["clips"] = info.get("clips", ["Anim_GoodForm", "Anim_BadForm"])
+            elif ex.get("model_3d_glb_url") == "assets/3d_bundled/base_mannequin.glb" and base_mannequin_info:
+                ex["asset_checksum"] = base_mannequin_info["sha256"]
         mock_path.write_text(json.dumps(mock_data, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
         print(f"[VigorAI] Synced SHA-256 & bundled flags into {mock_path}")
 

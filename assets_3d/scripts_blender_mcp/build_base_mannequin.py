@@ -146,11 +146,92 @@ def _create_pbr_material(
     return mat
 
 
+def _curl_fingers_into_grip_pose(me, height_scale: float = 1.0) -> None:
+    """Cuon 5 ngon tay vao tu the nam tu nhien (Grip Pose) dua tren .sculpt_face_set cua mesh goc."""
+    import math
+    from mathutils import Quaternion, Vector  # type: ignore
+
+    fs = me.attributes.get(".sculpt_face_set")
+    if fs is None:
+        return
+
+    poly_sids = [fs.data[i].value for i in range(len(me.polygons))]
+    vert_sids: list[set[int]] = [set() for _ in range(len(me.vertices))]
+    for p, sid in zip(me.polygons, poly_sids):
+        for vi in p.vertices:
+            vert_sids[vi].add(sid)
+
+    def avg_pts(v_indices: set[int]) -> Vector:
+        pts = [me.vertices[vi].co for vi in v_indices]
+        return sum(pts, Vector((0.0, 0.0, 0.0))) / max(1, len(pts))
+
+    side_specs = [
+        (1.0, 9, [(64, 65, 66, 67), (68, 69, 70, 71), (72, 73, 74, 75), (76, 77, 78, 79)], (80, 81, 82, 83)),
+        (-1.0, 10, [(88, 89, 90, 91), (92, 93, 94, 95), (96, 97, 98, 99), (100, 101, 102, 103)], (84, 85, 86, 87)),
+    ]
+
+    for sx, palm_sid, fingers, thumb in side_specs:
+        palm_in = Vector((-sx * 0.94, 0.05, -0.33)).normalized()
+        for s_prox, s_mid, s_dist, s_nail in fingers:
+            mcp_ring = {vi for vi, s in enumerate(vert_sids) if palm_sid in s and s_prox in s}
+            pip_ring = {vi for vi, s in enumerate(vert_sids) if s_prox in s and s_mid in s}
+            dip_ring = {vi for vi, s in enumerate(vert_sids) if s_mid in s and s_dist in s}
+            if not (mcp_ring and pip_ring and dip_ring):
+                continue
+
+            p_mcp = avg_pts(mcp_ring)
+            p_pip = avg_pts(pip_ring)
+            f_dir = p_pip - p_mcp
+            if f_dir.length < 1e-6:
+                continue
+            curl_axis = f_dir.normalized().cross(palm_in)
+            if curl_axis.length < 1e-6:
+                continue
+            curl_axis.normalize()
+
+            for ring, grp_sids, deg, inward_off in (
+                (mcp_ring, {s_prox, s_mid, s_dist, s_nail}, 68.0, 0.004 * height_scale),
+                (pip_ring, {s_mid, s_dist, s_nail}, 82.0, 0.003 * height_scale),
+                (dip_ring, {s_dist, s_nail}, 52.0, 0.0),
+            ):
+                piv = avg_pts(ring) + palm_in * inward_off
+                grp = {vi for vi, s in enumerate(vert_sids) if s & grp_sids}
+                for vi in grp:
+                    w = 0.45 if vi in ring else 1.0
+                    q = Quaternion(curl_axis, math.radians(deg * w))
+                    me.vertices[vi].co = piv + q @ (me.vertices[vi].co - piv)
+
+        s_prox, s_mid, s_dist, s_nail = thumb
+        mcp_ring = {vi for vi, s in enumerate(vert_sids) if palm_sid in s and s_prox in s}
+        pip_ring = {vi for vi, s in enumerate(vert_sids) if s_prox in s and s_mid in s}
+        dip_ring = {vi for vi, s in enumerate(vert_sids) if s_mid in s and s_dist in s}
+        if mcp_ring and pip_ring and dip_ring:
+            t_dir = (avg_pts(pip_ring) - avg_pts(mcp_ring)).normalized()
+            thumb_in = Vector((-sx * 0.58, 0.74, -0.34)).normalized()
+            t_axis = t_dir.cross(thumb_in)
+            if t_axis.length >= 1e-6:
+                t_axis.normalize()
+                for ring, grp_sids, deg in (
+                    (mcp_ring, {s_prox, s_mid, s_dist, s_nail}, 34.0),
+                    (pip_ring, {s_mid, s_dist, s_nail}, 46.0),
+                    (dip_ring, {s_dist, s_nail}, 32.0),
+                ):
+                    piv = avg_pts(ring)
+                    grp = {vi for vi, s in enumerate(vert_sids) if s & grp_sids}
+                    for vi in grp:
+                        w = 0.45 if vi in ring else 1.0
+                        q = Quaternion(t_axis, math.radians(deg * w))
+                        me.vertices[vi].co = piv + q @ (me.vertices[vi].co - piv)
+
+    me.update()
+
+
 def _load_and_normalize_base_mesh(
     bundle_path: Path,
     collection,
     mesh_object_name: str = "GEO-body_male_realistic",
     target_height: float = 1.78,
+    grip_hands: bool = False,
 ):
     import bpy  # type: ignore
     from mathutils import Vector  # type: ignore
@@ -192,6 +273,8 @@ def _load_and_normalize_base_mesh(
     for v in me.vertices:
         v.co = Vector(((v.co.x - cx) * scale, (v.co.y - cy) * scale, (v.co.z - cz) * scale))
     me.update()
+    if grip_hands:
+        _curl_fingers_into_grip_pose(me, height_scale=target_height / 1.78)
     return src_obj
 
 
@@ -248,9 +331,10 @@ def _classify_polygon(
             return "Mat_Muscle_Quads"
         return "Mat_Muscle_Hamstrings"
 
-    # 8. Upper Arms -> Shoulders (deltoid cap) vs Biceps (anterior) vs Triceps (posterior)
+    # 8. Upper Arms -> Shoulders (tapered deltoid cap) vs Biceps (anterior) vs Triceps (posterior)
     if sid in {20, 21}:
-        if cz >= 1.325 or (ax >= 0.175 and cz >= 1.315):
+        deltoid_z_floor = 1.352 - 0.42 * max(0.0, ax - 0.180) + 0.018 * abs(cy - 0.015)
+        if cz >= deltoid_z_floor:
             return "Mat_Muscle_Shoulders"
         if cz < 1.158:
             return "Mat_Body_Neutral"  # Elbow hinge
@@ -482,6 +566,91 @@ def _ensure_fallback_weights(mesh_obj, arm_obj) -> int:
     return fixed
 
 
+def _smooth_and_lock_skin_weights(
+    mesh_obj,
+    orig_kd,
+    orig_sids: list[int],
+    height_scale: float = 1.0,
+) -> None:
+    """Khoa weight ngon tay (Hand_L/R 100%) va lam muot Laplacian vung Vai / Co tay truoc khi tach Mesh."""
+    me = mesh_obj.data
+    inv_scale = 1.0 / height_scale if height_scale > 0 else 1.0
+    vg_names = [vg.name for vg in mesh_obj.vertex_groups]
+    vg_by_index = {vg.index: vg.name for vg in mesh_obj.vertex_groups}
+
+    vert_sids: list[int] = []
+    weights: list[dict[str, float]] = []
+    for v in me.vertices:
+        _, orig_idx, _ = orig_kd.find(v.co)
+        vert_sids.append(orig_sids[orig_idx])
+        wmap: dict[str, float] = {}
+        for g in v.groups:
+            if g.weight > 1e-5:
+                bname = vg_by_index.get(g.group)
+                if bname:
+                    wmap[bname] = g.weight
+        weights.append(wmap)
+
+    # 1. Lock curled fingers/palm strictly to Hand_L / Hand_R
+    locked_verts: set[int] = set()
+    for vi, v in enumerate(me.vertices):
+        sid = vert_sids[vi]
+        nz = v.co.z * inv_scale
+        if sid >= 64 or (sid in {9, 10} and nz < 0.908):
+            hand_bone = "Hand_L" if v.co.x >= 0.0 else "Hand_R"
+            if hand_bone in vg_names:
+                weights[vi] = {hand_bone: 1.0}
+                locked_verts.add(vi)
+
+    # 2. Build adjacency list and identify shoulder/clavicle/wrist smooth regions
+    adj: list[list[int]] = [[] for _ in range(len(me.vertices))]
+    for e in me.edges:
+        a, b = e.vertices[0], e.vertices[1]
+        adj[a].append(b)
+        adj[b].append(a)
+
+    smooth_verts: list[int] = []
+    for vi, v in enumerate(me.vertices):
+        if vi in locked_verts:
+            continue
+        nz = v.co.z * inv_scale
+        if (1.16 <= nz <= 1.54) or (0.89 <= nz <= 0.96):
+            smooth_verts.append(vi)
+
+    # 3. 4 iterations of Laplacian weight smoothing (factor=0.50)
+    for _ in range(4):
+        next_weights = {}
+        for vi in smooth_verts:
+            nbrs = adj[vi]
+            if not nbrs:
+                continue
+            accum: dict[str, float] = {}
+            for b, w in weights[vi].items():
+                accum[b] = accum.get(b, 0.0) + w * 0.50
+            nbr_factor = 0.50 / len(nbrs)
+            for nb in nbrs:
+                for b, w in weights[nb].items():
+                    accum[b] = accum.get(b, 0.0) + w * nbr_factor
+            tot = sum(accum.values())
+            if tot > 1e-6:
+                next_weights[vi] = {b: w / tot for b, w in accum.items() if w / tot > 1e-4}
+        for vi, nw in next_weights.items():
+            weights[vi] = nw
+
+    # 4. Write cleaned normalized weights back to vertex groups
+    for vg in mesh_obj.vertex_groups:
+        vg.remove(list(range(len(me.vertices))))
+    vg_lookup = {vg.name: vg for vg in mesh_obj.vertex_groups}
+    for vi, wmap in enumerate(weights):
+        tot = sum(wmap.values())
+        if tot <= 1e-6:
+            continue
+        for bname, w in wmap.items():
+            vg = vg_lookup.get(bname)
+            if vg is not None:
+                vg.add([vi], w / tot, "REPLACE")
+
+
 def set_heatmap_preview_colors(enabled: bool = True) -> None:
     """Doi mau 11 Mat_Muscle_* sang bang mau Heatmap mau (de kiem tra ranh gioi) hoac ve Xam chuan."""
     import bpy  # type: ignore
@@ -507,6 +676,7 @@ def build_mannequin(
     mesh_object_name: str = "GEO-body_male_realistic",
     target_height: float = 1.78,
     use_draco: bool = False,
+    grip_hands: bool = False,
 ) -> dict:
     """Dung hoan chinh Base Mannequin Low-Poly Anatomical Faceted tu Blender Human Base Meshes."""
     import bpy  # type: ignore
@@ -530,6 +700,7 @@ def build_mannequin(
         col,
         mesh_object_name=mesh_object_name,
         target_height=target_height,
+        grip_hands=grip_hands,
     )
     orig_me = unified.data
 
@@ -613,6 +784,8 @@ def build_mannequin(
     if fixed_verts > 0:
         print(f"[VigorAI] Fallback nearest-bone weights assigned to {fixed_verts} vertices")
 
+    _smooth_and_lock_skin_weights(unified, kd, orig_sids, height_scale=height_scale)
+
     # 5. Separate unified skinned mesh by material into 13 seamless objects
     bpy.ops.object.select_all(action="DESELECT")
     unified.select_set(True)
@@ -633,6 +806,9 @@ def build_mannequin(
             continue
         obj.data.validate(verbose=False)
         obj.data.update()
+        for mod in obj.modifiers:
+            if mod.type == "ARMATURE":
+                mod.use_deform_preserve_volume = True
         mname = obj.data.materials[0].name
         canonical = mat_to_mesh_name.get(mname)
         if canonical:
