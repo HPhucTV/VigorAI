@@ -6,7 +6,7 @@
       "name_en": "Barbell Bench Press",
       "equipment_type": "BARBELL",
       "model_3d_glb_url": "assets/3d_bundled/barbell_bench_press.glb",
-      "asset_checksum": "5faa03e3a10459c6d702c56a0a3f0613bb5e59573730a7b7bd3a5aaf63b308bb",
+      "asset_checksum": "4a15ad4ad562c240d871c742030c463f920edaa0056e27f73dab3db81645f152",
       "primary_muscles": [
         "Mat_Muscle_Chest"
       ],
@@ -67,7 +67,7 @@
       "name_en": "Incline Dumbbell Press",
       "equipment_type": "DUMBBELL",
       "model_3d_glb_url": "https://vigorai-production.up.railway.app/api/v1/exercises/INCLINE_DUMBBELL_PRESS/glb",
-      "asset_checksum": "5d75828bbde53b18059a1a59599d2a3526e880d2dbed849093c46f5e09c2a41c",
+      "asset_checksum": "3eede66b50233dd9e8844bb1b4d193f1ea4e344168f560043799e58e27f1355b",
       "primary_muscles": [
         "Mat_Muscle_Chest"
       ],
@@ -115,7 +115,7 @@
       "name_en": "Push-Up",
       "equipment_type": "BODYWEIGHT",
       "model_3d_glb_url": "assets/3d_bundled/push_up.glb",
-      "asset_checksum": "966052fdbadcced4458068b603d2b3b43d6bf1f0bc4816b1d4d7b296274e9c49",
+      "asset_checksum": "7a33379c4fec9bdf97af2eb2c811254d931580011fd723f0f52fcb9da4d5d455",
       "primary_muscles": [
         "Mat_Muscle_Chest"
       ],
@@ -175,7 +175,7 @@
       "name_en": "Pec Deck Fly / Cable Crossover",
       "equipment_type": "CABLE",
       "model_3d_glb_url": "https://vigorai-production.up.railway.app/api/v1/exercises/CABLE_CHEST_FLY/glb",
-      "asset_checksum": "ba9d58938fcec56db989d576a6cd2559aa1fff3901e25d9fb3829407cda6b0f0",
+      "asset_checksum": "01a0c400be563f3b75efcc0221cb103b08ee8f572b148984fb10f3c1636a64ba",
       "primary_muscles": [
         "Mat_Muscle_Chest"
       ],
@@ -223,7 +223,7 @@
       "name_en": "Machine Chest Press",
       "equipment_type": "MACHINE",
       "model_3d_glb_url": "assets/3d_bundled/base_mannequin.glb",
-      "asset_checksum": "f8c76723747aba8167fa734434b9ad4870e3c42be220fa712edadb716480a9ae",
+      "asset_checksum": "70ba0dbd3549311b54db5f8dcc468dc3a178f263dc801a3416e89705d44e1f18",
       "primary_muscles": [
         "Mat_Muscle_Chest"
       ],
@@ -265,7 +265,7 @@
       "name_en": "Barbell Deadlift",
       "equipment_type": "BARBELL",
       "model_3d_glb_url": "https://vigorai-production.up.railway.app/api/v1/exercises/BARBELL_DEADLIFT/glb",
-      "asset_checksum": "b4fa80771a34a442b78d3295e8dfd39e1995ff7a0e78382a12f59bd546ed98f2",
+      "asset_checksum": "9aad605fce214c60a38bb0938d9bf85548151defc76f2ac8aca0f8c47256da3e",
       "primary_muscles": [
         "Mat_Muscle_Back_Lats",
         "Mat_Muscle_Hamstrings",
@@ -316,7 +316,7 @@
       "name_en": "Barbell Bent-Over Row",
       "equipment_type": "BARBELL",
       "model_3d_glb_url": "https://vigorai-production.up.railway.app/api/v1/exercises/BARBELL_BENT_OVER_ROW/glb",
-      "asset_checksum": "1415727e5ae46f929463ea00373123025c408af1364bbd8421225bfd0d4a66c3",
+      "asset_checksum": "aebac963de70ef79a727fe9bbba8054bd04892d13bfa8e0e13a2321c51c418bc",
       "primary_muscles": [
         "Mat_Muscle_Back_Lats",
         "Mat_Muscle_Traps"
@@ -366,7 +366,7 @@
       "name_en": "Lat Pulldown",
       "equipment_type": "CABLE",
       "model_3d_glb_url": "https://vigorai-production.up.railway.app/api/v1/exercises/LAT_PULLDOWN/glb",
-      "asset_checksum": "5fe27fe31087abc1ac1c6c681731c1451183773a5a63497dbbc9ee237e9e1acf",
+      "asset_checksum": "7de3846799cde3bdd1b044a7cdedd09b2e5c3d7bbe20636600b0519f2ddeef9a",
       "primary_muscles": [
         "Mat_Muscle_Back_Lats"
       ],
@@ -414,7 +414,7 @@
       "name_en": "Seated Cable Row",
       "equipment_type": "CABLE",
       "model_3d_glb_url": "https://vigorai-production.up.railway.app/api/v1/exercises/SEATED_CABLE_ROW/glb",
-      "asset_checksum": "c434576897e3b5937ed81759bbd066d438dbd14090f8a0f80505b05a3733926e",
+      "asset_checksum": "cf90edf5b9d999745653711424eb045a24b275dd96b338779b931cc6eee1e072",
       "primary_muscles": [
         "Mat_Muscle_Back_Lats",
         "Mat_Muscle_Traps"
@@ -462,7 +462,7 @@
       "name_en": "One-Arm Dumbbell Row",
       "equipment_type": "DUMBBELL",
       "model_3d_glb_url": "assets/3d_bundled/base_mannequin.glb",
-      "asset_checksum": "f8c76723747aba8167fa734434b9ad4870e3c42be220fa712edadb716480a9ae",
+      "asset_checksum": "70ba0dbd3549311b54db5f8dcc468dc3a178f263dc801a3416e89705d44e1f18",
       "primary_muscles": [
         "Mat_Muscle_Back_Lats"
       ],
@@ -506,7 +506,7 @@
       "name_en": "Barbell Overhead Press",
       "equipment_type": "BARBELL",
       "model_3d_glb_url": "assets/3d_bundled/base_mannequin.glb",
-      "asset_checksum": "f8c76723747aba8167fa734434b9ad4870e3c42be220fa712edadb716480a9ae",
+      "asset_checksum": "70ba0dbd3549311b54db5f8dcc468dc3a178f263dc801a3416e89705d44e1f18",
       "primary_muscles": [
         "Mat_Muscle_Shoulders"
       ],
@@ -551,7 +551,7 @@
       "name_en": "Dumbbell Lateral Raise",
       "equipment_type": "DUMBBELL",
       "model_3d_glb_url": "https://vigorai-production.up.railway.app/api/v1/exercises/DUMBBELL_LATERAL_RAISE/glb",
-      "asset_checksum": "f52e2a0f7a81eac5f19effabd813326783b492b7259755f8cca43c3de857621e",
+      "asset_checksum": "e73cf1ed8656af0b217e892d9660bd54c7f60ef6f66e466346ee83c957da45ac",
       "primary_muscles": [
         "Mat_Muscle_Shoulders"
       ],
@@ -598,7 +598,7 @@
       "name_en": "Cable Face Pull",
       "equipment_type": "CABLE",
       "model_3d_glb_url": "https://vigorai-production.up.railway.app/api/v1/exercises/CABLE_FACE_PULL/glb",
-      "asset_checksum": "958111166abff5809b7cda450f8fca1b695e8ab000f6b47e5b714e467140be8e",
+      "asset_checksum": "b600247af8f2ae43f375e844207f0696744fbde8b20087ab002b2d8a0c82d01e",
       "primary_muscles": [
         "Mat_Muscle_Shoulders",
         "Mat_Muscle_Traps"
@@ -645,7 +645,7 @@
       "name_en": "Seated Dumbbell Shoulder Press",
       "equipment_type": "DUMBBELL",
       "model_3d_glb_url": "https://vigorai-production.up.railway.app/api/v1/exercises/DUMBBELL_SHOULDER_PRESS/glb",
-      "asset_checksum": "a70b92aadae50fc5928b0ce9e23a0a7bbdd89f77d1d04a4c39c8f8fe9127d8ee",
+      "asset_checksum": "d84f042bb5646b042a8e43a1f94bfed8c6197bc1c0080076241e8d5a70e3bb39",
       "primary_muscles": [
         "Mat_Muscle_Shoulders"
       ],
@@ -691,7 +691,7 @@
       "name_en": "Barbell Bicep Curl",
       "equipment_type": "BARBELL",
       "model_3d_glb_url": "https://vigorai-production.up.railway.app/api/v1/exercises/BARBELL_BICEP_CURL/glb",
-      "asset_checksum": "b8f14393fb4b707f985b5994b3701fec76e3bf86e08e2d462475d0c404c65367",
+      "asset_checksum": "085d1c84702ef9cd1a0e5c187ecc1db9d77167266a1ebe1acfb4ccfd66651695",
       "primary_muscles": [
         "Mat_Muscle_Biceps"
       ],
@@ -736,7 +736,7 @@
       "name_en": "Dumbbell Hammer Curl",
       "equipment_type": "DUMBBELL",
       "model_3d_glb_url": "https://vigorai-production.up.railway.app/api/v1/exercises/DUMBBELL_HAMMER_CURL/glb",
-      "asset_checksum": "01ff7c521e655a4fa9f90012996479310a37372a4e47bd9cded1e7402e18fb50",
+      "asset_checksum": "33c46bf74336d950d8da83df526317d7cd09497dc71421bc8af679bd286cedd1",
       "primary_muscles": [
         "Mat_Muscle_Biceps"
       ],
@@ -780,7 +780,7 @@
       "name_en": "Cable Bicep Curl",
       "equipment_type": "CABLE",
       "model_3d_glb_url": "assets/3d_bundled/base_mannequin.glb",
-      "asset_checksum": "f8c76723747aba8167fa734434b9ad4870e3c42be220fa712edadb716480a9ae",
+      "asset_checksum": "70ba0dbd3549311b54db5f8dcc468dc3a178f263dc801a3416e89705d44e1f18",
       "primary_muscles": [
         "Mat_Muscle_Biceps"
       ],
@@ -821,7 +821,7 @@
       "name_en": "Cable Tricep Pushdown",
       "equipment_type": "CABLE",
       "model_3d_glb_url": "https://vigorai-production.up.railway.app/api/v1/exercises/CABLE_TRICEP_PUSHDOWN/glb",
-      "asset_checksum": "ea04f1897288ee7cb3f30f26d3334597dea411213ff2d9e4a63aa6f84aa28a0b",
+      "asset_checksum": "2b48cae2338c3c4aa2118f1c287a5b6e7c24bd4ffc9e065f8f565aa7e1cef780",
       "primary_muscles": [
         "Mat_Muscle_Triceps"
       ],
@@ -865,7 +865,7 @@
       "name_en": "Overhead Dumbbell Tricep Extension",
       "equipment_type": "DUMBBELL",
       "model_3d_glb_url": "https://vigorai-production.up.railway.app/api/v1/exercises/OVERHEAD_DUMBBELL_TRICEP_EXT/glb",
-      "asset_checksum": "ded0225eec17e79595d40b119938276097d04181ddf582f5e44f978bb9ab56d8",
+      "asset_checksum": "0fd3512940008677214dcebc1070d0fb5dd0b5dda535dae8b271c67bb2e5e6ba",
       "primary_muscles": [
         "Mat_Muscle_Triceps"
       ],
@@ -909,7 +909,7 @@
       "name_en": "Close-Grip Bench Press",
       "equipment_type": "BARBELL",
       "model_3d_glb_url": "assets/3d_bundled/base_mannequin.glb",
-      "asset_checksum": "f8c76723747aba8167fa734434b9ad4870e3c42be220fa712edadb716480a9ae",
+      "asset_checksum": "70ba0dbd3549311b54db5f8dcc468dc3a178f263dc801a3416e89705d44e1f18",
       "primary_muscles": [
         "Mat_Muscle_Triceps",
         "Mat_Muscle_Chest"
@@ -953,7 +953,7 @@
       "name_en": "Barbell Back Squat",
       "equipment_type": "BARBELL",
       "model_3d_glb_url": "assets/3d_bundled/barbell_squat.glb",
-      "asset_checksum": "6933137d1885fd8a36a31610f461cd05b5387c9b55c196bb99dcd2757abf017f",
+      "asset_checksum": "7f06f9bf9e074965c5e41349bd30e2594996ae6cd791211c50ede096944992a5",
       "primary_muscles": [
         "Mat_Muscle_Quads",
         "Mat_Muscle_Glutes"
@@ -1014,7 +1014,7 @@
       "name_en": "Goblet Squat",
       "equipment_type": "DUMBBELL",
       "model_3d_glb_url": "assets/3d_bundled/base_mannequin.glb",
-      "asset_checksum": "f8c76723747aba8167fa734434b9ad4870e3c42be220fa712edadb716480a9ae",
+      "asset_checksum": "70ba0dbd3549311b54db5f8dcc468dc3a178f263dc801a3416e89705d44e1f18",
       "primary_muscles": [
         "Mat_Muscle_Quads",
         "Mat_Muscle_Glutes"
@@ -1058,7 +1058,7 @@
       "name_en": "Romanian Deadlift",
       "equipment_type": "BARBELL",
       "model_3d_glb_url": "https://vigorai-production.up.railway.app/api/v1/exercises/ROMANIAN_DEADLIFT/glb",
-      "asset_checksum": "1792c1eca5d8ae52308027005d9fd25bec7fb36cf69335c57ac4b8d3e6afed17",
+      "asset_checksum": "eb688edfb829a1d43b23c0faa08749a984cf0b1cf5275dd37c0ff5e15a2994b7",
       "primary_muscles": [
         "Mat_Muscle_Hamstrings",
         "Mat_Muscle_Glutes"
@@ -1106,7 +1106,7 @@
       "name_en": "Machine Leg Press",
       "equipment_type": "MACHINE",
       "model_3d_glb_url": "https://vigorai-production.up.railway.app/api/v1/exercises/LEG_PRESS/glb",
-      "asset_checksum": "d3c20380fe7c7112777679e0d4694cee8e98950950a4988b75f84b7e60ac11f4",
+      "asset_checksum": "647d7e1bc1e830318e22a6efa3aa4876d2b8a262e85c22ad31c1b233e0f66a9a",
       "primary_muscles": [
         "Mat_Muscle_Quads",
         "Mat_Muscle_Glutes"
@@ -1152,7 +1152,7 @@
       "name_en": "Dumbbell Walking Lunge",
       "equipment_type": "DUMBBELL",
       "model_3d_glb_url": "https://vigorai-production.up.railway.app/api/v1/exercises/WALKING_LUNGE/glb",
-      "asset_checksum": "874373cedaf6cea829a074c774d71dd5fed46feba5e0acc668f8ae68d3c931b0",
+      "asset_checksum": "decbd40454f8063e87700f889ed4ecac9ad9cff86b8a008243ca9c12c425cb88",
       "primary_muscles": [
         "Mat_Muscle_Quads",
         "Mat_Muscle_Glutes"
@@ -1200,7 +1200,7 @@
       "name_en": "Seated/Lying Leg Curl",
       "equipment_type": "MACHINE",
       "model_3d_glb_url": "https://vigorai-production.up.railway.app/api/v1/exercises/LEG_CURL_MACHINE/glb",
-      "asset_checksum": "9b981f5936df520303102a46aa3d2bf55fd46452f181e94afa3ec9e8110aab52",
+      "asset_checksum": "ec8491af794501501e920d0c1ba271065a2999a834b33d2752243e12708a34cb",
       "primary_muscles": [
         "Mat_Muscle_Hamstrings"
       ],
@@ -1244,7 +1244,7 @@
       "name_en": "Standing Calf Raise",
       "equipment_type": "MACHINE",
       "model_3d_glb_url": "assets/3d_bundled/base_mannequin.glb",
-      "asset_checksum": "f8c76723747aba8167fa734434b9ad4870e3c42be220fa712edadb716480a9ae",
+      "asset_checksum": "70ba0dbd3549311b54db5f8dcc468dc3a178f263dc801a3416e89705d44e1f18",
       "primary_muscles": [
         "Mat_Muscle_Calves"
       ],
@@ -1285,7 +1285,7 @@
       "name_en": "Forearm Plank",
       "equipment_type": "BODYWEIGHT",
       "model_3d_glb_url": "https://vigorai-production.up.railway.app/api/v1/exercises/PLANK/glb",
-      "asset_checksum": "6001ec40443255f317ebe123bc70dcbe5541b6cbf52c4f283404efaa2a86e134",
+      "asset_checksum": "2fe21ed182aa6c874233532eb37942cd26013f3f951b8c26c3b6acc2bfc0cc13",
       "primary_muscles": [
         "Mat_Muscle_Abs_Core"
       ],
@@ -1330,7 +1330,7 @@
       "name_en": "Hanging Leg Raise",
       "equipment_type": "BODYWEIGHT",
       "model_3d_glb_url": "https://vigorai-production.up.railway.app/api/v1/exercises/HANGING_LEG_RAISE/glb",
-      "asset_checksum": "f55ba36ec0de09fcb20058bfcb9bc6fb3e04537a16b8906ca96a1a61754642e6",
+      "asset_checksum": "6b3cea7a6238e31374c745647bd61fee431251169735f1765fe45dc4d1a0e4b4",
       "primary_muscles": [
         "Mat_Muscle_Abs_Core"
       ],
@@ -1376,7 +1376,7 @@
       "name_en": "Kettlebell Swing",
       "equipment_type": "KETTLEBELL",
       "model_3d_glb_url": "assets/3d_bundled/base_mannequin.glb",
-      "asset_checksum": "f8c76723747aba8167fa734434b9ad4870e3c42be220fa712edadb716480a9ae",
+      "asset_checksum": "70ba0dbd3549311b54db5f8dcc468dc3a178f263dc801a3416e89705d44e1f18",
       "primary_muscles": [
         "Mat_Muscle_Glutes",
         "Mat_Muscle_Hamstrings"
@@ -1421,7 +1421,7 @@
       "name_en": "Wide-Grip Pull-up",
       "equipment_type": "BODYWEIGHT",
       "model_3d_glb_url": "https://vigorai-production.up.railway.app/api/v1/exercises/WIDE_GRIP_PULLUP/glb",
-      "asset_checksum": "c6de823782138bef014a52e6e0876de2263df02b4f5cf905d8b51ff76eec1caa",
+      "asset_checksum": "cdf26a1489ae6f2d7ab9b831b603104a9bd244b1e98d652f0066d6ada79f1c49",
       "primary_muscles": [
         "Mat_Muscle_Back_Lats"
       ],
@@ -1468,7 +1468,7 @@
       "name_en": "Straight-Arm Cable Pulldown",
       "equipment_type": "CABLE",
       "model_3d_glb_url": "https://vigorai-production.up.railway.app/api/v1/exercises/STRAIGHT_ARM_CABLE_PULLDOWN/glb",
-      "asset_checksum": "5d536bbfccde5de619fd4a5001cf1a6851827fd83ff8bc8710b62a5a914d2e7c",
+      "asset_checksum": "8aa2d60bd1d8cd67131809138e9f2d3264d7bdb9c91869115099945a082a1774",
       "primary_muscles": [
         "Mat_Muscle_Back_Lats"
       ],
@@ -1514,7 +1514,7 @@
       "name_en": "Incline Dumbbell Curl",
       "equipment_type": "DUMBBELL",
       "model_3d_glb_url": "https://vigorai-production.up.railway.app/api/v1/exercises/INCLINE_DUMBBELL_CURL/glb",
-      "asset_checksum": "520c80123b50a485c10fb56ff172351e502091fde3c98902839310a3a795388f",
+      "asset_checksum": "8ccd077da1fa53c269234131bbf91abb699400392493d5190aaaad3aabceb26f",
       "primary_muscles": [
         "Mat_Muscle_Biceps"
       ],
@@ -1558,7 +1558,7 @@
       "name_en": "Skull Crusher",
       "equipment_type": "BARBELL",
       "model_3d_glb_url": "https://vigorai-production.up.railway.app/api/v1/exercises/SKULL_CRUSHER/glb",
-      "asset_checksum": "ebf84f929465439171678ea7ff03181557aab5c21fcf6093c24652d846da5602",
+      "asset_checksum": "17065fd78a9b86939e96e53a749ce6a4b58f75228af75dd84cdf674e86da3090",
       "primary_muscles": [
         "Mat_Muscle_Triceps"
       ],
@@ -1603,7 +1603,7 @@
       "name_en": "Leg Extension",
       "equipment_type": "MACHINE",
       "model_3d_glb_url": "https://vigorai-production.up.railway.app/api/v1/exercises/LEG_EXTENSION/glb",
-      "asset_checksum": "15d09cc138d6177d11817bf50e2afc973dfc342f03cfa8949b68e9f0aa5f2355",
+      "asset_checksum": "4bdb1737a8443f055f39f3b5e71f447ef7710abf969e272db18ecfc07afdcf56",
       "primary_muscles": [
         "Mat_Muscle_Quads"
       ],
@@ -1647,7 +1647,7 @@
       "name_en": "Seated Leg Curl",
       "equipment_type": "MACHINE",
       "model_3d_glb_url": "https://vigorai-production.up.railway.app/api/v1/exercises/SEATED_LEG_CURL/glb",
-      "asset_checksum": "e6c35a0db5dc6a0b0b15b4c564ae25059aca27dd4044d15ec39a63ff94018cf5",
+      "asset_checksum": "2472a68b57333b6e5b849c2c164d01716476db89c158ef9bcf3b34dea84dc870",
       "primary_muscles": [
         "Mat_Muscle_Hamstrings"
       ],
@@ -1691,7 +1691,7 @@
       "name_en": "Barbell Hip Thrust",
       "equipment_type": "BARBELL",
       "model_3d_glb_url": "https://vigorai-production.up.railway.app/api/v1/exercises/BARBELL_HIP_THRUST/glb",
-      "asset_checksum": "2f6ef45ead3603ad95ef3554cd025f3d1dcec3da11788df19bb390fdc633a9ea",
+      "asset_checksum": "70a020e80f54a007816da89cb967384baca88a21145be2792bb530274486442f",
       "primary_muscles": [
         "Mat_Muscle_Glutes"
       ],
@@ -1738,7 +1738,7 @@
       "name_en": "Cable Glute Kickback",
       "equipment_type": "CABLE",
       "model_3d_glb_url": "https://vigorai-production.up.railway.app/api/v1/exercises/CABLE_GLUTE_KICKBACK/glb",
-      "asset_checksum": "6d689cbd62ad85fe28fe080c201f2813bd477de03dc6009a6df86c816f6b4359",
+      "asset_checksum": "8eb74f0b927dadf7ff4dbc5ceafbe33ddd036d79c3c5fe910fb4fb0f765e4e2a",
       "primary_muscles": [
         "Mat_Muscle_Glutes"
       ],
@@ -1784,7 +1784,7 @@
       "name_en": "Cable Crunch",
       "equipment_type": "CABLE",
       "model_3d_glb_url": "https://vigorai-production.up.railway.app/api/v1/exercises/CABLE_CRUNCH/glb",
-      "asset_checksum": "3fa1f8256071c10b3fc96e25deb64643ad7c8708ef5b090a8a498f9e76d8d377",
+      "asset_checksum": "a2cae9132b6ec5c0fd36fa0d3379bc77a7de79666d2fd52f542619df516f6be0",
       "primary_muscles": [
         "Mat_Muscle_Abs_Core"
       ],

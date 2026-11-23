@@ -229,19 +229,57 @@ def _aim_bone_world(
     target_y_dir_world: Vector,
     roll_reference_z_world: Vector | None = None,
 ) -> None:
-    """Xoay PoseBone sao cho truc Y doc xuong huong dung target_y_dir_world."""
+    """Xoay PoseBone theo Swing-Twist an toan giai phau (khong be co tay & xoan truc vai/cang tay)."""
     import bpy  # type: ignore
 
     bpy.context.view_layer.update()
     pb = arm_obj.pose.bones[bone_name]
     cur_mat_world = arm_obj.matrix_world @ pb.matrix
-    cur_y = cur_mat_world.col[1].to_3d().normalized()
+    rest_rot3 = cur_mat_world.to_3x3() @ pb.rotation_quaternion.to_matrix().inverted()
+    rest_y = rest_rot3.col[1].to_3d().normalized()
     tgt_y = target_y_dir_world.normalized()
-    rot_delta = cur_y.rotation_difference(tgt_y)
 
-    new_rot3 = rot_delta.to_matrix() @ cur_mat_world.to_3x3()
+    # Clamp wrist deviation vs Forearm above floor so wrist never kinks sharply
+    if bone_name in ("Hand_L", "Hand_R") and cur_mat_world.translation.z > 0.12:
+        cross_y = rest_y.cross(tgt_y)
+        if cross_y.length > 1e-6:
+            ang_y = math.acos(max(-1.0, min(1.0, rest_y.dot(tgt_y))))
+            max_bend = math.radians(14.0)
+            if ang_y > max_bend:
+                tgt_y = (Quaternion(cross_y.normalized(), max_bend) @ rest_y).normalized()
+
+    rot_delta = rest_y.rotation_difference(tgt_y)
+    swing_rot3 = rot_delta.to_matrix() @ rest_rot3
+    new_rot3 = swing_rot3
+
     if roll_reference_z_world is not None:
-        # Project reference onto plane perpendicular to tgt_y to stabilize twist
+        # Align parent Forearm_L/R Z smoothly to roll_reference_z_world without atan2 wraparound
+        if bone_name in ("Hand_L", "Hand_R"):
+            side = bone_name.split("_")[1]
+            pb_fore = arm_obj.pose.bones.get(f"Forearm_{side}")
+            if pb_fore is not None:
+                fore_mat = arm_obj.matrix_world @ pb_fore.matrix
+                fore_y = fore_mat.col[1].to_3d().normalized()
+                fref = roll_reference_z_world - fore_y * roll_reference_z_world.dot(fore_y)
+                if fref.length > 0.15:
+                    fnew_z = fref.normalized()
+                    fnew_x = fore_y.cross(fnew_z).normalized()
+                    fnew_z = fnew_x.cross(fore_y).normalized()
+                    frot3 = Matrix((fnew_x, fore_y, fnew_z)).transposed()
+                    fw = Matrix.Translation(fore_mat.translation) @ frot3.to_4x4()
+                    pb_fore.matrix = arm_obj.matrix_world.inverted() @ fw
+                    bpy.context.view_layer.update()
+                    cur_mat_world = arm_obj.matrix_world @ pb.matrix
+                    rest_rot3 = cur_mat_world.to_3x3() @ pb.rotation_quaternion.to_matrix().inverted()
+                    rest_y = rest_rot3.col[1].to_3d().normalized()
+                    tgt_y = target_y_dir_world.normalized()
+                    if cur_mat_world.translation.z > 0.12:
+                        cy2 = rest_y.cross(tgt_y)
+                        if cy2.length > 1e-6:
+                            ay2 = math.acos(max(-1.0, min(1.0, rest_y.dot(tgt_y))))
+                            if ay2 > math.radians(14.0):
+                                tgt_y = (Quaternion(cy2.normalized(), math.radians(14.0)) @ rest_y).normalized()
+
         ref = roll_reference_z_world - tgt_y * roll_reference_z_world.dot(tgt_y)
         if ref.length > 1e-4:
             new_z = ref.normalized()
@@ -263,10 +301,30 @@ def _solve_two_bone_ik_world(
     roll_z_upper: Vector,
     roll_z_lower: Vector,
 ) -> None:
-    """Giai IK 2 doan xuong giai phau chinh xac trong khong gian World."""
+    """Giai IK 2 doan xuong giai phau + nhip xuong don Clavicle khi nang tay cao."""
     import bpy  # type: ignore
 
     bpy.context.view_layer.update()
+    if upper_name in ("UpperArm_L", "UpperArm_R"):
+        side = upper_name.split("_")[1]
+        clav_name = f"Clavicle_{side}"
+        if clav_name in arm_obj.pose.bones and "Spine_03" in arm_obj.pose.bones:
+            pb_clav = arm_obj.pose.bones[clav_name]
+            pb_clav.rotation_quaternion = Quaternion((1.0, 0.0, 0.0, 0.0))
+            bpy.context.view_layer.update()
+            clav_mat = arm_obj.matrix_world @ pb_clav.matrix
+            clav_head = clav_mat.translation
+            clav_rest_y = clav_mat.col[1].to_3d().normalized()
+            clav_rest_z = clav_mat.col[2].to_3d().normalized()
+            spine_up = (arm_obj.matrix_world @ arm_obj.pose.bones["Spine_03"].matrix).col[1].to_3d().normalized()
+            to_tgt = (target_world - clav_head).normalized()
+            elev = to_tgt.dot(spine_up)
+            if elev > -0.10:
+                t_elev = min(1.0, (elev + 0.10) / 0.95)
+                lift_rad = math.radians(24.0 * t_elev)
+                new_clav_y = (clav_rest_y * math.cos(lift_rad) + spine_up * math.sin(lift_rad)).normalized()
+                _aim_bone_world(arm_obj, clav_name, new_clav_y, clav_rest_z)
+
     pb_up = arm_obj.pose.bones[upper_name]
     pb_lo = arm_obj.pose.bones[lower_name]
 
@@ -295,8 +353,16 @@ def _solve_two_bone_ik_world(
     _aim_bone_world(arm_obj, lower_name, lower_dir, roll_z_lower)
 
 
+_LAST_KEYED_QUAT: dict[str, Quaternion] = {}
+
+
 def _key_all_pose_bones(arm_obj, frame: int) -> None:
     for pb in arm_obj.pose.bones:
+        q = pb.rotation_quaternion.copy()
+        prev_q = _LAST_KEYED_QUAT.get(pb.name)
+        if prev_q is not None and prev_q.dot(q) < 0.0:
+            pb.rotation_quaternion = Quaternion((-q.w, -q.x, -q.y, -q.z))
+        _LAST_KEYED_QUAT[pb.name] = pb.rotation_quaternion.copy()
         pb.keyframe_insert(data_path="location", frame=frame)
         pb.keyframe_insert(data_path="rotation_quaternion", frame=frame)
 
@@ -318,6 +384,8 @@ def _push_action_to_nla(arm_obj, action_name: str, frame_start: int, frame_end: 
 
 def _begin_action(arm_obj, action_name: str) -> None:
     import bpy  # type: ignore
+
+    _LAST_KEYED_QUAT.clear()
 
     if arm_obj.animation_data is None:
         arm_obj.animation_data_create()
@@ -412,13 +480,13 @@ def _pose_squat(arm_obj, depth: float, bad_form: bool) -> None:
             Vector((0.0, 1.0, 0.0)),
             Vector((0.0, 1.0, 0.0)),
         )
-        _aim_bone_world(arm_obj, f"Hand_{side}", Vector((-sx * 0.15, -0.40, 0.90)), Vector((sx * 1.0, 0.0, 0.0)))
+        _aim_bone_world(arm_obj, f"Hand_{side}", Vector((-sx * 0.15, -0.40, 0.90)), Vector((-sx * 1.0, 0.0, 0.0)))
 
 
 def build_barbell_squat(export_paths: list[Path]) -> dict:
     import bpy  # type: ignore
 
-    base_mod.build_mannequin(blend_path=None, glb_paths=[], keep_heatmap_preview=False)
+    base_mod.build_mannequin(blend_path=None, glb_paths=[], keep_heatmap_preview=False, grip_hands=True)
     col = bpy.data.collections.get("VigorAI_Mannequin") or bpy.context.scene.collection
     arm_obj = bpy.data.objects["Armature_GymHuman"]
 
@@ -457,12 +525,11 @@ def _pose_push_up(arm_obj, depth: float, bad_form: bool) -> None:
 
     # Body oriented prone along Y axis (toes near Y=+0.78 Z=0.04, shoulders near Y=-0.42)
     # In push-up top position, torso leans up at ~22 deg from toes; at bottom ~7 deg
-    plank_deg = 22.0 - 15.0 * depth
+    plank_deg = 16.0 - 11.0 * depth
     plank_rad = math.radians(plank_deg)
-    # Place Pelvis so Feet stay anchored near (Y=+0.72, Z=0.05)
-    # Distance from toes to pelvis is ~0.90m
-    pelvis_y = 0.70 - 0.88 * math.cos(plank_rad)
-    pelvis_z = 0.09 + 0.88 * math.sin(plank_rad) - (0.13 * depth if bad_form else 0.0)
+    # Place Pelvis so Feet stay anchored near (Y=+0.72, Z=0.175) above the mat and hands reach floor cleanly
+    pelvis_y = 0.72 - 0.80 * math.cos(plank_rad)
+    pelvis_z = 0.14 + 0.80 * math.sin(plank_rad) - (0.04 * depth if bad_form else 0.0)
 
     _set_bone_world_head(arm_obj, "Pelvis", Vector((0.0, pelvis_y, pelvis_z)))
 
@@ -482,18 +549,26 @@ def _pose_push_up(arm_obj, depth: float, bad_form: bool) -> None:
     _aim_bone_world(arm_obj, "Neck", Vector((0.0, -0.94, 0.34)), Vector((1.0, 0.0, 0.0)))
     _aim_bone_world(arm_obj, "Head", Vector((0.0, -0.88, 0.48)), Vector((1.0, 0.0, 0.0)))
 
-    # Legs extend straight back to mat toes (+Y)
-    leg_dir = Vector((0.0, math.cos(plank_rad), -math.sin(plank_rad)))
+    # Legs extend straight back to mat toes (+Y) using 2-bone IK so feet stay anchored above floor
     for side, sx in (("L", 1.0), ("R", -1.0)):
-        _aim_bone_world(arm_obj, f"Thigh_{side}", leg_dir, Vector((1.0, 0.0, 0.0)))
-        _aim_bone_world(arm_obj, f"Calf_{side}", leg_dir, Vector((1.0, 0.0, 0.0)))
-        _aim_bone_world(arm_obj, f"Foot_{side}", Vector((0.0, -0.15, -0.98)), Vector((1.0, 0.0, 0.0)))
+        ankle_target = Vector((sx * 0.13, 0.74, 0.175))
+        knee_pole = Vector((sx * 0.06, 0.0, -1.0)).normalized()
+        _solve_two_bone_ik_world(
+            arm_obj,
+            f"Thigh_{side}",
+            f"Calf_{side}",
+            ankle_target,
+            knee_pole,
+            Vector((1.0, 0.0, 0.0)),
+            Vector((1.0, 0.0, 0.0)),
+        )
+        _aim_bone_world(arm_obj, f"Foot_{side}", Vector((0.0, -0.60, -0.80)).normalized(), Vector((1.0, 0.0, 0.0)))
 
-    # Hands planted firmly on mat (Z = 0.03) just wider than shoulders
-    hand_y = -0.36
-    hand_x = 0.25 if bad_form else 0.215
+    # Hands planted flat on mat (Z = 0.048) with thumbs inward (-sx*X) -> palm faces down (0, 0, -1)
+    hand_y = -0.52
+    hand_x = 0.30 if bad_form else 0.24
     for side, sx in (("L", 1.0), ("R", -1.0)):
-        wrist_target = Vector((sx * hand_x, hand_y, 0.035))
+        wrist_target = Vector((sx * hand_x, hand_y, 0.048))
         # Good form tucks elbows ~45 deg back (+Y); bad form flares 90 deg out (+/-X)
         elbow_pole = Vector((sx * 0.95, 0.15, 0.25)) if bad_form else Vector((sx * 0.45, 0.85, 0.28))
         _solve_two_bone_ik_world(
@@ -505,7 +580,7 @@ def _pose_push_up(arm_obj, depth: float, bad_form: bool) -> None:
             Vector((0.0, 0.0, 1.0)),
             Vector((0.0, 0.0, 1.0)),
         )
-        _aim_bone_world(arm_obj, f"Hand_{side}", Vector((0.0, -1.0, 0.0)), Vector((sx * 1.0, 0.0, 0.0)))
+        _aim_bone_world(arm_obj, f"Hand_{side}", Vector((0.0, -1.0, 0.0)), Vector((-sx * 1.0, 0.0, 0.0)))
 
 
 def build_push_up(export_paths: list[Path]) -> dict:
@@ -608,13 +683,13 @@ def _pose_bench_press(arm_obj, depth: float, bad_form: bool) -> None:
             Vector((0.0, -1.0, 0.0)),
             Vector((0.0, -1.0, 0.0)),
         )
-        _aim_bone_world(arm_obj, f"Hand_{side}", Vector((0.0, 0.0, 1.0)), Vector((sx * 1.0, 0.0, 0.0)))
+        _aim_bone_world(arm_obj, f"Hand_{side}", Vector((0.0, 0.0, 1.0)), Vector((-sx * 1.0, 0.0, 0.0)))
 
 
 def build_barbell_bench_press(export_paths: list[Path]) -> dict:
     import bpy  # type: ignore
 
-    base_mod.build_mannequin(blend_path=None, glb_paths=[], keep_heatmap_preview=False)
+    base_mod.build_mannequin(blend_path=None, glb_paths=[], keep_heatmap_preview=False, grip_hands=True)
     col = bpy.data.collections.get("VigorAI_Mannequin") or bpy.context.scene.collection
     arm_obj = bpy.data.objects["Armature_GymHuman"]
 
