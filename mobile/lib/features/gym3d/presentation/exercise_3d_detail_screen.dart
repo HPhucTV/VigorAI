@@ -9,6 +9,7 @@ import '../../../core/config/feature_flags.dart';
 import '../../../core/database/workout_tables.drift.dart';
 import '../../../core/theme/app_theme.dart';
 import '../data/asset_cache_manager.dart';
+import '../data/exercise_coaching_guide.dart';
 import '../data/exercise_repository.dart';
 import 'widgets/muscle_3d_viewer_widget.dart';
 
@@ -201,30 +202,35 @@ class _Exercise3DDetailScreenState
             ? 'Anim_BadForm'
             : 'Anim_GoodForm';
         final phaseInfo = _activePhaseInfo(exercise, _phaseProgress);
+        final coaching = ExerciseCoachingGuide.forExercise(exercise);
+        final primaryColor = Theme.of(context).colorScheme.primary;
 
         return Scaffold(
           appBar: AppBar(
             title: Text(exercise.nameVi),
           ),
           body: ListView(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.fromLTRB(20, 12, 20, 28),
             children: [
-              // 1. 3D Interactive Viewport + Live Phase/BadForm Overlay (F07-F13)
+              // 1. Immersive 3D Interactive Stage + Floating Smoked-Glass HUD (F07-F13)
               FutureBuilder<String>(
                 future: _resolvedGlbFuture,
                 builder: (context, snapshot) {
                   if (snapshot.connectionState == ConnectionState.waiting) {
                     return Container(
-                      height: 340,
+                      height: 370,
                       decoration: BoxDecoration(
-                        color: const Color(0xFF12161F),
-                        borderRadius: BorderRadius.circular(16),
+                        gradient: const RadialGradient(
+                          colors: [Color(0xFF192336), Color(0xFF090B0F)],
+                          radius: 0.9,
+                        ),
+                        borderRadius: BorderRadius.circular(28),
                       ),
                       child: const Center(
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            CircularProgressIndicator(),
+                            CircularProgressIndicator(color: AppColors.volt),
                             SizedBox(height: 10),
                             Text(
                               'Đang nạp mô hình 3D...',
@@ -237,11 +243,14 @@ class _Exercise3DDetailScreenState
                   }
                   if (snapshot.hasError) {
                     return Container(
-                      height: 340,
+                      height: 370,
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: Colors.red.shade50,
-                        borderRadius: BorderRadius.circular(16),
+                        color: AppColors.tintedSurface(
+                          context,
+                          AppColors.warningRed,
+                        ),
+                        borderRadius: BorderRadius.circular(28),
                       ),
                       child: Center(
                         child: Text(
@@ -252,132 +261,145 @@ class _Exercise3DDetailScreenState
                     );
                   }
                   final src = snapshot.data ?? exercise.model3dGlbUrl;
-                  return Stack(
-                    children: [
-                      Muscle3DViewerWidget(
-                        glbAssetOrUrl: src,
-                        muscleColorsMap: muscleColors,
-                        animationName: activeClip,
-                        playbackSpeed: _playbackSpeed,
-                        cameraPreset: _cameraPreset,
-                        isPlaying: _isPlaying,
-                        normalizedProgress: _manualSeekProgress,
-                        avatarPreset: avatarPreset,
-                        height: 340,
-                        onModelLoaded: () {
-                          if (mounted && !_isViewerLoaded) {
-                            setState(() {
-                              _isViewerLoaded = true;
-                              _phaseProgress = 0.0;
-                            });
-                          }
-                        },
-                        onMuscleTap: (matId) {
-                          setState(() => _tappedMuscleId = matId);
-                        },
-                      ),
-                      Positioned(
-                        top: 10,
-                        left: 10,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 10,
-                            vertical: 5,
-                          ),
-                          decoration: BoxDecoration(
-                            color: Colors.black.withValues(alpha: 0.68),
-                            borderRadius: BorderRadius.circular(20),
-                            border: Border.all(
-                              color: phaseInfo.color.withValues(alpha: 0.85),
-                            ),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(Icons.air, size: 14, color: phaseInfo.color),
-                              const SizedBox(width: 6),
-                              Text(
-                                '${phaseInfo.label} · ${phaseInfo.breath}',
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ],
-                          ),
+                  return ClipRRect(
+                    borderRadius: BorderRadius.circular(28),
+                    child: Stack(
+                      children: [
+                        Muscle3DViewerWidget(
+                          glbAssetOrUrl: src,
+                          muscleColorsMap: muscleColors,
+                          animationName: activeClip,
+                          playbackSpeed: _playbackSpeed,
+                          cameraPreset: _cameraPreset,
+                          isPlaying: _isPlaying,
+                          normalizedProgress: _manualSeekProgress,
+                          avatarPreset: avatarPreset,
+                          height: 370,
+                          onModelLoaded: () {
+                            if (mounted && !_isViewerLoaded) {
+                              setState(() {
+                                _isViewerLoaded = true;
+                                _phaseProgress = 0.0;
+                              });
+                            }
+                          },
+                          onMuscleTap: (matId) {
+                            setState(() => _tappedMuscleId = matId);
+                          },
                         ),
-                      ),
-                      if (_showBadForm)
                         Positioned(
-                          top: 10,
-                          right: 10,
+                          top: 12,
+                          left: 12,
                           child: Container(
                             padding: const EdgeInsets.symmetric(
                               horizontal: 10,
                               vertical: 5,
                             ),
                             decoration: BoxDecoration(
-                              color: AppColors.warningRed.withValues(alpha: 0.92),
+                              color: Colors.black.withValues(alpha: 0.72),
                               borderRadius: BorderRadius.circular(20),
+                              border: Border.all(
+                                color: phaseInfo.color.withValues(alpha: 0.85),
+                              ),
                             ),
-                            child: const Row(
+                            child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                Icon(Icons.warning_amber_rounded,
-                                    size: 14, color: Colors.white),
-                                SizedBox(width: 4),
+                                Icon(Icons.air, size: 14, color: phaseInfo.color),
+                                const SizedBox(width: 6),
                                 Text(
-                                  'LỖI SAI CHẤN THƯƠNG',
-                                  style: TextStyle(
+                                  '${phaseInfo.label} · ${phaseInfo.breath}',
+                                  style: const TextStyle(
                                     color: Colors.white,
                                     fontSize: 11,
-                                    fontWeight: FontWeight.bold,
+                                    fontWeight: FontWeight.w600,
                                   ),
                                 ),
                               ],
                             ),
                           ),
                         ),
-                    ],
+                        if (_showBadForm)
+                          Positioned(
+                            top: 12,
+                            right: 12,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 5,
+                              ),
+                              decoration: BoxDecoration(
+                                color: AppColors.warningRed.withValues(alpha: 0.92),
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              child: const Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    Icons.warning_amber_rounded,
+                                    size: 14,
+                                    color: Colors.white,
+                                  ),
+                                  SizedBox(width: 4),
+                                  Text(
+                                    'LỖI SAI CHẤN THƯƠNG',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        // Floating Camera Angle Pills on 3D Stage
+                        Positioned(
+                          left: 12,
+                          right: 12,
+                          bottom: 12,
+                          child: Row(
+                            children: [
+                              _CameraChip(
+                                label: 'Trước',
+                                selected: _cameraPreset == CameraPreset3D.front,
+                                onTap: () => setState(
+                                  () => _cameraPreset = CameraPreset3D.front,
+                                ),
+                              ),
+                              const SizedBox(width: 6),
+                              _CameraChip(
+                                label: 'Ngang',
+                                selected: _cameraPreset == CameraPreset3D.side,
+                                onTap: () => setState(
+                                  () => _cameraPreset = CameraPreset3D.side,
+                                ),
+                              ),
+                              const SizedBox(width: 6),
+                              _CameraChip(
+                                label: 'Sau',
+                                selected: _cameraPreset == CameraPreset3D.back,
+                                onTap: () => setState(
+                                  () => _cameraPreset = CameraPreset3D.back,
+                                ),
+                              ),
+                              const SizedBox(width: 6),
+                              _CameraChip(
+                                label: 'Trên',
+                                selected: _cameraPreset == CameraPreset3D.top,
+                                onTap: () => setState(
+                                  () => _cameraPreset = CameraPreset3D.top,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
                   );
                 },
               ),
-              const SizedBox(height: 10),
-
-              // 2. 4 Camera Angle Presets (F08: < 300ms)
-              Row(
-                children: [
-                  _CameraChip(
-                    label: 'Trước',
-                    selected: _cameraPreset == CameraPreset3D.front,
-                    onTap: () =>
-                        setState(() => _cameraPreset = CameraPreset3D.front),
-                  ),
-                  const SizedBox(width: 6),
-                  _CameraChip(
-                    label: 'Ngang',
-                    selected: _cameraPreset == CameraPreset3D.side,
-                    onTap: () =>
-                        setState(() => _cameraPreset = CameraPreset3D.side),
-                  ),
-                  const SizedBox(width: 6),
-                  _CameraChip(
-                    label: 'Sau',
-                    selected: _cameraPreset == CameraPreset3D.back,
-                    onTap: () =>
-                        setState(() => _cameraPreset = CameraPreset3D.back),
-                  ),
-                  const SizedBox(width: 6),
-                  _CameraChip(
-                    label: 'Trên',
-                    selected: _cameraPreset == CameraPreset3D.top,
-                    onTap: () =>
-                        setState(() => _cameraPreset = CameraPreset3D.top),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 10),
+              const SizedBox(height: 14),
 
               // 3. Good Form vs Bad Form Switch + Speed / Play Controls (F10, F11)
               Row(
@@ -585,10 +607,10 @@ class _Exercise3DDetailScreenState
               // 4. Muscle Tap Feedback + Interactive Muscle Chips (F09)
               if (_tappedMuscleId != null)
                 Card(
-                  color: const Color(0xFFEDE7F6),
+                  color: AppColors.tintedSurface(context, primaryColor),
                   child: ListTile(
                     dense: true,
-                    leading: const Icon(Icons.touch_app, color: AppColors.primary),
+                    leading: Icon(Icons.touch_app, color: primaryColor),
                     title: Text(
                       MuscleMaterialIds.labelVi(_tappedMuscleId!),
                       style: const TextStyle(fontWeight: FontWeight.bold),
@@ -645,31 +667,151 @@ class _Exercise3DDetailScreenState
                   ),
                 ],
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 14),
 
-              // 5. Phase & Breathing Guide
+              // 5. Cam nang Ky thuat 4 Phan Truc quan (Ket noi 3D & Timeline)
+              // Phan 1: Chuan bi Tu the & Diem tua
               Card(
                 child: Padding(
                   padding: const EdgeInsets.all(14),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
-                        'Nhịp 3 Pha Chuyển động & Hít thở',
-                        style: TextStyle(fontWeight: FontWeight.bold),
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.settings_accessibility_outlined,
+                            color: primaryColor,
+                            size: 20,
+                          ),
+                          const SizedBox(width: 8),
+                          const Expanded(
+                            child: Text(
+                              '1. Chuẩn bị Tư thế & Điểm tựa',
+                              style: TextStyle(fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                        ],
                       ),
                       const SizedBox(height: 8),
-                      _PhaseRow(
-                        phase: '1. Hạ tạ (Eccentric)',
-                        breath: exercise.phaseKeyframes.eccentric.breath,
+                      ...coaching.setupSteps.asMap().entries.map(
+                            (entry) => Padding(
+                              padding: const EdgeInsets.only(bottom: 6),
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  CircleAvatar(
+                                    radius: 10,
+                                    backgroundColor: AppColors.tintedSurface(
+                                      context,
+                                      primaryColor,
+                                    ),
+                                    child: Text(
+                                      '${entry.key + 1}',
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.bold,
+                                        color: primaryColor,
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Text(
+                                      entry.value,
+                                      style: const TextStyle(height: 1.35),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                      if (exercise.setupGuide.isNotEmpty) ...[
+                        const SizedBox(height: 4),
+                        Wrap(
+                          spacing: 6,
+                          runSpacing: 6,
+                          children: exercise.setupGuide.entries
+                              .map(
+                                (e) => Chip(
+                                  visualDensity: VisualDensity.compact,
+                                  label: Text(
+                                    '${_formatSetupKey(e.key)}: ${e.value}',
+                                    style: const TextStyle(fontSize: 11.5),
+                                  ),
+                                ),
+                              )
+                              .toList(),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 10),
+
+              // Phan 2: Chuyen dong 3 Pha & Nhip tho (cham de tua 3D)
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(14),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(Icons.air, color: primaryColor, size: 20),
+                          const SizedBox(width: 8),
+                          const Expanded(
+                            child: Text(
+                              '2. Chuyển động 3 Pha & Nhịp thở',
+                              style: TextStyle(fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                        ],
                       ),
-                      _PhaseRow(
-                        phase: '2. Giữ đáy (Isometric)',
-                        breath: exercise.phaseKeyframes.isometric.breath,
+                      const SizedBox(height: 4),
+                      Text(
+                        'Chạm vào từng pha để tua trực tiếp mô hình 3D đến điểm kỹ thuật tương ứng.',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: AppColors.secondaryText(context),
+                        ),
                       ),
-                      _PhaseRow(
-                        phase: '3. Phát lực (Concentric)',
-                        breath: exercise.phaseKeyframes.concentric.breath,
+                      const SizedBox(height: 10),
+                      _PhaseDetailTile(
+                        title: 'Pha 1 — Hạ tạ / Giãn cơ (${exercise.phaseKeyframes.eccentric.breath})',
+                        detail: coaching.eccentricDetail,
+                        accent: AppColors.hydrationBlue,
+                        active: phaseInfo.index == 0,
+                        onTap: () => _jumpToPhase(
+                          (exercise.phaseKeyframes.eccentric.start +
+                                  exercise.phaseKeyframes.eccentric.end) *
+                              0.5,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      _PhaseDetailTile(
+                        title: 'Pha 2 — Giữ đáy / Điểm căng (${exercise.phaseKeyframes.isometric.breath})',
+                        detail: coaching.isometricDetail,
+                        accent: AppColors.calorieOrange,
+                        active: phaseInfo.index == 1,
+                        onTap: () => _jumpToPhase(
+                          (exercise.phaseKeyframes.isometric.start +
+                                  exercise.phaseKeyframes.isometric.end) *
+                              0.5,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      _PhaseDetailTile(
+                        title: 'Pha 3 — Phát lực / Đẩy lên (${exercise.phaseKeyframes.concentric.breath})',
+                        detail: coaching.concentricDetail,
+                        accent: AppColors.muscleRecoveredGreen,
+                        active: phaseInfo.index == 2,
+                        onTap: () => _jumpToPhase(
+                          (exercise.phaseKeyframes.concentric.start +
+                                  exercise.phaseKeyframes.concentric.end) *
+                              0.5,
+                        ),
                       ),
                     ],
                   ),
@@ -677,70 +819,137 @@ class _Exercise3DDetailScreenState
               ),
               const SizedBox(height: 10),
 
-              // 6. Setup Guide (F12)
-              if (exercise.setupGuide.isNotEmpty)
-                Card(
-                  child: Padding(
-                    padding: const EdgeInsets.all(14),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'Thiết lập Dụng cụ & Tư thế ban đầu',
-                          style: TextStyle(fontWeight: FontWeight.bold),
-                        ),
-                        const SizedBox(height: 6),
-                        ...exercise.setupGuide.entries.map(
-                          (e) => Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 2),
-                            child: Text(
-                              '• ${_formatSetupKey(e.key)}: ${e.value}',
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
+              // Phan 3: Cam nhan Co bap Dung (Mind-Muscle Connection)
+              Card(
+                color: AppColors.tintedSurface(
+                  context,
+                  AppColors.muscleRecoveredGreen,
+                  lightAlpha: 0.08,
+                  darkAlpha: 0.14,
                 ),
-              const SizedBox(height: 10),
-
-              // 7. Bad Form Warnings (F10)
-              if (exercise.badFormWarnings.isNotEmpty)
-                Card(
-                  color: _showBadForm
-                      ? const Color(0xFFFFEBEE)
-                      : const Color(0xFFFFF8E1),
-                  child: Padding(
-                    padding: const EdgeInsets.all(14),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Icon(
-                              Icons.warning_amber_rounded,
-                              color: _showBadForm
-                                  ? AppColors.warningRed
-                                  : AppColors.calorieOrange,
-                            ),
-                            const SizedBox(width: 8),
-                            const Text(
-                              'Lỗi sai cần tránh & Cách khắc phục',
+                child: Padding(
+                  padding: const EdgeInsets.all(14),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Row(
+                        children: [
+                          Icon(
+                            Icons.psychology_outlined,
+                            color: AppColors.muscleRecoveredGreen,
+                            size: 20,
+                          ),
+                          SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              '3. Cảm nhận Cơ bắp Đúng',
                               style: TextStyle(fontWeight: FontWeight.bold),
                             ),
-                          ],
-                        ),
-                        const SizedBox(height: 6),
-                        ...exercise.badFormWarnings.map(
-                          (w) => Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 2),
-                            child: Text('• $w'),
                           ),
+                        ],
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        coaching.mindMuscleCue,
+                        style: const TextStyle(height: 1.4),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Chú thích màu trên 3D: Đỏ (Cơ chính) · Cam (Cơ phụ) · Vàng (Cơ giữ thăng bằng).',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: AppColors.secondaryText(context),
                         ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
                 ),
+              ),
+              const SizedBox(height: 10),
+
+              // Phan 4: Phan tich Loi sai & Cach sua (lien ket nut Loi sai 3D)
+              Card(
+                color: AppColors.tintedSurface(
+                  context,
+                  _showBadForm ? AppColors.warningRed : AppColors.calorieOrange,
+                  lightAlpha: _showBadForm ? 0.12 : 0.08,
+                  darkAlpha: _showBadForm ? 0.22 : 0.14,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  side: BorderSide(
+                    color: (_showBadForm
+                            ? AppColors.warningRed
+                            : AppColors.calorieOrange)
+                        .withValues(alpha: _showBadForm ? 0.85 : 0.35),
+                    width: _showBadForm ? 1.5 : 1.0,
+                  ),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(14),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.warning_amber_rounded,
+                            color: _showBadForm
+                                ? AppColors.warningRed
+                                : AppColors.calorieOrange,
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              _showBadForm
+                                  ? '4. Đang mô phỏng Lỗi sai trên 3D'
+                                  : '4. Phân tích Lỗi sai & Cách sửa',
+                              style: const TextStyle(fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      ...coaching.badFormDetails.map(
+                        (item) => Padding(
+                          padding: const EdgeInsets.only(bottom: 8),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                '❌ Lỗi: ${item.error}',
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                  height: 1.35,
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                '⚠️ Tác hại: ${item.risk}',
+                                style: TextStyle(
+                                  fontSize: 12.5,
+                                  height: 1.35,
+                                  color: AppColors.secondaryText(context),
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                '✅ Cách sửa: ${item.fix}',
+                                style: const TextStyle(
+                                  fontSize: 12.5,
+                                  height: 1.35,
+                                  color: AppColors.muscleRecoveredGreen,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
 
               if (!FeatureFlags.isMvpClosedTesting) ...[
                 const SizedBox(height: 14),
@@ -773,38 +982,89 @@ class _CameraChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Expanded(
-      child: ChoiceChip(
-        label: Center(child: Text(label)),
-        selected: selected,
-        showCheckmark: false,
-        onSelected: (_) => onTap(),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(100),
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          decoration: BoxDecoration(
+            color: selected
+                ? AppColors.volt
+                : Colors.black.withValues(alpha: 0.65),
+            borderRadius: BorderRadius.circular(100),
+            border: Border.all(
+              color: selected
+                  ? AppColors.volt
+                  : Colors.white.withValues(alpha: 0.16),
+            ),
+          ),
+          alignment: Alignment.center,
+          child: Text(
+            label,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
+              color: selected ? const Color(0xFF090B0F) : Colors.white,
+            ),
+          ),
+        ),
       ),
     );
   }
 }
 
-class _PhaseRow extends StatelessWidget {
-  final String phase;
-  final String breath;
+class _PhaseDetailTile extends StatelessWidget {
+  final String title;
+  final String detail;
+  final Color accent;
+  final bool active;
+  final VoidCallback onTap;
 
-  const _PhaseRow({required this.phase, required this.breath});
+  const _PhaseDetailTile({
+    required this.title,
+    required this.detail,
+    required this.accent,
+    required this.active,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 2),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(phase),
-          Text(
-            breath,
-            style: const TextStyle(
-              fontWeight: FontWeight.w600,
-              color: AppColors.primary,
-            ),
+    return InkWell(
+      borderRadius: BorderRadius.circular(12),
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        padding: const EdgeInsets.all(10),
+        decoration: BoxDecoration(
+          color: active
+              ? AppColors.tintedSurface(context, accent, lightAlpha: 0.12, darkAlpha: 0.22)
+              : AppColors.subtleSurface(context),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: active
+                ? accent.withValues(alpha: 0.8)
+                : AppColors.subtleBorder(context),
           ),
-        ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              title,
+              style: TextStyle(
+                fontWeight: FontWeight.w700,
+                fontSize: 13,
+                color: accent,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              detail,
+              style: const TextStyle(fontSize: 12.5, height: 1.35),
+            ),
+          ],
+        ),
       ),
     );
   }

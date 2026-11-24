@@ -371,6 +371,54 @@ class WorkoutRepository {
     );
   }
 
+  /// Thay the cac giao an AI tu dong tao truoc do bang phac do moi (giu nguyen giao an tu tao & mau chuan).
+  Future<List<WorkoutRoutineModel>> applyGeneratedPlan(
+    List<WorkoutRoutineModel> generated,
+  ) async {
+    final now = DateTime.now().toUtc();
+    final existingRows = await (_db.select(_db.workoutRoutinesTable)
+          ..where((t) => t.isTemplate.equals(false)))
+        .get();
+    final staleAiIds = existingRows
+        .where((r) => r.id.startsWith('ai-plan-'))
+        .map((r) => r.id)
+        .toList();
+    if (staleAiIds.isNotEmpty) {
+      await (_db.update(_db.workoutRoutinesTable)
+            ..where((t) => t.id.isIn(staleAiIds)))
+          .write(
+        WorkoutRoutinesTableCompanion(
+          deletedAt: Value(now),
+          updatedAt: Value(now),
+          syncStatus: const Value('PENDING_DELETE'),
+        ),
+      );
+    }
+
+    for (final routine in generated) {
+      await _upsertRoutineRow(routine);
+    }
+    return generated;
+  }
+
+  static WorkoutRoutineModel? pickTodayRoutine(
+    List<WorkoutRoutineModel> routines, {
+    int? weekday,
+  }) {
+    if (routines.isEmpty) return null;
+    final targetDay = weekday ?? DateTime.now().weekday;
+    for (final r in routines) {
+      if (!r.isTemplate && r.scheduledWeekdays.contains(targetDay)) return r;
+    }
+    for (final r in routines) {
+      if (r.scheduledWeekdays.contains(targetDay)) return r;
+    }
+    for (final r in routines) {
+      if (!r.isTemplate) return r;
+    }
+    return routines.first;
+  }
+
   Future<void> softDeleteRoutine(String routineId) async {
     final existing = await (_db.select(_db.workoutRoutinesTable)
           ..where((t) => t.id.equals(routineId)))
