@@ -1,39 +1,110 @@
 # [OWNER: M4] Loc, gop nhan, kiem tra va chia dataset YOLO cho AI Model B v1.0 (T-M4-01)
 """Bien cac dataset tai tu Roboflow Universe / Kaggle (dinh dang YOLO) thanh 1 dataset chuan.
 
-Cac buoc: doc nhan -> gop ve 18 class_code (food_classes.py) -> bo bbox loi/lech chuan ->
-bo anh trung (SHA-1) -> chia 70/20/10 co phan tang -> ghi data.yaml + dataset_report.json.
+Cac buoc: doc nhan -> gop ve 18 class_code (food_classes.py, hoac --map rieng tung bo) ->
+bo bbox loi/lech chuan -> bo anh trung (SHA-1) -> gom cac ban augment cua cung 1 anh goc ->
+chia 70/20/10 theo NHOM anh goc (co phan tang) -> ghi data.yaml + dataset_report.json.
 
 Vi du:
     python prepare_dataset.py \\
-        --src ../datasets/raw/vietnamese-food --src ../datasets/raw/gym-meals \\
+        --src ../datasets/raw/pork-rice --src ../datasets/raw/rice-ii \\
+        --map "pork-rice:egg=BOILED_EGG" \\
         --out ../datasets/model_b_v1
 
     python prepare_dataset.py --validate-only --out ../datasets/model_b_v1
 
+--map "TEN_THU_MUC_NGUON:nhan nguon=CLASS_CODE" (lap lai nhieu lan). TEN_THU_MUC_NGUON la ten
+thu muc cuoi cua --src (khong phan biet hoa thuong); dung "*" de ap cho moi nguon. --map uu
+tien hon bang alias chung, nen cac nhan chung chung nhu `egg` chi gan cho dung bo ban da kiem tra.
+
 Moi nguon la thu muc xuat YOLO (Roboflow "YOLOv8") co data.yaml (hoac classes.txt) va cac
 thu muc images/labels theo bat ky bo cuc nao (train/valid/test hoac images/ + labels/).
+
+Ban augment cua Roboflow co ten dang `<ten-goc>_jpg.rf.<ma>.jpg`. Script coi cac file cung
+`<ten-goc>` la 1 nhom: ca nhom vao cung 1 tap (khong ro ri giua train va val/test), va o
+val/test chi giu 1 anh moi nhom de do khong bi lech boi anh xoay/nhieu.
+
 Chi dung thu vien chuan cua Python.
 """
 from __future__ import annotations
 
 import argparse
+import csv
 import hashlib
 import json
+import os
 import random
+import re
 import shutil
 import sys
 from collections import Counter, defaultdict
 from pathlib import Path
 
-from food_classes import CLASS_CODES, resolve_class
+from food_classes import CLASS_CODES, normalize_name, resolve_class
 
 IMAGE_EXTS = {".jpg", ".jpeg", ".png", ".bmp", ".webp"}
 SPLIT_RATIOS = (0.70, 0.20, 0.10)  # train / val / test
 SPLIT_NAMES = ("train", "val", "test")
 MIN_BOX_SIDE = 0.005  # canh bbox chuan hoa nho hon nguong nay coi la lech chuan
 CLIP_TOLERANCE = 0.005  # cho phep tran bien toi da 0.5% roi cat ve [0, 1]
+EDGE_TOL = 2e-6  # sai so lam tron khi ghi 6 chu so thap phan (khung cham sat mep anh bi lech ~5e-7)
 MIN_CLASSES, MAX_CLASSES = 15, 20
+SEP = "__"  # ngan cach <nguon>__<hash12>__<ten-goc> trong ten file dau ra
+
+
+def safe_name(text: str) -> str:
+    return re.sub(r"[^A-Za-z0-9]+", "-", text).strip("-") or "src"
+
+
+def group_key(stem: str) -> str:
+    """Roboflow: `<ten>_jpg.rf.<ma>` -> `<ten>_jpg`; ten khac giu nguyen."""
+    return stem.split(".rf.")[0]
+
+
+def _long_path_str(abs_path: str) -> str:
+    """Them tien to \\\\?\\ de Windows mo duoc duong dan > 260 ky tu."""
+    if abs_path.startswith("\\\\?\\"):
+        return abs_path
+    if abs_path.startswith("\\\\"):  # UNC: \\\\server\\share -> \\\\?\\UNC\\server\\share
+        return "\\\\?\\UNC\\" + abs_path[2:]
+    return "\\\\?\\" + abs_path
+
+
+def fs(path: Path) -> Path:
+    """Dung cho moi thao tac doc file nguon: ten file Roboflow rat dai, vuot gioi han 260 ky tu
+    cua Windows (khi do is_file() tra False va open() bao FileNotFoundError)."""
+    if sys.platform != "win32":
+        return path
+    return Path(_long_path_str(os.path.abspath(path)))
+
+
+# --------------------------------------------------------------------------- #
+# --map
+# --------------------------------------------------------------------------- #
+def parse_map_args(values: list[str]) -> dict[str, dict[str, str]]:
+    """'src:nhan=CLASS' -> {src_lower: {nhan_chuan_hoa: CLASS}}. Bao loi ro rang khi sai."""
+    overrides: dict[str, dict[str, str]] = {}
+    for raw in values:
+        src, sep, rest = raw.partition(":")
+        label, eq, code = rest.rpartition("=")
+        src, label, code = src.strip(), label.strip(), code.strip()
+        if not sep or not eq or not src or not label:
+            raise SystemExit(f"[LOI] --map '{raw}' sai dinh dang, can dang 'thu-muc-nguon:nhan=CLASS_CODE'")
+        if code not in CLASS_CODES:
+            raise SystemExit(
+                f"[LOI] --map '{raw}': '{code}' khong phai class_code hop le. Hop le: {', '.join(CLASS_CODES)}"
+            )
+        overrides.setdefault(src.lower(), {})[normalize_name(label)] = code
+    return overrides
+
+
+def resolve_label(src_name: str, label: str, overrides: dict[str, dict[str, str]]) -> str | None:
+    norm = normalize_name(label)
+    for key in (src_name.lower(), "*"):
+        code = overrides.get(key, {}).get(norm)
+        if code:
+            return code
+    return resolve_class(label)
 
 
 # --------------------------------------------------------------------------- #
@@ -90,10 +161,10 @@ def label_path_for(image: Path) -> Path | None:
     if "images" in parts:
         idx = len(parts) - 1 - parts[::-1].index("images")
         candidate = Path(*parts[:idx], "labels", *parts[idx + 1:]).with_suffix(".txt")
-        if candidate.is_file():
+        if fs(candidate).is_file():
             return candidate
     same_dir = image.with_suffix(".txt")
-    return same_dir if same_dir.is_file() else None
+    return same_dir if fs(same_dir).is_file() else None
 
 
 def _box_from_tokens(tokens: list[str]) -> tuple[float, float, float, float] | None:
@@ -125,13 +196,19 @@ def normalize_box(box: tuple[float, float, float, float]) -> tuple[float, float,
 
 
 def convert_labels(
-    label_file: Path | None, names: list[str], stats: Counter, unmapped: Counter
+    label_file: Path | None,
+    names: list[str],
+    src_name: str,
+    overrides: dict[str, dict[str, str]],
+    stats: Counter,
+    unmapped: Counter,
+    mapping_log: Counter,
 ) -> list[str]:
     if label_file is None:
         stats["images_without_label_file"] += 1
         return []
     out: list[str] = []
-    for raw in label_file.read_text(encoding="utf-8", errors="replace").splitlines():
+    for raw in fs(label_file).read_text(encoding="utf-8", errors="replace").splitlines():
         tokens = raw.split()
         if not tokens:
             continue
@@ -143,9 +220,11 @@ def convert_labels(
         if not 0 <= class_idx < len(names):
             stats["boxes_invalid"] += 1
             continue
-        code = resolve_class(names[class_idx])
+        label = names[class_idx]
+        code = resolve_label(src_name, label, overrides)
         if code is None:
-            unmapped[names[class_idx]] += 1
+            unmapped[f"{src_name}:{label}"] += 1
+            mapping_log[(src_name, label, "-")] += 1
             stats["boxes_dropped_unmapped"] += 1
             continue
         raw_box = _box_from_tokens(tokens)
@@ -153,6 +232,7 @@ def convert_labels(
         if box is None:
             stats["boxes_invalid"] += 1
             continue
+        mapping_log[(src_name, label, code)] += 1
         new_idx = CLASS_CODES.index(code)
         out.append(f"{new_idx} {box[0]:.6f} {box[1]:.6f} {box[2]:.6f} {box[3]:.6f}")
     return out
@@ -161,56 +241,96 @@ def convert_labels(
 # --------------------------------------------------------------------------- #
 # Gop, chia, ghi
 # --------------------------------------------------------------------------- #
-def collect_items(sources: list[Path]) -> tuple[list[dict], Counter, Counter]:
+def collect_items(
+    sources: list[Path], overrides: dict[str, dict[str, str]]
+) -> tuple[list[dict], Counter, Counter, Counter]:
     stats: Counter = Counter()
     unmapped: Counter = Counter()
+    mapping_log: Counter = Counter()
     seen_hashes: set[str] = set()
     items: list[dict] = []
     for src in sources:
         names = load_source_names(src)
+        src_safe = safe_name(src.name)
         images = sorted(p for p in src.rglob("*") if p.suffix.lower() in IMAGE_EXTS)
         for image in images:
             stats["images_scanned"] += 1
-            digest = hashlib.sha1(image.read_bytes()).hexdigest()
+            digest = hashlib.sha1(fs(image).read_bytes()).hexdigest()
             if digest in seen_hashes:
                 stats["images_duplicate_dropped"] += 1
                 continue
             seen_hashes.add(digest)
-            lines = convert_labels(label_path_for(image), names, stats, unmapped)
+            lines = convert_labels(
+                label_path_for(image), names, src.name, overrides, stats, unmapped, mapping_log
+            )
             if not lines:
                 stats["images_dropped_no_valid_box"] += 1
                 continue
-            items.append({"image": image, "hash": digest, "lines": lines})
-    return items, stats, unmapped
+            group = f"{src_safe}:{group_key(image.stem)}"
+            items.append(
+                {
+                    "image": image,
+                    "hash": digest,
+                    "lines": lines,
+                    "src": src_safe,
+                    "group": group,
+                    "gid": hashlib.sha1(group.encode("utf-8")).hexdigest()[:10],
+                }
+            )
+    return items, stats, unmapped, mapping_log
 
 
-def stratified_split(items: list[dict], seed: int) -> dict[str, list[dict]]:
-    """Chia 70/20/10 theo lop hiem nhat trong anh de moi lop co mat o ca 3 tap khi du anh."""
-    image_count: Counter = Counter()
+def stratified_split(items: list[dict], seed: int) -> tuple[dict[str, list[dict]], int]:
+    """Chia 70/20/10 theo NHOM anh goc, phan tang theo lop hiem nhat cua nhom.
+
+    Tra ve (splits, so_anh_augment_bi_bo_o_val_test).
+    """
+    groups: dict[str, list[dict]] = defaultdict(list)
     for it in items:
         it["classes"] = {int(ln.split()[0]) for ln in it["lines"]}
-        image_count.update(it["classes"])
-    groups: dict[int, list[dict]] = defaultdict(list)
-    for it in items:
-        rarest = min(it["classes"], key=lambda c: (image_count[c], c))
-        groups[rarest].append(it)
+        groups[it["group"]].append(it)
+
+    group_classes: dict[str, set[int]] = {}
+    group_count: Counter = Counter()
+    for g, members in groups.items():
+        group_classes[g] = set().union(*(m["classes"] for m in members))
+        group_count.update(group_classes[g])
+
+    by_rarest: dict[int, list[str]] = defaultdict(list)
+    for g in sorted(groups):
+        rarest = min(group_classes[g], key=lambda c: (group_count[c], c))
+        by_rarest[rarest].append(g)
 
     rng = random.Random(seed)
-    splits: dict[str, list[dict]] = {name: [] for name in SPLIT_NAMES}
-    for cls in sorted(groups):
-        group = groups[cls]
-        rng.shuffle(group)
-        n = len(group)
+    assignment: dict[str, str] = {}
+    for cls in sorted(by_rarest):
+        gs = by_rarest[cls]
+        rng.shuffle(gs)
+        n = len(gs)
         if n < 3:
-            splits["train"].extend(group)
+            for g in gs:
+                assignment[g] = "train"
             continue
         n_val = max(1, round(n * SPLIT_RATIOS[1]))
         n_test = max(1, round(n * SPLIT_RATIOS[2]))
         n_train = n - n_val - n_test
-        splits["train"].extend(group[:n_train])
-        splits["val"].extend(group[n_train:n_train + n_val])
-        splits["test"].extend(group[n_train + n_val:])
-    return splits
+        for g in gs[:n_train]:
+            assignment[g] = "train"
+        for g in gs[n_train:n_train + n_val]:
+            assignment[g] = "val"
+        for g in gs[n_train + n_val:]:
+            assignment[g] = "test"
+
+    splits: dict[str, list[dict]] = {name: [] for name in SPLIT_NAMES}
+    dropped = 0
+    for g in sorted(groups):
+        members = sorted(groups[g], key=lambda it: it["image"].name)
+        split = assignment[g]
+        if split != "train" and len(members) > 1:
+            dropped += len(members) - 1
+            members = members[:1]
+        splits[split].extend(members)
+    return splits, dropped
 
 
 def write_data_yaml(out: Path) -> None:
@@ -226,20 +346,33 @@ def write_data_yaml(out: Path) -> None:
 
 
 def write_dataset(splits: dict[str, list[dict]], out: Path) -> None:
+    """Ten file dau ra NGAN (`<nguon>__<hash12>__<ma-nhom>`) de Windows/OpenCV/YOLO khong vuot
+    gioi han 260 ky tu; ten goc nam trong manifest.csv."""
+    manifest: list[list[str]] = []
     for split, items in splits.items():
         img_dir = out / "images" / split
         lbl_dir = out / "labels" / split
         img_dir.mkdir(parents=True, exist_ok=True)
         lbl_dir.mkdir(parents=True, exist_ok=True)
         for it in items:
-            stem = f"{it['hash'][:12]}_{it['image'].stem}"
-            shutil.copy2(it["image"], img_dir / f"{stem}{it['image'].suffix.lower()}")
+            stem = f"{it['src']}{SEP}{it['hash'][:12]}{SEP}{it['gid']}"
+            shutil.copy2(fs(it["image"]), img_dir / f"{stem}{it['image'].suffix.lower()}")
             (lbl_dir / f"{stem}.txt").write_text("\n".join(it["lines"]) + "\n", encoding="utf-8")
+            manifest.append([stem, split, it["src"], it["group"], str(it["image"])])
+    with (out / "manifest.csv").open("w", newline="", encoding="utf-8") as fh:
+        writer = csv.writer(fh)
+        writer.writerow(["out_stem", "split", "source", "group", "original_file"])
+        writer.writerows(manifest)
     write_data_yaml(out)
 
 
 def build_report(
-    splits: dict[str, list[dict]], stats: Counter, unmapped: Counter, min_images: int
+    splits: dict[str, list[dict]],
+    stats: Counter,
+    unmapped: Counter,
+    mapping_log: Counter,
+    eval_copies_dropped: int,
+    min_images: int,
 ) -> dict:
     per_class: dict[str, dict[str, dict[str, int]]] = {}
     total_images: Counter = Counter()
@@ -263,11 +396,17 @@ def build_report(
             missing = [s for s in SPLIT_NAMES if per_class[code].get(s, {}).get("images", 0) == 0]
             if missing:
                 warnings.append(f"{code}: thieu tap {', '.join(missing)}")
+    mapping = [
+        {"source": src, "label": label, "class_code": None if code == "-" else code, "boxes": n}
+        for (src, label, code), n in sorted(mapping_log.items())
+    ]
     return {
         "classes": CLASS_CODES,
         "images_per_split": dict(total_images),
         "stats": dict(stats),
+        "augment_copies_dropped_from_val_test": eval_copies_dropped,
         "per_class": per_class,
+        "source_class_mapping": mapping,
         "unmapped_source_classes": dict(unmapped.most_common()),
         "warnings": warnings,
     }
@@ -276,6 +415,15 @@ def build_report(
 # --------------------------------------------------------------------------- #
 # Kiem tra dataset da dung (Definition of Done T-M4-01)
 # --------------------------------------------------------------------------- #
+def parse_stem(stem: str) -> tuple[str, str, str]:
+    """`<nguon>__<hash12>__<ma-nhom>` -> (nhom, hash, ma-nhom); khong dung dinh dang thi coi la anh don."""
+    parts = stem.split(SEP, 2)
+    if len(parts) == 3:
+        src, digest, gid = parts
+        return f"{src}:{gid}", digest, gid
+    return stem, stem, stem
+
+
 def validate_dataset(out: Path) -> list[str]:
     errors: list[str] = []
     yaml_path = out / "data.yaml"
@@ -295,6 +443,7 @@ def validate_dataset(out: Path) -> list[str]:
         errors.append(f"so lop {len(names)} ngoai khoang {MIN_CLASSES}-{MAX_CLASSES}")
 
     split_hashes: dict[str, set[str]] = {}
+    split_groups: dict[str, set[str]] = {}
     for split in SPLIT_NAMES:
         img_dir, lbl_dir = out / "images" / split, out / "labels" / split
         if not img_dir.is_dir() or not any(img_dir.iterdir()):
@@ -306,7 +455,9 @@ def validate_dataset(out: Path) -> list[str]:
             errors.append(f"{split}/{stem}: anh khong co file nhan")
         for stem in labels.keys() - images.keys():
             errors.append(f"{split}/{stem}: nhan khong co anh")
-        split_hashes[split] = {stem.split("_")[0] for stem in images}
+        parsed = [parse_stem(stem) for stem in images]
+        split_groups[split] = {g for g, _, _ in parsed}
+        split_hashes[split] = {h for _, h, _ in parsed}
         for stem, lbl in labels.items():
             lines = [ln for ln in lbl.read_text(encoding="utf-8").splitlines() if ln.strip()]
             if not lines:
@@ -321,7 +472,12 @@ def validate_dataset(out: Path) -> list[str]:
                     continue
                 if len(tok) != 5 or not 0 <= cls < len(names):
                     errors.append(f"{split}/{stem}: class/so truong sai '{ln}'")
-                elif not (0 <= xc - w / 2 and xc + w / 2 <= 1 + 1e-6 and 0 <= yc - h / 2 and yc + h / 2 <= 1 + 1e-6):
+                elif not (
+                    -EDGE_TOL <= xc - w / 2
+                    and xc + w / 2 <= 1 + EDGE_TOL
+                    and -EDGE_TOL <= yc - h / 2
+                    and yc + h / 2 <= 1 + EDGE_TOL
+                ):
                     errors.append(f"{split}/{stem}: bbox ra ngoai khung '{ln}'")
                 elif w < MIN_BOX_SIDE or h < MIN_BOX_SIDE:
                     errors.append(f"{split}/{stem}: bbox lech chuan (qua nho) '{ln}'")
@@ -330,7 +486,12 @@ def validate_dataset(out: Path) -> list[str]:
         for b in names_seen[i + 1:]:
             overlap = split_hashes[a] & split_hashes[b]
             if overlap:
-                errors.append(f"ro ri du lieu: {len(overlap)} anh trung giua '{a}' va '{b}'")
+                errors.append(f"ro ri du lieu: {len(overlap)} anh trung noi dung giua '{a}' va '{b}'")
+            group_overlap = split_groups[a] & split_groups[b]
+            if group_overlap:
+                errors.append(
+                    f"ro ri ban augment: {len(group_overlap)} anh goc co mat o ca '{a}' va '{b}'"
+                )
     return errors
 
 
@@ -340,6 +501,7 @@ def validate_dataset(out: Path) -> list[str]:
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--src", type=Path, action="append", default=[], help="thu muc dataset YOLO nguon (lap lai nhieu lan)")
+    parser.add_argument("--map", action="append", default=[], metavar="NGUON:NHAN=CLASS", help="gan nhan nguon -> class_code rieng cho 1 bo (lap lai nhieu lan)")
     parser.add_argument("--out", type=Path, required=True, help="thu muc dau ra (nen nam trong ai_research/datasets/)")
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--min-images-per-class", type=int, default=100)
@@ -351,21 +513,34 @@ def main(argv: list[str] | None = None) -> int:
             parser.error("can it nhat 1 --src (hoac dung --validate-only)")
         if args.out.exists() and any(args.out.iterdir()):
             parser.error(f"{args.out} da co du lieu; chon thu muc moi de tranh tron dataset cu")
-        items, stats, unmapped = collect_items(args.src)
+        overrides = parse_map_args(args.map)
+        src_names = {p.name.lower() for p in args.src} | {"*"}
+        unknown = sorted(set(overrides) - src_names)
+        if unknown:
+            parser.error(f"--map nhac toi nguon khong co trong --src: {', '.join(unknown)}")
+        items, stats, unmapped, mapping_log = collect_items(args.src, overrides)
         if not items:
             print("[LOI] khong con anh hop le nao sau khi loc.", file=sys.stderr)
             return 1
-        splits = stratified_split(items, args.seed)
+        splits, eval_dropped = stratified_split(items, args.seed)
         args.out.mkdir(parents=True, exist_ok=True)
         write_dataset(splits, args.out)
-        report = build_report(splits, stats, unmapped, args.min_images_per_class)
+        report = build_report(
+            splits, stats, unmapped, mapping_log, eval_dropped, args.min_images_per_class
+        )
         (args.out / "dataset_report.json").write_text(
             json.dumps(report, indent=2, ensure_ascii=False), encoding="utf-8"
         )
         print(f"Anh moi tap: {report['images_per_split']}")
         print(f"Thong ke loc: {report['stats']}")
+        if eval_dropped:
+            print(f"Bo {eval_dropped} ban augment thua o val/test (giu 1 anh moi anh goc).")
+        print("Gan nhan nguon -> lop:")
+        for row in report["source_class_mapping"]:
+            target = row["class_code"] or "(BO)"
+            print(f"  {row['source']}: '{row['label']}' -> {target} ({row['boxes']} khung)")
         if report["unmapped_source_classes"]:
-            print(f"Lop nguon chua gan duoc (them alias vao food_classes.py neu can): {report['unmapped_source_classes']}")
+            print("Nhan nguon chua gan duoc: them alias vao food_classes.py hoac dung --map")
         for w in report["warnings"]:
             print(f"[CANH BAO] {w}")
 

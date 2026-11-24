@@ -17,6 +17,21 @@
 
 ---
 
+## Phiên 32 — 2026-11-23 11:20 | Thành viên: M4 (Pure AI Engineer) | Task: `T-M4-01` (`[~]`)
+- **Mục tiêu phiên:** Chuẩn bị pipeline dataset Model B cho dữ liệu Roboflow thật (bộ Pork rice, CC BY 4.0, 181 ảnh, `egg` = 161 khung).
+- **Những file đã tạo / chỉnh sửa (`0` file `[LOCKED STUB]` bị chạm):**
+  - `ai_research/model_b_food_yolo/prepare_dataset.py`: thêm `--map "nguồn:nhãn=CLASS"` (gán nhãn riêng từng bộ), gom bản augment Roboflow (`.rf.`) về ảnh gốc khi chia, val/test chỉ giữ 1 ảnh mỗi nhóm, validator bắt rò rỉ nhóm, báo cáo `source_class_mapping`; tên file đầu ra đổi thành `<nguồn>__<hash12>__<mã-nhóm>` (ngắn, ~40 ký tự) kèm `manifest.csv` tra ngược tên gốc. Sửa lỗi đường dẫn > 260 ký tự trên Windows (tên file Roboflow rất dài làm `FileNotFoundError`): mọi thao tác đọc file nguồn đi qua `fs()` thêm tiền tố `\\?\`. Phần Windows chưa được chạy thử trên máy Windows thật.
+  - `ai_research/model_b_food_yolo/food_classes.py`: thêm alias `plain rice`, `nasi putih` cho `WHITE_RICE` (không thêm `egg` vào alias chung vì mơ hồ giữa trứng luộc/ốp la).
+  - `ai_research/model_b_food_yolo/README.md`, `ai_research/SOURCES.md` (mới): hướng dẫn và nhật ký nguồn/giấy phép dữ liệu.
+- **Quyết định kỹ thuật / Lưu ý quan trọng:**
+  - Nhãn nguồn chung chung (`egg`) chỉ gán qua `--map` sau khi xem ảnh; bộ Pork rice là trứng hầm kiểu Thái nên chỉ là nguồn bổ sung cho `BOILED_EGG`.
+  - Bộ có augment (ví dụ foodvn: 3 bản/ảnh, xoay ±35°) có số ảnh thật chỉ ~1/3 và bbox xoay bị nới rộng; ưu tiên bộ không augment hoặc tạo version không augment qua Fork.
+  - Giải nén dataset vào `ai_research/datasets/raw/<tên>/` (bị `.gitignore` chặn), không giải nén ở gốc repo.
+- **Kiểm tra / Kết quả chạy thử:** Chạy trên 3 bộ giả kiểu Roboflow (có augment ×3): 105 nhóm ảnh gốc, 0 nhóm nằm ở nhiều tập, val/test tối đa 1 ảnh/nhóm; `--map` sai class/sai nguồn/sai định dạng đều báo lỗi rõ; chủ động chép 1 bản augment từ train sang val thì validator báo cả rò rỉ nội dung lẫn rò rỉ augment. Chưa chạy trên dữ liệu thật của nhóm.
+- **Việc cần làm ở phiên kế tiếp:** Tải thêm bộ cơm trắng và các món còn thiếu (trứng luộc, trứng ốp la, ức gà...), ghi vào `SOURCES.md`, chạy `prepare_dataset.py` với các `--map` tương ứng, đạt 8–10 lớp đủ ảnh để train `v1.0` (`T-M4-04`); song song làm `T-M4-05` (benchmark Model C).
+
+---
+
 ## Phiên 31 — 2026-11-22 20:30 | Thành viên: M4 (Pure AI Engineer) | Task: `T-M4-02` (`[x]`), `T-M4-01` (`[~]`)
 - **Mục tiêu phiên:** Khởi động phần AI của M4: sinh dữ liệu Banister cho Model C và chuẩn bị pipeline dataset cho Model B.
 - **Những file đã tạo / chỉnh sửa (`0` file `[LOCKED STUB]` bị chạm):**

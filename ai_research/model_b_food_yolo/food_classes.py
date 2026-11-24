@@ -14,7 +14,19 @@ import unicodedata
 
 # (class_code, alias...) - alias co the co dau tieng Viet, se duoc chuan hoa khi so khop.
 CORE_CLASSES_V1: list[tuple[str, tuple[str, ...]]] = [
-    ("WHITE_RICE", ("rice", "white rice", "steamed rice", "cooked rice", "cơm", "cơm trắng")),
+    (
+        "WHITE_RICE",
+        (
+            "rice",
+            "white rice",
+            "steamed rice",
+            "cooked rice",
+            "plain rice",
+            "nasi putih",
+            "cơm",
+            "cơm trắng",
+        ),
+    ),
     ("BROWN_RICE", ("brown rice", "gạo lứt", "cơm gạo lứt")),
     (
         "GRILLED_CHICKEN_BREAST",
