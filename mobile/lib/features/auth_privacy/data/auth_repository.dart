@@ -117,6 +117,13 @@ class AuthRepository {
     return AuthUserProfile.fromJson(jsonDecode(raw) as Map<String, dynamic>);
   }
 
+  Future<void> saveCachedUserProfile(AuthUserProfile profile) async {
+    await _storage.write(
+      key: StorageKeys.currentUserJson,
+      value: jsonEncode(profile.toJson()),
+    );
+  }
+
   Future<AuthUserProfile> login({
     required String email,
     required String password,
@@ -139,6 +146,8 @@ class AuthRepository {
     required double heightCm,
     required String fitnessGoal,
     required bool medicalDisclaimerAccepted,
+    String? birthDateIso,
+    String? activityLevel,
   }) async {
     if (!medicalDisclaimerAccepted) {
       throw StateError(
@@ -154,6 +163,8 @@ class AuthRepository {
         'gender': gender,
         'height_cm': heightCm,
         'fitness_goal': fitnessGoal,
+        if (birthDateIso != null) 'birth_date': birthDateIso,
+        if (activityLevel != null) 'activity_level': activityLevel,
         'medical_disclaimer_accepted': medicalDisclaimerAccepted,
       },
     );
@@ -164,6 +175,8 @@ class AuthRepository {
       fallbackGender: gender,
       fallbackHeight: heightCm,
       fallbackGoal: fitnessGoal,
+      fallbackBirthDateIso: birthDateIso,
+      fallbackActivityLevel: activityLevel,
     );
   }
 
@@ -197,6 +210,8 @@ class AuthRepository {
     String? fallbackGender,
     double? fallbackHeight,
     String? fallbackGoal,
+    String? fallbackBirthDateIso,
+    String? fallbackActivityLevel,
   }) async {
     final accessToken = data['access_token'] as String?;
     final refreshToken = data['refresh_token'] as String?;
@@ -213,7 +228,9 @@ class AuthRepository {
           'email': fallbackEmail ?? 'demo@vigorai.app',
           'full_name': fallbackName ?? 'Thành viên VigorAI',
           'gender': fallbackGender ?? 'MALE',
+          'birth_date': fallbackBirthDateIso,
           'height_cm': fallbackHeight ?? 172.0,
+          'activity_level': fallbackActivityLevel ?? 'MODERATE',
           'fitness_goal': fallbackGoal ?? 'BULK',
           'medical_disclaimer_accepted': true,
         };

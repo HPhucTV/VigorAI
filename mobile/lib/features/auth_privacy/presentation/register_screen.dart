@@ -1,8 +1,14 @@
-// [OWNER: M1] Man hinh Dang ky tai khoan VigorAI kem thong so sinh trac & Disclaimer (T-M1-04 / F26)
+// [OWNER: M1] Man hinh Dang ky tai khoan VigorAI tu dong nap thong so tu Onboarding Wizard 6 buoc (T-M1-04 / F26)
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/theme/app_theme.dart';
+import '../../gym3d/data/exercise_repository.dart';
+import '../../health/data/health_repository.dart';
+import '../../workout/data/workout_repository.dart';
+import '../../workout/domain/smart_routine_generator.dart';
+import '../data/user_fitness_profile.dart';
 import 'auth_controller.dart';
 
 class RegisterScreen extends ConsumerStatefulWidget {
@@ -21,6 +27,21 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
 
   String _gender = 'MALE';
   String _fitnessGoal = 'BULK';
+  bool _prefilledFromWizard = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_prefilledFromWizard) {
+      _prefilledFromWizard = true;
+      final profile = ref.read(userFitnessProfileProvider);
+      if (profile.hasCompletedWizard) {
+        _gender = profile.gender;
+        _fitnessGoal = profile.derivedFitnessGoal;
+        _heightController.text = profile.heightCm.round().toString();
+      }
+    }
+  }
 
   @override
   void dispose() {
@@ -33,7 +54,18 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
 
   Future<void> _submitRegister() async {
     if (!(_formKey.currentState?.validate() ?? false)) return;
-    final heightCm = double.tryParse(_heightController.text) ?? 170.0;
+    final profile = ref.read(userFitnessProfileProvider);
+    final heightCm = double.tryParse(_heightController.text) ?? profile.heightCm;
+    final updatedProfile = profile.copyWith(
+      fullName: _nameController.text.trim(),
+      gender: _gender,
+      heightCm: heightCm.clamp(140.0, 210.0),
+      hasCompletedWizard: true,
+    );
+    await ref
+        .read(userFitnessProfileProvider.notifier)
+        .saveProfile(updatedProfile);
+
     final success = await ref.read(authControllerProvider.notifier).register(
           email: _emailController.text,
           password: _passwordController.text,
@@ -41,8 +73,29 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
           gender: _gender,
           heightCm: heightCm,
           fitnessGoal: _fitnessGoal,
+          birthDateIso: updatedProfile.birthDateIso,
+          activityLevel: updatedProfile.derivedActivityLevel,
         );
-    if (success && mounted) {
+    if (!success) return;
+
+    // Ghi ban ghi sinh trac dau tien + dam bao giao an ca nhan da co trong may
+    try {
+      await ref.read(healthRepositoryProvider).saveBiometric(
+            weightKg: updatedProfile.currentWeightKg,
+            heightCm: updatedProfile.heightCm,
+            bodyFatPct: updatedProfile.estimatedBodyFatPct,
+          );
+      final exercises = await ref.read(exercisesListProvider.future);
+      final generated = SmartRoutineGenerator.generatePlan(
+        profile: updatedProfile,
+        allExercises: exercises,
+      );
+      await ref.read(workoutRepositoryProvider).applyGeneratedPlan(generated);
+      ref.invalidate(workoutRoutinesProvider);
+      await ref.read(healthDashboardProvider.notifier).load();
+    } catch (_) {}
+
+    if (mounted) {
       context.go('/health');
     }
   }
@@ -50,17 +103,41 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   @override
   Widget build(BuildContext context) {
     final authState = ref.watch(authControllerProvider);
+    final wizardProfile = ref.watch(userFitnessProfileProvider);
+    final primaryColor = Theme.of(context).colorScheme.primary;
 
     return Scaffold(
       appBar: AppBar(title: const Text('Tạo tài khoản VigorAI')),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(20),
+          padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
           child: Form(
             key: _formKey,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
+                if (wizardProfile.hasCompletedWizard) ...[
+                  Card(
+                    color: AppColors.tintedSurface(context, primaryColor),
+                    child: Padding(
+                      padding: const EdgeInsets.all(12),
+                      child: Row(
+                        children: [
+                          Icon(Icons.auto_awesome, color: primaryColor),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Text(
+                              'Đã đồng bộ phác đồ: ${wizardProfile.targetCaloriesKcal.round()} kcal/ngày · '
+                              '${wizardProfile.selectedProgram.shortLabelVi} (${wizardProfile.sessionsPerWeek} buổi/tuần).',
+                              style: const TextStyle(fontSize: 12.5),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                ],
                 TextFormField(
                   controller: _nameController,
                   decoration: const InputDecoration(
@@ -113,7 +190,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                       child: TextFormField(
                         controller: _heightController,
                         keyboardType: TextInputType.number,
-                        decoration: const InputDecoration(labelText: 'Chiều cao (cm)'),
+                        decoration:
+                            const InputDecoration(labelText: 'Chiều cao (cm)'),
                         validator: (v) {
                           final h = double.tryParse(v ?? '');
                           if (h == null || h < 100 || h > 240) {
@@ -128,7 +206,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                 const SizedBox(height: 12),
                 DropdownButtonFormField<String>(
                   initialValue: _fitnessGoal,
-                  decoration: const InputDecoration(labelText: 'Mục tiêu luyện tập'),
+                  decoration:
+                      const InputDecoration(labelText: 'Mục tiêu luyện tập'),
                   items: const [
                     DropdownMenuItem(value: 'BULK', child: Text('Tăng cơ')),
                     DropdownMenuItem(value: 'CUT', child: Text('Giảm mỡ')),
@@ -144,7 +223,9 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                     authState.disclaimerAccepted
                         ? Icons.check_circle
                         : Icons.cancel,
-                    color: authState.disclaimerAccepted ? Colors.green : Colors.red,
+                    color: authState.disclaimerAccepted
+                        ? Colors.green
+                        : Colors.red,
                   ),
                   title: Text(
                     authState.disclaimerAccepted
@@ -168,9 +249,10 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                 ],
                 const SizedBox(height: 16),
                 FilledButton(
-                  onPressed: (authState.isLoading || !authState.disclaimerAccepted)
-                      ? null
-                      : _submitRegister,
+                  onPressed:
+                      (authState.isLoading || !authState.disclaimerAccepted)
+                          ? null
+                          : _submitRegister,
                   child: const Text('Đăng ký & Bắt đầu'),
                 ),
                 const SizedBox(height: 10),

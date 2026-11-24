@@ -14,6 +14,7 @@ import '../../../core/network/dio_client.dart';
 import '../../../core/platform/workmanager_reminder_service.dart';
 import '../../../core/sync/sync_queue_manager.dart';
 import '../../auth_privacy/data/auth_repository.dart';
+import '../../auth_privacy/data/user_fitness_profile.dart';
 import '../../auth_privacy/presentation/auth_controller.dart';
 
 class HealthDashboardState {
@@ -792,6 +793,7 @@ class HealthDashboardController extends StateNotifier<HealthDashboardState> {
   final SyncQueueManager _syncManager;
   final WorkmanagerReminderService _reminderService;
   final AuthUserProfile? _userProfile;
+  final UserFitnessProfile? _fitnessProfile;
   String? _activityLevelOverride;
   String? _fitnessGoalOverride;
 
@@ -799,14 +801,24 @@ class HealthDashboardController extends StateNotifier<HealthDashboardState> {
     this._repository,
     this._syncManager,
     this._reminderService,
-    this._userProfile,
-  ) : super(const HealthDashboardState(isLoading: true)) {
+    this._userProfile, {
+    UserFitnessProfile? fitnessProfile,
+  })  : _fitnessProfile = fitnessProfile,
+        super(const HealthDashboardState(isLoading: true)) {
     load();
   }
 
-  double get _heightCm => _userProfile?.heightCm ?? 172.0;
-  String get _gender => _userProfile?.gender ?? 'MALE';
-  int get _ageYears => _userProfile?.calculateAgeYears() ?? 24;
+  bool get _hasWizard => _fitnessProfile?.hasCompletedWizard ?? false;
+
+  double get _heightCm => _hasWizard
+      ? _fitnessProfile!.heightCm
+      : (_userProfile?.heightCm ?? 172.0);
+  String get _gender => _hasWizard
+      ? _fitnessProfile!.gender
+      : (_userProfile?.gender ?? 'MALE');
+  int get _ageYears => _hasWizard
+      ? _fitnessProfile!.ageYears
+      : (_userProfile?.calculateAgeYears() ?? 24);
 
   Future<void> load({
     String? activityLevelOverride,
@@ -821,10 +833,14 @@ class HealthDashboardController extends StateNotifier<HealthDashboardState> {
     state = state.copyWith(isLoading: true, clearError: true);
     try {
       final act = _activityLevelOverride ??
-          _userProfile?.activityLevel ??
+          (_hasWizard
+              ? _fitnessProfile!.derivedActivityLevel
+              : _userProfile?.activityLevel) ??
           state.activityLevel;
       final goal = _fitnessGoalOverride ??
-          _userProfile?.fitnessGoal ??
+          (_hasWizard
+              ? _fitnessProfile!.derivedFitnessGoal
+              : _userProfile?.fitnessGoal) ??
           state.fitnessGoal;
       final loaded = await _repository.loadDashboardData(
         heightCm: _heightCm,
@@ -833,7 +849,22 @@ class HealthDashboardController extends StateNotifier<HealthDashboardState> {
         activityLevel: act,
         fitnessGoal: goal,
       );
-      state = loaded.copyWith(
+      var resolved = loaded;
+      if (_hasWizard &&
+          _activityLevelOverride == null &&
+          _fitnessGoalOverride == null) {
+        final fp = _fitnessProfile!;
+        final currentWeight =
+            loaded.latestBiometric?.weightKg ?? fp.currentWeightKg;
+        final personalizedProfile =
+            fp.copyWith(currentWeightKg: currentWeight);
+        resolved = loaded.copyWith(
+          targetCaloriesKcal: personalizedProfile.targetCaloriesKcal,
+          macroTargets: personalizedProfile.macroTargets,
+          bmrKcal: personalizedProfile.bmrKcal,
+        );
+      }
+      state = resolved.copyWith(
         hydrationReminderEnabled: state.hydrationReminderEnabled,
         supplementReminderEnabled: state.supplementReminderEnabled,
       );
@@ -1062,6 +1093,13 @@ final healthDashboardProvider =
     final syncMgr = ref.watch(syncQueueManagerProvider);
     final reminderSvc = ref.watch(workmanagerReminderServiceProvider);
     final user = ref.watch(authControllerProvider.select((s) => s.user));
-    return HealthDashboardController(repo, syncMgr, reminderSvc, user);
+    final fitnessProfile = ref.watch(userFitnessProfileProvider);
+    return HealthDashboardController(
+      repo,
+      syncMgr,
+      reminderSvc,
+      user,
+      fitnessProfile: fitnessProfile,
+    );
   },
 );

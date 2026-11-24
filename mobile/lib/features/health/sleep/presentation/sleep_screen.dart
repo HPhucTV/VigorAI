@@ -42,14 +42,18 @@ class _SleepScreenState extends ConsumerState<SleepScreen> {
         title: const Text('Theo dõi Giấc ngủ'),
       ),
       body: ListView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.fromLTRB(20, 14, 20, 24),
         children: [
           if (daily != null)
             Card(
               child: ListTile(
-                leading: const CircleAvatar(
-                  backgroundColor: Color(0xFFEDE7F6),
-                  child: Icon(Icons.bedtime_outlined, color: AppColors.sleepPurple),
+                leading: CircleAvatar(
+                  backgroundColor:
+                      AppColors.tintedSurface(context, AppColors.sleepPurple),
+                  child: const Icon(
+                    Icons.bedtime_outlined,
+                    color: AppColors.sleepPurple,
+                  ),
                 ),
                 title: Text(
                   'Giấc ngủ hôm nay: ${daily.sleepHours.toStringAsFixed(1)} giờ',
@@ -250,9 +254,9 @@ class _SleepScreenState extends ConsumerState<SleepScreen> {
           ),
           if (FeatureFlags.enableHealthConnect) ...[
             const SizedBox(height: 12),
-            const Card(
-              color: Color(0xFFF3F6FA),
-              child: ListTile(
+            Card(
+              color: AppColors.subtleSurface(context),
+              child: const ListTile(
                 leading: Icon(Icons.health_and_safety_outlined),
                 title: Text('Đồng bộ giấc ngủ tự động'),
                 subtitle: Text(

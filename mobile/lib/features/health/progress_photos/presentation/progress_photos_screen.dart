@@ -75,12 +75,15 @@ class _ProgressPhotosScreenState extends ConsumerState<ProgressPhotosScreen> {
               (filtered.length >= 2 ? filtered.first : null);
 
           return ListView(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.fromLTRB(20, 14, 20, 24),
             children: [
               // Huy hieu bao mat rieng tu CH Play
-              const Card(
-                color: Color(0xFFE8F5E9),
-                child: ListTile(
+              Card(
+                color: AppColors.tintedSurface(
+                  context,
+                  AppColors.muscleRecoveredGreen,
+                ),
+                child: const ListTile(
                   leading: Icon(
                     Icons.lock_outline,
                     color: AppColors.muscleRecoveredGreen,
@@ -180,13 +183,15 @@ class _ProgressPhotosScreenState extends ConsumerState<ProgressPhotosScreen> {
                       ),
                       const SizedBox(height: 10),
                       if (before == null || after == null)
-                        const SizedBox(
+                        SizedBox(
                           height: 120,
                           child: Center(
                             child: Text(
                               'Thêm ít nhất 2 ảnh (hoặc chọn Trước / Sau bên dưới) để so sánh trực tiếp.',
                               textAlign: TextAlign.center,
-                              style: TextStyle(color: Colors.black54),
+                              style: TextStyle(
+                                color: AppColors.secondaryText(context),
+                              ),
                             ),
                           ),
                         )
