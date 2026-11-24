@@ -64,11 +64,11 @@ class MuscleRadarView extends ConsumerWidget {
         return RefreshIndicator(
           onRefresh: () async => ref.invalidate(analyticsSummaryProvider(30)),
           child: ListView(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.fromLTRB(20, 14, 20, 24),
             children: [
               Card(
                 child: Padding(
-                  padding: const EdgeInsets.all(14),
+                  padding: const EdgeInsets.all(18),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -84,27 +84,32 @@ class MuscleRadarView extends ConsumerWidget {
                         'Tính theo số hiệp hiệu dụng (RPE ≥ 6.0, loại trừ Warmup)',
                         style: Theme.of(context).textTheme.bodySmall,
                       ),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 28),
                       SizedBox(
                         height: 270,
                         child: RadarChart(
                           RadarChartData(
                             radarShape: RadarShape.polygon,
                             tickCount: 4,
-                            ticksTextStyle: const TextStyle(
+                            ticksTextStyle: TextStyle(
                               fontSize: 10,
-                              color: Colors.grey,
+                              color: AppColors.secondaryText(context),
                             ),
-                            tickBorderData:
-                                BorderSide(color: Colors.grey.shade300),
-                            gridBorderData:
-                                BorderSide(color: Colors.grey.shade300),
-                            radarBorderData:
-                                BorderSide(color: Colors.grey.shade400),
-                            titlePositionPercentageOffset: 0.16,
-                            titleTextStyle: const TextStyle(
+                            tickBorderData: BorderSide(
+                              color: AppColors.subtleBorder(context),
+                            ),
+                            gridBorderData: BorderSide(
+                              color: AppColors.subtleBorder(context),
+                            ),
+                            radarBorderData: BorderSide(
+                              color: AppColors.secondaryText(context)
+                                  .withValues(alpha: 0.4),
+                            ),
+                            titlePositionPercentageOffset: 0.20,
+                            titleTextStyle: TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.w600,
+                              color: Theme.of(context).colorScheme.onSurface,
                             ),
                             getTitle: (index, angle) {
                               final axis = _axes[index];
@@ -123,9 +128,9 @@ class MuscleRadarView extends ConsumerWidget {
                                 dataEntries: targetEntries,
                               ),
                               RadarDataSet(
-                                fillColor:
-                                    AppColors.primary.withValues(alpha: 0.28),
-                                borderColor: AppColors.primary,
+                                fillColor: AppColors.telemetryCyan(context)
+                                    .withValues(alpha: 0.28),
+                                borderColor: AppColors.telemetryCyan(context),
                                 entryRadius: 3.5,
                                 borderWidth: 2.3,
                                 dataEntries: entries,
@@ -142,7 +147,7 @@ class MuscleRadarView extends ConsumerWidget {
 
               // Pull / Push Balance & Weak Muscle Advice
               Card(
-                color: const Color(0xFFE3F2FD),
+                color: AppColors.tintedSurface(context, AppColors.primary),
                 child: ListTile(
                   leading: const CircleAvatar(
                     backgroundColor: AppColors.primary,
@@ -172,7 +177,7 @@ class MuscleRadarView extends ConsumerWidget {
               ),
               const SizedBox(height: 10),
               Card(
-                color: const Color(0xFFFFF8E1),
+                color: AppColors.tintedSurface(context, AppColors.calorieOrange),
                 child: ListTile(
                   leading: const Icon(
                     Icons.lightbulb_outline,

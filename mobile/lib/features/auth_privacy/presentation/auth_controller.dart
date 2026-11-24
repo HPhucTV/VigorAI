@@ -92,16 +92,30 @@ class AuthController extends StateNotifier<AuthState> {
   }
 
   Future<void> restoreSession() async {
-    final disclaimer = await _repository.hasAcceptedDisclaimer();
-    final hasToken = await _repository.hasValidToken();
-    final cachedUser = await _repository.getCachedUserProfile();
-    state = state.copyWith(
-      isInitialized: true,
-      disclaimerAccepted: disclaimer,
-      isAuthenticated: disclaimer && hasToken,
-      user: cachedUser,
-      clearError: true,
-    );
+    try {
+      final results = await Future.wait<dynamic>([
+        _repository.hasAcceptedDisclaimer(),
+        _repository.hasValidToken(),
+        _repository.getCachedUserProfile(),
+      ]);
+      final disclaimer = results[0] as bool;
+      final hasToken = results[1] as bool;
+      final cachedUser = results[2] as AuthUserProfile?;
+      state = state.copyWith(
+        isInitialized: true,
+        disclaimerAccepted: disclaimer,
+        isAuthenticated: disclaimer && hasToken,
+        user: cachedUser,
+        clearError: true,
+      );
+    } catch (_) {
+      state = state.copyWith(
+        isInitialized: true,
+        disclaimerAccepted: false,
+        isAuthenticated: false,
+        clearError: true,
+      );
+    }
   }
 
   Future<void> acceptMedicalDisclaimer() async {
@@ -144,6 +158,11 @@ class AuthController extends StateNotifier<AuthState> {
     }
   }
 
+  Future<void> updateLocalProfile(AuthUserProfile updated) async {
+    await _repository.saveCachedUserProfile(updated);
+    state = state.copyWith(user: updated, clearError: true);
+  }
+
   Future<bool> register({
     required String email,
     required String password,
@@ -151,6 +170,8 @@ class AuthController extends StateNotifier<AuthState> {
     required String gender,
     required double heightCm,
     required String fitnessGoal,
+    String? birthDateIso,
+    String? activityLevel,
   }) async {
     if (!state.disclaimerAccepted) {
       state = state.copyWith(
@@ -167,6 +188,8 @@ class AuthController extends StateNotifier<AuthState> {
         gender: gender,
         heightCm: heightCm,
         fitnessGoal: fitnessGoal,
+        birthDateIso: birthDateIso,
+        activityLevel: activityLevel,
         medicalDisclaimerAccepted: state.disclaimerAccepted,
       );
       state = state.copyWith(
