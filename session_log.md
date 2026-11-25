@@ -20,21 +20,27 @@
 ## Phiên 34 — 2026-11-25 20:35 | Thành viên: M4 (Pure AI Engineer) | Task: `T-M4-06` (`[x]`)
 - **Mục tiêu phiên:** Tích hợp trọng số **Model B v1.1 (`yolov8s-gymfood-v1.1`, 16/18 lớp)** train từ Google Colab T4 vào FastAPI backend, benchmark thực tế bằng ONNX Runtime CPU trên toàn bộ 245 ảnh test, kiểm tra bounding box trực quan trên món ăn Việt Nam và đóng `[x]` `T-M4-06`.
 - **Những file đã tạo / chỉnh sửa (`0` file `[LOCKED STUB]` bị chạm):**
-  - `backend/ai_models/weights/food_yolo_v1.onnx` (`44.77 MB`, `sha256: 5407422aa1f62a266e9398fd983e13f77558e1188890d1a723f73d9c8bc46637`) & `food_yolo_v1.pt` *(không commit Git; bản 6 lớp cũ backup tại `food_yolo_v1_6cls_backup.onnx`)*.
+  - `backend/ai_models/weights/food_yolo_v1.onnx` (`44.77 MB`, `sha256: 5407422aa1f62a266e9398fd983e13f77558e1188890d1a723f73d9c8bc46637`) & `food_yolo_v1.pt` *(không commit Git; bản 6 lớp cũ backup tại `food_yolo_v1_6cls_backup.onnx`; đã upload lên Railway Storage Bucket `gym3d-assets` tại key `ai_models/food_yolo_v1.onnx`)*.
+  - `backend/app/services/ai_food_yolo.py` & `backend/ai_models/README.md`: Bổ sung `_download_s3_uri` hỗ trợ tải trực tiếp từ Private S3 / Railway Storage Bucket (`VIGOR_FOOD_MODEL_URL=s3://...`) qua `boto3` kèm xác minh SHA-256.
   - `ai_research/evaluation_reports/model_b_v1_1_16classes/`: Lưu trọn bộ báo cáo Colab (`model_b_v3_train_report.json`, `model_b_manifest_generated.json`, `results.png`, `confusion_matrix.png`, `confusion_matrix_normalized.png`) và báo cáo benchmark CPU (`model_b_v1_1_onnx_eval.json`).
   - `backend/ai_models/model_b_manifest.json`: Nâng cấp lên `yolov8s-gymfood-v1.1`, cập nhật `sha256`, toàn bộ `16` lớp trong `trained_classes` và các chỉ số benchmark Colab T4 + ONNX CPU.
-  - `backend/tests/test_ai_api.py`: Cập nhật `test_real_onnx_inference_end_to_end` đọc động `model_version` từ `model_b_manifest.json`, kiểm tra `GET /api/v1/ai/food-model/info` với ONNX thật và chạy suy luận trên `8` ảnh `model_b_v3/images/test`.
+  - `backend/tests/test_ai_api.py`: Cập nhật `test_real_onnx_inference_end_to_end` đọc động `model_version` từ `model_b_manifest.json` trên `8` ảnh `model_b_v3/images/test`, và bổ sung `test_service_s3_download_verifies_sha256` (`34/34 PASS`).
   - `docs/taskboard.md`, `session_log.md`: Đóng `[x]` `T-M4-06` (`M4: 5 / 14 Done (35.7%)`, `Tổng: 35 / 63 Done (55.6%)`).
 - **Quyết định kỹ thuật / Lưu ý quan trọng:**
   - Giữ ngưỡng `conf_threshold = 0.30` (thay vì `0.45`) vì chênh lệch F1 chỉ `+0.0021` (`0.7069` vs `0.7048`) nhưng `0.30` giữ Recall tốt hơn (`0.6448` vs `0.6131`) trên camera điện thoại.
+  - Hỗ trợ `s3://<bucket>/<key>` bằng `boto3` (`signature_version="s3v4"`, `addressing_style="virtual"`) để Railway container tải trực tiếp trọng số từ Bucket private mà không cần mở public bucket hay dùng presigned URL hết hạn.
   - Shape ngõ ra ONNX xác nhận `[1, 22, 8400]` khớp 100% với 18 class slots của `FoodYoloService`; hai lớp ít dữ liệu (`BROWN_RICE`, `SWEET_POTATO`) và cải thiện các lớp yếu như `TOFU` sẽ xử lý trong đợt mở rộng dataset `T-M4-09`.
 - **Kiểm tra / Kết quả chạy thử:**
   - `evaluate_model.py` (`food_yolo_v1.onnx` trên CPU, `245` ảnh `test` của `model_b_v3`, `conf=0.30`): **`mAP@0.5 = 0.7656`**, `Precision = 0.7771`, `Recall = 0.6448`, `F1 = 0.7048`; **`CPU inference mean = 82.84 ms`** (`p50 = 77.0 ms`, `p95 = 115.0 ms` `< 150 ms`), **`e2e mean = 91.13 ms`** (`p95 = 157.96 ms` `< 3.0 s`). Các món chủ lực: `BANH_MI_THIT 0.995`, `BEEF_PHO 0.995`, `BUN_CHA 0.995`, `BOILED_EGG 0.9879`, `BROCCOLI 0.9469`, `COM_TAM_SUON 0.9277`, `SALMON_FILLET 0.918`, `FRIED_EGG 0.8791`.
-  - `python -m pytest backend/tests/test_ai_api.py -v`: **33 / 33 PASS** (`5.28s`).
+  - `python -m pytest backend/tests/test_ai_api.py -v`: **34 / 34 PASS** (`2.58s`).
   - `test_camera_local.py` trực quan hóa 3 ảnh món Việt (`BEEF_PHO` `87.2%` / `613.4 kcal` / `77ms`, `COM_TAM_SUON` `83.3%` / `1470.0 kcal` / `86ms`, `BANH_MI_THIT` `91.4%` / `1057.5 kcal` / `82ms`): bounding box ôm sát món ăn chính xác.
+  - **Live Railway Production (`https://vigorai-api-production.up.railway.app`, project `vigorai-production-ai`, Bucket `gym3d-assets`, `INSTALL_AI_DEPS=true`, `VIGOR_FOOD_ALLOW_STUB=0`):**
+    - `GET /healthz`: `200 OK` (`{"status":"ok","service":"VigorAI API"}`).
+    - `GET /api/v1/ai/food-model/info`: `200 OK` (`available: true`, `backend: "onnxruntime"`, `model_version: "yolov8s-gymfood-v1.1"`, `catalog_size: 36`, `stub_fallback_enabled: false` — container tự tải `food_yolo_v1.onnx` từ S3 Bucket private và xác minh SHA-256 thành công).
+    - `POST /api/v1/ai/food-analyze`: `BEEF_PHO` (`200 OK`, `Phở bò tái` `87.1%`, `646.3g`, `614.0 kcal`, `748 ms`), `COM_TAM_SUON` (`200 OK`, `Cơm tấm sườn nướng` `83.1%`, `875.0g`, `1470.0 kcal`, `867 ms`).
 - **Việc cần làm ở phiên kế tiếp:**
-  - Triển khai weight `food_yolo_v1.onnx` (`44.77 MB`) lên Cloud Storage (S3/Bucket/GitHub Release) và cấu hình `VIGOR_FOOD_MODEL_URL` + `VIGOR_FOOD_MODEL_SHA256` + `VIGOR_FOOD_ALLOW_STUB=0` + `INSTALL_AI_DEPS=true` trên Railway Production (phối hợp M3).
-  - Triển khai **AI Model C** (`T-M4-07`, `T-M4-08`) và mở rộng dataset `T-M4-09` (bổ sung `BROWN_RICE`, `SWEET_POTATO`, `TOFU`).
+  - Khi `M3` merge nhánh `vu` vào `main`, đồng bộ các biến `INSTALL_AI_DEPS=true`, `S3_ADDRESSING_STYLE=virtual`, `VIGOR_FOOD_MODEL_URL=s3://${{gym3d-assets.BUCKET}}/ai_models/food_yolo_v1.onnx`, `VIGOR_FOOD_MODEL_SHA256=5407422aa1f62a266e9398fd983e13f77558e1188890d1a723f73d9c8bc46637`, `VIGOR_FOOD_ALLOW_STUB=0` sang project chính `vigorai-production` (nếu dùng chung).
+  - Triển khai **AI Model C** (`T-M4-07`, `T-M4-08`) và mở rộng dataset `T-M4-09` lên 35–50 món cho `v1.2.0` (bổ sung `BROWN_RICE`, `SWEET_POTATO`, `TOFU`).
 
 ---
 
