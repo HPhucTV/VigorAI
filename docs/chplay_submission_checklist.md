@@ -23,7 +23,7 @@
 
 | Kiểm tra Policy Google Play | Nhịp 1 & 2 (`v1.0.0+1` / `v1.1.0`) | Nhịp 3 (`v1.2.0` — Sprint 3) |
 | :--- | :---: | :---: |
-| **`minSdk = 26`, `targetSdk = 35` (Android 15)** | Đạt | Đạt |
+| **`minSdk = 26`, `targetSdk = 36` (Android 16)** | Đạt | Đạt |
 | **64-bit (`arm64-v8a`, `x86_64`) & 16 KB Page Size Alignment** | Đạt | Đạt |
 | **Dung lượng cài đặt `.aab` gốc `< 40 MB`** | Đạt (`~11–25 MB`) | Đạt |
 | **0 Quyền cấm** (`READ_MEDIA_IMAGES`, `READ_EXTERNAL_STORAGE`, `WRITE_EXTERNAL_STORAGE`, `SCHEDULE_EXACT_ALARM`, `USE_EXACT_ALARM`, `ACCESS_BACKGROUND_LOCATION`, `QUERY_ALL_PACKAGES`) | Chặn cứng bằng `tools:node="remove"` | Chặn cứng bằng `tools:node="remove"` |

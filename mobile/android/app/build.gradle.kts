@@ -28,8 +28,8 @@ android {
         applicationId = "com.vigorai.app"
         // Android 8.0 (API 26) la muc toi thieu bat buoc cua Android Health Connect
         minSdk = 26
-        // Android 15 (API 35) bat buoc voi ung dung moi nop Google Play Console
-        targetSdk = 35
+        // Android 16 (API 36) bat buoc voi ung dung moi nop Google Play Console
+        targetSdk = 36
         versionCode = flutter.versionCode
         versionName = flutter.versionName
 

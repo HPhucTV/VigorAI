@@ -17,6 +17,19 @@
 
 ---
 
+## Phiên 38 — 2026-11-25 10:17 | Thành viên: M1 | Task: Nâng `targetSdk = 36` theo yêu cầu Google Play & Đóng gói `.aab` `v1.0.0+2` (`T-M1-07`)
+- **Mục tiêu phiên:** Xử lý thông báo bắt buộc API cấp 36 từ Google Play Console và đóng gói lại `.aab` mới (`versionCode = 2`) phục vụ phát hành Closed Testing.
+- **Những file đã tạo / chỉnh sửa (`[OWNER: M1]`, `0` file `[LOCKED STUB]` bị chạm):**
+  - `mobile/android/app/build.gradle.kts`: Nâng `targetSdk` từ `35` lên `36` (Android 16), giữ `minSdk = 26`, 64-bit và 16KB page size alignment.
+  - `docs/chplay_submission_checklist.md`: Cập nhật chuẩn `targetSdk = 36`.
+  - Cập nhật ngoài Git trong `mobile/build/play_store_kit/`: thay thế bản `.aab` cũ bằng `VigorAI-v1.0.0+2-release.aab` (`versionCode = 2`) và bổ sung hướng dẫn mục **Tính năng tài chính (Financial features)** trong `HUONG_DAN_NOP_CH_PLAY_A_Z.md`.
+- **Kiểm tra / Kết quả chạy thử:**
+  - `flutter build appbundle --release --build-name=1.0.0 --build-number=2 --dart-define=USE_MOCK_API=false --dart-define=API_BASE_URL=https://vigorai-production.up.railway.app --dart-define=MVP_CLOSED_TESTING=false --dart-define=ENABLE_HEALTH_CONNECT=false`: Exit `0`, ký bằng Upload Keystore `CN=VigorAI`, Merged `AndroidManifest.xml` xác nhận `targetSdkVersion="36"` với `0` quyền cấm và `0` quyền Health Connect / Foreground Service Health.
+- **Việc cần làm ở phiên kế tiếp:**
+  - Người dùng upload `VigorAI-v1.0.0+2-release.aab` lên Closed Testing, hoàn tất 5 đầu mục trên Play Console và bấm Gửi xem xét để bắt đầu 14 ngày thử nghiệm.
+
+---
+
 ## Phiên 37 — 2026-11-25 09:38 | Thành viên: M1 + M3 | Task: Chuẩn bị Trọn bộ Hồ sơ, Trang Privacy Policy, Signed `.aab` & Tài khoản Reviewer Nộp Google Play Console (`T-M1-07`)
 - **Mục tiêu phiên:** Hoàn thiện toàn bộ tài nguyên kỹ thuật, pháp lý và Store Listing để người dùng đẩy bản `v1.0.0+1` lên Closed Testing trên Google Play Console.
 - **Những file đã tạo / chỉnh sửa (`[OWNER: M1]` + `[OWNER: M3]`, `0` file `[LOCKED STUB]` bị chạm):**
