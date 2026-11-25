@@ -13,6 +13,7 @@ from app.models.entities import FoodNutritionCatalog
 from app.schemas.ai_schema import (
     DetectedFoodItem,
     FoodAnalyzeResponse,
+    FoodModelInfoResponse,
     ReadinessAndOverloadResponse,
     TotalNutritionSummary,
     WeightRecommendation,
@@ -27,11 +28,14 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 MAX_UPLOAD_BYTES = 5 * 1024 * 1024  # app gui anh < 300KB, 5MB la tran an toan
+VALID_MEAL_TYPES = {"BREAKFAST", "LUNCH", "DINNER", "SNACK"}
 
 
 async def load_catalog_map(db: AsyncSession | None) -> dict[str, dict]:
     """Bang tra dinh duong theo class_code: lay ban seed lam nen, DB (M3 co the sua) ghi de len."""
     catalog = {entry["class_code"]: dict(entry) for entry in FOOD_CATALOG_SEED}
+    if db is None:
+        return catalog
     try:
         rows = (await db.execute(select(FoodNutritionCatalog))).scalars().all()
     except Exception:  # DB loi hoac khong co: van dung duoc ban seed
@@ -97,14 +101,27 @@ def _stub_allowed() -> bool:
     return os.environ.get("VIGOR_FOOD_ALLOW_STUB", "1") != "0"
 
 
+@router.get("/food-model/info", response_model=FoodModelInfoResponse)
+async def get_food_model_info(
+    db: AsyncSession = Depends(get_db),
+) -> FoodModelInfoResponse:
+    """Thong tin trang thai & phien ban AI Model B dang nap tren Server."""
+    catalog = await load_catalog_map(db)
+    service = get_food_service()
+    return FoodModelInfoResponse(**service.info(catalog_size=len(catalog), stub_allowed=_stub_allowed()))
+
+
 @router.post("/food-analyze", response_model=FoodAnalyzeResponse)
 async def analyze_food_image(
     image: UploadFile = File(...),
     meal_type: str = Form(default="LUNCH"),
     db: AsyncSession = Depends(get_db),
 ) -> FoodAnalyzeResponse:
-    """Nhan dien mon an (YOLOv8) -> uoc luong gram -> Calo/Macro (T-M4-04 / T-M4-06)."""
-    _ = meal_type  # chua dung de suy luan; giu cho hop dong API
+    """Nhan dien mon an (YOLOv8 ONNX/PyTorch) -> uoc luong gram -> Calo/Macro (T-M4-04 / T-M4-06)."""
+    normalized_meal = (meal_type or "LUNCH").strip().upper()
+    if normalized_meal not in VALID_MEAL_TYPES:
+        normalized_meal = "LUNCH"
+
     data = await image.read(MAX_UPLOAD_BYTES + 1)
     if not data:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "Ảnh tải lên bị rỗng.")
@@ -126,6 +143,15 @@ async def analyze_food_image(
         if _stub_allowed():
             return _stub_food_response()
         raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, "Model nhận diện món ăn chưa sẵn sàng.")
+
+    logger.info(
+        "food-analyze meal=%s backend=%s version=%s items=%d ms=%d",
+        normalized_meal,
+        getattr(service, "backend_name", "unknown"),
+        payload["model_version"],
+        len(payload["detected_items"]),
+        payload["inference_time_ms"],
+    )
     return FoodAnalyzeResponse(**payload)
 
 

@@ -1,0 +1,46 @@
+{
+  "model": "yolov8s.pt",
+  "device": "0",
+  "epochs_requested": 100,
+  "imgsz": 640,
+  "images_per_split": {
+    "train": 592,
+    "val": 84,
+    "test": 42
+  },
+  "weights": "/content/runs/model_b_v1/weights/best.pt",
+  "onnx": "/content/runs/model_b_v1/weights/best.onnx",
+  "test_metrics": {
+    "precision": 0.8728,
+    "recall": 0.7475,
+    "map50": 0.8213,
+    "map50_95": 0.6913,
+    "per_class_ap50": {
+      "WHITE_RICE": 0.995,
+      "BOILED_EGG": 0.9735,
+      "FRIED_EGG": 0.7093,
+      "BEEF_STEAK": 0.923,
+      "SALMON_FILLET": 0.4921,
+      "GREEN_SALAD": 0.835
+    },
+    "speed_ms_per_image": {
+      "preprocess": 3.01,
+      "inference": 10.9,
+      "loss": 0.0,
+      "postprocess": 4.47
+    }
+  },
+  "kpi_target": {
+    "map50": 0.8,
+    "precision": 0.82,
+    "recall": 0.78,
+    "inference_ms": 150.0
+  },
+  "kpi_pass": {
+    "map50>=0.80": true,
+    "precision>=0.82": true,
+    "recall>=0.78": false,
+    "inference<150ms": true
+  },
+  "caveat": "Tap test nho va chi gom cac lop co du lieu; so lieu chi dung de kiem chung pipeline, khong phai KPI cuoi cung. Toc do do tren thiet bi huan luyen, can do lai tren server that."
+}

@@ -1,26 +1,46 @@
 # [OWNER: M4] AI Model B Service - YOLOv8 Food Detection & Macro Estimator (T-M4-04, T-M4-06)
 """Nhan dien mon an tu anh, quy doi bbox -> gram -> Calo/Macro (tra `food_nutrition_catalog`).
 
-Phan tinh toan (quy doi gram, dinh duong, tong) la ham thuan, khong can ultralytics/PIL de import
-hoac test. Phan suy luan (`FoodYoloService`) chi nap thu vien nang khi that su co anh can xu ly.
+Ho tro 2 backend suy luan:
+1. ONNX Runtime thuan (`onnxruntime` + `numpy` + `PIL`) cho file `.onnx`:
+   - Khong can PyTorch/OpenCV/Ultralytics tren server Production (nhe RAM, nhanh CPU).
+   - Tu doc danh sach ten lop tu metadata ONNX hoac `backend/ai_models/model_b_manifest.json`.
+   - Letterbox dung chuan YOLOv8 + NMS theo lop + loc trung cheo lop (`cross_class_iou`).
+2. Ultralytics (`ultralytics.YOLO`) cho file `.pt` (hoac model gia trong unit test).
+
+Phan tinh toan thuan (quy doi gram, dinh duong, NMS, decode output) khong can onnxruntime/ultralytics
+de import hay chay unit test.
 
 Bien moi truong (deu tuy chon):
-    VIGOR_FOOD_MODEL_PATH     duong dan weights (.pt hoac .onnx); mac dinh ai_models/weights/food_yolo_v1.pt
-    VIGOR_FOOD_MODEL_VERSION  chuoi phien ban tra ve cho client; mac dinh = ten file weights
-    VIGOR_FOOD_CONF           nguong tin cay toi thieu, mac dinh 0.30
-    VIGOR_FOOD_IOU            nguong NMS, mac dinh 0.50
-    VIGOR_FOOD_IMGSZ          kich thuoc anh suy luan, mac dinh 640
-    VIGOR_FOOD_DEVICE         cpu (mac dinh) | 0 (GPU)
+    VIGOR_FOOD_MODEL_PATH     duong dan weights (.onnx hoac .pt); uu tien manifest / weights/
+    VIGOR_FOOD_MODEL_URL      URL HTTPS de tu dong tai weights neu chua co tren dia (Railway/Docker)
+    VIGOR_FOOD_MODEL_SHA256   SHA-256 kiem tra toan ven khi tai tu URL
+    VIGOR_FOOD_MODEL_VERSION  chuoi phien ban tra ve cho client
+    VIGOR_FOOD_CONF           nguong tin cay toi thieu (mac dinh 0.30 hoac theo manifest)
+    VIGOR_FOOD_IOU            nguong NMS cung lop (mac dinh 0.45 hoac theo manifest)
+    VIGOR_FOOD_CROSS_IOU      nguong loai trung cheo lop (mac dinh 0.75; 0 de tat)
+    VIGOR_FOOD_IMGSZ          kich thuoc anh suy luan (mac dinh 640)
+    VIGOR_FOOD_DEVICE         cpu (mac dinh) | 0 (GPU cho .pt)
+    VIGOR_FOOD_ORT_THREADS    so luong CPU cho ONNX Runtime (mac dinh tu dong)
 """
 from __future__ import annotations
 
+import ast
+import hashlib
 import io
+import json
+import logging
 import os
 import threading
 import time
+import urllib.request
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
+
+import numpy as np
+
+logger = logging.getLogger(__name__)
 
 # Quy doi khau phan: gram = default_serving_g * clamp(area_ratio / REF_AREA_RATIO, 0.4, 2.5)
 MIN_SCALE = 0.4
@@ -28,6 +48,8 @@ MAX_SCALE = 2.5
 REF_AREA_RATIO = 0.25
 MAX_ITEMS = 20
 MIN_BOX_SIDE = 0.01  # bo bbox qua nho (< 1% canh anh), thuong la nhieu
+MAX_IMAGE_PIXELS = 40_000_000  # chan decompression bomb (~40 MP)
+LETTERBOX_PAD_VALUE = 114
 
 DISCLAIMER = (
     "Giá trị dinh dưỡng được AI ước tính dựa trên hình ảnh, "
@@ -38,8 +60,10 @@ EMPTY_DISCLAIMER = (
     "hoặc thêm món thủ công."
 )
 
-DEFAULT_WEIGHTS_DIR = Path(__file__).resolve().parents[2] / "ai_models" / "weights"
-DEFAULT_WEIGHT_FILES = ("food_yolo_v1.pt", "food_yolo_v1.onnx")
+AI_MODELS_DIR = Path(__file__).resolve().parents[2] / "ai_models"
+DEFAULT_MANIFEST_PATH = AI_MODELS_DIR / "model_b_manifest.json"
+DEFAULT_WEIGHTS_DIR = AI_MODELS_DIR / "weights"
+DEFAULT_WEIGHT_FILES = ("food_yolo_v1.onnx", "food_yolo_v1.pt")
 
 
 class FoodModelUnavailable(RuntimeError):
@@ -58,8 +82,12 @@ class Detection:
 
 
 # --------------------------------------------------------------------------- #
-# Ham thuan: quy doi gram & dinh duong (T-M4-04)
+# Ham thuan: quy doi gram, dinh duong & NMS (T-M4-04)
 # --------------------------------------------------------------------------- #
+def normalize_class_code(raw: str) -> str:
+    return raw.strip().upper().replace(" ", "_").replace("-", "_")
+
+
 def clamp_bbox(bbox: list[float] | tuple[float, ...]) -> tuple[float, float, float, float] | None:
     """Cat bbox ve [0, 1], doi cho neu nguoc; tra None neu suy bien hoac qua nho."""
     x1, y1, x2, y2 = (float(v) for v in bbox)
@@ -73,6 +101,40 @@ def clamp_bbox(bbox: list[float] | tuple[float, ...]) -> tuple[float, float, flo
 def bbox_area_ratio(bbox: list[float] | tuple[float, ...]) -> float:
     x1, y1, x2, y2 = bbox
     return max(0.0, (x2 - x1) * (y2 - y1))
+
+
+def bbox_iou(a: tuple[float, float, float, float], b: tuple[float, float, float, float]) -> float:
+    ix1 = max(a[0], b[0])
+    iy1 = max(a[1], b[1])
+    ix2 = min(a[2], b[2])
+    iy2 = min(a[3], b[3])
+    inter = max(0.0, ix2 - ix1) * max(0.0, iy2 - iy1)
+    if inter <= 0.0:
+        return 0.0
+    area_a = max(0.0, (a[2] - a[0]) * (a[3] - a[1]))
+    area_b = max(0.0, (b[2] - b[0]) * (b[3] - b[1]))
+    union = area_a + area_b - inter
+    return inter / union if union > 0.0 else 0.0
+
+
+def suppress_cross_class_duplicates(
+    detections: list[Detection],
+    cross_iou_threshold: float = 0.75,
+) -> list[Detection]:
+    """Loai bo truong hop 2 lop khac nhau de chong cung 1 mon an (tranh cong doi Calo)."""
+    if cross_iou_threshold <= 0.0 or len(detections) <= 1:
+        return list(detections)
+    ordered = sorted(detections, key=lambda d: d.confidence, reverse=True)
+    kept: list[Detection] = []
+    for det in ordered:
+        duplicate = False
+        for prev in kept:
+            if prev.class_code != det.class_code and bbox_iou(prev.bbox_norm, det.bbox_norm) >= cross_iou_threshold:
+                duplicate = True
+                break
+        if not duplicate:
+            kept.append(det)
+    return kept
 
 
 def estimate_portion_grams(
@@ -97,18 +159,21 @@ def compute_item_nutrition(entry: dict[str, Any], grams: float) -> dict[str, flo
 def build_items(
     detections: list[Detection],
     catalog: dict[str, dict[str, Any]],
+    cross_class_iou: float = 0.75,
 ) -> list[dict[str, Any]]:
     """Moi Detection -> 1 DetectedFoodItem (dict). Bo qua lop khong co trong catalog."""
+    filtered = suppress_cross_class_duplicates(detections, cross_class_iou)
     items: list[dict[str, Any]] = []
-    for det in sorted(detections, key=lambda d: d.confidence, reverse=True):
-        entry = catalog.get(det.class_code)
+    for det in sorted(filtered, key=lambda d: d.confidence, reverse=True):
+        code = normalize_class_code(det.class_code)
+        entry = catalog.get(code)
         box = clamp_bbox(det.bbox_norm)
         if entry is None or box is None:
             continue
         grams = estimate_portion_grams(float(entry["default_serving_g"]), bbox_area_ratio(box))
         items.append(
             {
-                "class_code": det.class_code,
+                "class_code": code,
                 "name_vi": entry["name_vi"],
                 "confidence": round(float(det.confidence), 3),
                 "bbox_norm": [round(v, 4) for v in box],
@@ -134,9 +199,10 @@ def build_response_payload(
     catalog: dict[str, dict[str, Any]],
     inference_ms: int,
     model_version: str,
+    cross_class_iou: float = 0.75,
 ) -> dict[str, Any]:
     """Dict khop `FoodAnalyzeResponse` (app/schemas/ai_schema.py)."""
-    items = build_items(detections, catalog)
+    items = build_items(detections, catalog, cross_class_iou=cross_class_iou)
     return {
         "inference_time_ms": int(inference_ms),
         "model_version": model_version,
@@ -147,7 +213,7 @@ def build_response_payload(
 
 
 # --------------------------------------------------------------------------- #
-# Suy luan YOLOv8
+# Tien xu ly & Hau xu ly ONNX YOLOv8 (khong phu thuoc PyTorch / OpenCV)
 # --------------------------------------------------------------------------- #
 def decode_image(data: bytes):
     """Bytes -> anh PIL RGB, xoay dung chieu theo EXIF (anh chup bang dien thoai)."""
@@ -155,47 +221,386 @@ def decode_image(data: bytes):
 
     try:
         with Image.open(io.BytesIO(data)) as raw:
+            w, h = raw.size
+            if w <= 0 or h <= 0 or (w * h) > MAX_IMAGE_PIXELS:
+                raise InvalidImageError("Kích thước ảnh không hợp lệ.")
             raw.load()
             return ImageOps.exif_transpose(raw).convert("RGB")
-    except Exception as exc:  # PIL nem nhieu loai loi khac nhau
+    except InvalidImageError:
+        raise
+    except Exception as exc:
         raise InvalidImageError("Không đọc được ảnh tải lên.") from exc
 
 
-def _env_float(name: str, default: float) -> float:
+def letterbox_image(image, target_size: int = 640) -> tuple[np.ndarray, float, int, int, int, int]:
+    """Resize giu ty le + dem vien xam 114 dung chuan YOLOv8 -> tensor float32 (1, 3, H, W)."""
+    from PIL import Image
+
+    orig_w, orig_h = image.size
+    scale = min(target_size / float(orig_w), target_size / float(orig_h))
+    new_w = max(1, int(round(orig_w * scale)))
+    new_h = max(1, int(round(orig_h * scale)))
+
+    if (new_w, new_h) != (orig_w, orig_h):
+        resized = image.resize((new_w, new_h), Image.Resampling.BILINEAR)
+    else:
+        resized = image
+
+    pad_x = (target_size - new_w) / 2.0
+    pad_y = (target_size - new_h) / 2.0
+    left = int(round(pad_x - 0.1))
+    top = int(round(pad_y - 0.1))
+
+    canvas = np.full((target_size, target_size, 3), LETTERBOX_PAD_VALUE, dtype=np.uint8)
+    canvas[top : top + new_h, left : left + new_w] = np.asarray(resized, dtype=np.uint8)
+    blob = np.ascontiguousarray(canvas.transpose(2, 0, 1), dtype=np.float32) * (1.0 / 255.0)
+    return blob[None, ...], scale, left, top, orig_w, orig_h
+
+
+def _nms_numpy(boxes_xyxy: np.ndarray, scores: np.ndarray, iou_threshold: float) -> list[int]:
+    """Greedy Non-Maximum Suppression thuan NumPy."""
+    if boxes_xyxy.size == 0:
+        return []
+    x1 = boxes_xyxy[:, 0]
+    y1 = boxes_xyxy[:, 1]
+    x2 = boxes_xyxy[:, 2]
+    y2 = boxes_xyxy[:, 3]
+    areas = np.maximum(0.0, x2 - x1) * np.maximum(0.0, y2 - y1)
+    order = scores.argsort()[::-1]
+
+    keep: list[int] = []
+    while order.size > 0:
+        idx = int(order[0])
+        keep.append(idx)
+        if order.size == 1:
+            break
+        rest = order[1:]
+        xx1 = np.maximum(x1[idx], x1[rest])
+        yy1 = np.maximum(y1[idx], y1[rest])
+        xx2 = np.minimum(x2[idx], x2[rest])
+        yy2 = np.minimum(y2[idx], y2[rest])
+        inter = np.maximum(0.0, xx2 - xx1) * np.maximum(0.0, yy2 - yy1)
+        union = areas[idx] + areas[rest] - inter
+        ious = np.where(union > 0.0, inter / union, 0.0)
+        order = rest[ious <= iou_threshold]
+    return keep
+
+
+def parse_onnx_names(raw_meta: str | None, fallback_classes: list[str]) -> dict[int, str]:
+    """Doc bang anh xa {idx: class_code} tu custom_metadata_map['names'] cua ONNX Ultralytics."""
+    if raw_meta:
+        for parser in (json.loads, ast.literal_eval):
+            try:
+                parsed = parser(raw_meta)
+                if isinstance(parsed, dict):
+                    return {int(k): str(v) for k, v in parsed.items()}
+                if isinstance(parsed, list):
+                    return {i: str(v) for i, v in enumerate(parsed)}
+            except Exception:
+                continue
+    return {i: code for i, code in enumerate(fallback_classes)}
+
+
+def decode_yolov8_output(
+    raw_output: np.ndarray,
+    names: dict[int, str],
+    scale: float,
+    pad_left: int,
+    pad_top: int,
+    orig_w: int,
+    orig_h: int,
+    conf_threshold: float,
+    iou_threshold: float,
+) -> list[Detection]:
+    """Giai ma tensor dau ra YOLOv8 ONNX (`[1, 4+C, N]` hoac `[1, N, 6]` end2end) -> list[Detection]."""
+    arr = np.asarray(raw_output, dtype=np.float32)
+    if arr.ndim == 3:
+        arr = arr[0]
+    if arr.ndim != 2 or arr.size == 0:
+        return []
+
+    # Dang end2end NMS [N, 6]: [x1, y1, x2, y2, conf, cls]
+    expected_dim = (4 + len(names)) if names else 0
+    if arr.shape[1] == 6 and expected_dim != 6:
+        detections: list[Detection] = []
+        for row in arr:
+            conf = float(row[4])
+            if conf < conf_threshold:
+                continue
+            cls_idx = int(round(float(row[5])))
+            class_code = names.get(cls_idx)
+            if not class_code:
+                continue
+            x1 = float(np.clip((row[0] - pad_left) / scale / orig_w, 0.0, 1.0))
+            y1 = float(np.clip((row[1] - pad_top) / scale / orig_h, 0.0, 1.0))
+            x2 = float(np.clip((row[2] - pad_left) / scale / orig_w, 0.0, 1.0))
+            y2 = float(np.clip((row[3] - pad_top) / scale / orig_h, 0.0, 1.0))
+            detections.append(Detection(class_code, conf, (x1, y1, x2, y2)))
+        return detections
+
+    # Chuan YOLOv8 ONNX: [4 + C, N] -> chuyen vi thanh [N, 4 + C]
+    if expected_dim > 0 and arr.shape[0] == expected_dim and arr.shape[1] != expected_dim:
+        arr = arr.T
+    elif expected_dim > 0 and arr.shape[1] == expected_dim:
+        pass
+    elif arr.shape[0] < arr.shape[1]:
+        arr = arr.T
+
+    if arr.shape[1] <= 4:
+        return []
+
+    boxes_xywh = arr[:, :4]
+    class_scores = arr[:, 4:]
+    class_ids = np.argmax(class_scores, axis=1)
+    confidences = class_scores[np.arange(class_scores.shape[0]), class_ids]
+
+    mask = confidences >= conf_threshold
+    if not np.any(mask):
+        return []
+
+    boxes_xywh = boxes_xywh[mask]
+    class_ids = class_ids[mask]
+    confidences = confidences[mask]
+
+    # xywh (letterbox pixels) -> xyxy (original image normalized [0, 1])
+    half_w = boxes_xywh[:, 2] * 0.5
+    half_h = boxes_xywh[:, 3] * 0.5
+    x1 = np.clip((boxes_xywh[:, 0] - half_w - pad_left) / scale / orig_w, 0.0, 1.0)
+    y1 = np.clip((boxes_xywh[:, 1] - half_h - pad_top) / scale / orig_h, 0.0, 1.0)
+    x2 = np.clip((boxes_xywh[:, 0] + half_w - pad_left) / scale / orig_w, 0.0, 1.0)
+    y2 = np.clip((boxes_xywh[:, 1] + half_h - pad_top) / scale / orig_h, 0.0, 1.0)
+    boxes_norm = np.stack([x1, y1, x2, y2], axis=1)
+
+    # NMS rieng theo tung lop (giong Ultralytics class-aware NMS)
+    detections = []
+    for cls_idx in np.unique(class_ids):
+        cls_mask = class_ids == cls_idx
+        cls_boxes = boxes_norm[cls_mask]
+        cls_confs = confidences[cls_mask]
+        keep = _nms_numpy(cls_boxes, cls_confs, iou_threshold)
+        class_code = names.get(int(cls_idx))
+        if not class_code:
+            continue
+        for k in keep:
+            bx = cls_boxes[k]
+            detections.append(
+                Detection(
+                    class_code=class_code,
+                    confidence=float(cls_confs[k]),
+                    bbox_norm=(float(bx[0]), float(bx[1]), float(bx[2]), float(bx[3])),
+                )
+            )
+    return detections
+
+
+# --------------------------------------------------------------------------- #
+# Manifest & Tu dong tai trong so (Railway / Docker deploy)
+# --------------------------------------------------------------------------- #
+def load_model_manifest(manifest_path: Path = DEFAULT_MANIFEST_PATH) -> dict[str, Any]:
+    if not manifest_path.is_file():
+        return {}
     try:
-        return float(os.environ.get(name, default))
+        data = json.loads(manifest_path.read_text(encoding="utf-8"))
+        return data if isinstance(data, dict) else {}
+    except Exception as exc:
+        logger.warning("Khong doc duoc %s: %s", manifest_path, exc)
+        return {}
+
+
+def compute_file_sha256(path: Path) -> str:
+    h = hashlib.sha256()
+    with path.open("rb") as fh:
+        for chunk in iter(lambda: fh.read(1024 * 1024), b""):
+            h.update(chunk)
+    return h.hexdigest()
+
+
+def _env_float(name: str, default: float) -> float:
+    raw = os.environ.get(name)
+    if raw is None or not raw.strip():
+        return default
+    try:
+        return float(raw)
     except ValueError:
         return default
 
 
-class FoodYoloService:
-    """Nap trong so YOLOv8 va suy luan mon an. Khong nap model cho toi khi co yeu cau dau tien."""
+def _env_int(name: str, default: int | None) -> int | None:
+    raw = os.environ.get(name)
+    if raw is None or not raw.strip():
+        return default
+    try:
+        return int(raw)
+    except ValueError:
+        return default
 
-    def __init__(self, model_path: str | os.PathLike[str] | None = None) -> None:
+
+def _download_s3_uri(s3_uri: str, dest_tmp: Path) -> None:
+    """Tai trong so tu private S3 / Railway Storage Bucket (`s3://bucket/key`)."""
+    import boto3
+    from botocore.client import Config as BotoConfig
+
+    raw_path = s3_uri[5:] if s3_uri.lower().startswith("s3://") else s3_uri
+    bucket_part, _, key_part = raw_path.partition("/")
+    bucket = bucket_part.strip() or (
+        os.environ.get("S3_BUCKET_NAME") or os.environ.get("AWS_S3_BUCKET_NAME") or ""
+    ).strip()
+    key = key_part.lstrip("/")
+    if not bucket or not key:
+        raise ValueError(f"S3 URI khong hop le: {s3_uri}")
+
+    endpoint_url = (
+        os.environ.get("S3_ENDPOINT_URL") or os.environ.get("AWS_ENDPOINT_URL") or ""
+    ).strip() or None
+    access_key = (
+        os.environ.get("S3_ACCESS_KEY") or os.environ.get("AWS_ACCESS_KEY_ID") or ""
+    ).strip()
+    secret_key = (
+        os.environ.get("S3_SECRET_KEY") or os.environ.get("AWS_SECRET_ACCESS_KEY") or ""
+    ).strip()
+    region = (os.environ.get("S3_REGION") or os.environ.get("AWS_DEFAULT_REGION") or "auto").strip()
+    addr_style = (os.environ.get("S3_ADDRESSING_STYLE") or "").strip()
+    if not addr_style and endpoint_url and "railway.app" in endpoint_url.lower():
+        addr_style = "virtual"
+
+    cfg_kwargs: dict[str, Any] = {"signature_version": "s3v4"}
+    if addr_style:
+        cfg_kwargs["s3"] = {"addressing_style": addr_style}
+
+    client = boto3.client(
+        "s3",
+        endpoint_url=endpoint_url,
+        aws_access_key_id=access_key or None,
+        aws_secret_access_key=secret_key or None,
+        region_name=region,
+        config=BotoConfig(**cfg_kwargs),
+    )
+    client.download_file(bucket, key, str(dest_tmp))
+
+
+# --------------------------------------------------------------------------- #
+# Service suy luan Model B (ONNX Runtime uu tien, fallback Ultralytics .pt)
+# --------------------------------------------------------------------------- #
+class FoodYoloService:
+    """Nap trong so YOLOv8 (.onnx hoac .pt) va suy luan mon an, an toan da luong."""
+
+    def __init__(
+        self,
+        model_path: str | os.PathLike[str] | None = None,
+        manifest_path: Path = DEFAULT_MANIFEST_PATH,
+    ) -> None:
         self._explicit_path = model_path
-        self._model: Any = None
+        self._manifest_path = manifest_path
+        self._manifest = load_model_manifest(manifest_path)
+        self._model: Any = None  # Ultralytics YOLO hoac mock trong unit test
+        self._onnx_session: Any = None
+        self._onnx_input_name: str = "images"
+        self._onnx_names: dict[int, str] = {}
+        self._loaded_backend: str | None = None
         self._lock = threading.Lock()
-        self.conf = _env_float("VIGOR_FOOD_CONF", 0.30)
-        self.iou = _env_float("VIGOR_FOOD_IOU", 0.50)
-        self.imgsz = int(_env_float("VIGOR_FOOD_IMGSZ", 640))
+        self._download_attempted = False
+
+        self.conf = _env_float("VIGOR_FOOD_CONF", float(self._manifest.get("conf_threshold", 0.30)))
+        self.iou = _env_float("VIGOR_FOOD_IOU", float(self._manifest.get("iou_threshold", 0.45)))
+        self.cross_class_iou = _env_float(
+            "VIGOR_FOOD_CROSS_IOU",
+            float(self._manifest.get("cross_class_iou_threshold", 0.75)),
+        )
+        self.imgsz = int(_env_float("VIGOR_FOOD_IMGSZ", float(self._manifest.get("imgsz", 640))))
         self.device = os.environ.get("VIGOR_FOOD_DEVICE", "cpu")
 
-    # ----- duong dan & phien ban ----- #
+    # ----- duong dan, phien ban & trang thai ----- #
+    def _manifest_candidate_files(self) -> list[str]:
+        candidates: list[str] = []
+        for key in ("active_file", "fallback_file"):
+            val = str(self._manifest.get(key) or "").strip()
+            if val and val not in candidates:
+                candidates.append(val)
+        for name in DEFAULT_WEIGHT_FILES:
+            if name not in candidates:
+                candidates.append(name)
+        return candidates
+
+    def _remote_download_spec(self) -> tuple[str, str | None, str]:
+        url = (os.environ.get("VIGOR_FOOD_MODEL_URL") or str(self._manifest.get("download_url") or "")).strip()
+        sha = (os.environ.get("VIGOR_FOOD_MODEL_SHA256") or str(self._manifest.get("sha256") or "")).strip() or None
+        filename = str(self._manifest.get("active_file") or DEFAULT_WEIGHT_FILES[0]).strip()
+        if url:
+            tail = url.split("?")[0].rstrip("/").rsplit("/", 1)[-1]
+            if tail.endswith((".onnx", ".pt")):
+                filename = tail
+        return url, sha, filename
+
+    def _maybe_download_weights(self) -> Path | None:
+        if self._explicit_path or os.environ.get("VIGOR_FOOD_MODEL_PATH") or self._download_attempted:
+            return None
+        url, expected_sha, filename = self._remote_download_spec()
+        if not url:
+            return None
+        with self._lock:
+            if self._download_attempted:
+                candidate = DEFAULT_WEIGHTS_DIR / filename
+                return candidate if candidate.is_file() else None
+            self._download_attempted = True
+            dest = DEFAULT_WEIGHTS_DIR / filename
+            if dest.is_file():
+                return dest
+            dest.parent.mkdir(parents=True, exist_ok=True)
+            tmp = dest.with_suffix(dest.suffix + ".part")
+            try:
+                logger.info("Dang tai trong so Model B tu %s -> %s", url, dest)
+                if url.lower().startswith("s3://"):
+                    _download_s3_uri(url, tmp)
+                else:
+                    req = urllib.request.Request(url, headers={"User-Agent": "VigorAI-Backend/1.0"})
+                    with urllib.request.urlopen(req, timeout=120) as resp, tmp.open("wb") as fh:
+                        while True:
+                            chunk = resp.read(1024 * 1024)
+                            if not chunk:
+                                break
+                            fh.write(chunk)
+                if expected_sha:
+                    actual = compute_file_sha256(tmp)
+                    if actual.lower() != expected_sha.lower():
+                        tmp.unlink(missing_ok=True)
+                        logger.error("SHA-256 khong khop cho %s: ky vong %s, thuc te %s", filename, expected_sha, actual)
+                        return None
+                tmp.replace(dest)
+                logger.info("Da tai xong trong so Model B (%d bytes).", dest.stat().st_size)
+                return dest
+            except Exception as exc:
+                tmp.unlink(missing_ok=True)
+                logger.warning("Khong tai duoc trong so Model B tu %s: %s", url, exc)
+                return None
+
     @property
     def model_path(self) -> Path | None:
         explicit = self._explicit_path or os.environ.get("VIGOR_FOOD_MODEL_PATH")
         if explicit:
             path = Path(explicit)
             return path if path.is_file() else None
-        for name in DEFAULT_WEIGHT_FILES:
+        for name in self._manifest_candidate_files():
             candidate = DEFAULT_WEIGHTS_DIR / name
             if candidate.is_file():
                 return candidate
-        return None
+        return self._maybe_download_weights()
 
     @property
     def available(self) -> bool:
-        return self.model_path is not None
+        return self._model is not None or self._onnx_session is not None or self.model_path is not None
+
+    @property
+    def backend_name(self) -> str:
+        if self._loaded_backend:
+            return self._loaded_backend
+        if self._model is not None:
+            return "ultralytics"
+        if self._onnx_session is not None:
+            return "onnxruntime"
+        path = self.model_path
+        if path is None:
+            return "stub"
+        return "onnxruntime" if path.suffix.lower() == ".onnx" else "ultralytics"
 
     @property
     def model_version(self) -> str:
@@ -203,27 +608,98 @@ class FoodYoloService:
         if override:
             return override
         path = self.model_path
-        return path.stem if path else "unavailable"
-
-    # ----- suy luan ----- #
-    def _load(self) -> Any:
-        if self._model is not None:
-            return self._model
-        path = self.model_path
         if path is None:
-            raise FoodModelUnavailable("Chưa có file trọng số Model B.")
+            return "unavailable"
+        # Neu dung file trong manifest (khong truyen explicit path tu test), uu tien ten phien ban trong manifest
+        if self._explicit_path is None and not os.environ.get("VIGOR_FOOD_MODEL_PATH"):
+            manifest_ver = str(self._manifest.get("model_version") or "").strip()
+            if manifest_ver:
+                return manifest_ver
+        return path.stem
+
+    @property
+    def supported_classes(self) -> list[str]:
+        if self._onnx_names:
+            return [self._onnx_names[k] for k in sorted(self._onnx_names)]
+        manifest_classes = self._manifest.get("classes")
+        if isinstance(manifest_classes, list) and manifest_classes:
+            return [str(c) for c in manifest_classes]
+        return []
+
+    # ----- nap model (double-checked locking) ----- #
+    def _load_onnx(self, path: Path) -> None:
+        try:
+            import onnxruntime as ort
+        except ImportError as exc:
+            raise FoodModelUnavailable("Thiếu thư viện onnxruntime để chạy file .onnx.") from exc
+        try:
+            opts = ort.SessionOptions()
+            opts.graph_optimization_level = ort.GraphOptimizationLevel.ORT_ENABLE_ALL
+            threads = _env_int("VIGOR_FOOD_ORT_THREADS", None)
+            if threads and threads > 0:
+                opts.intra_op_num_threads = threads
+            session = ort.InferenceSession(
+                str(path),
+                sess_options=opts,
+                providers=["CPUExecutionProvider"],
+            )
+            inp = session.get_inputs()[0]
+            if len(inp.shape) == 4 and isinstance(inp.shape[2], int) and inp.shape[2] > 0:
+                self.imgsz = int(inp.shape[2])
+            meta_map = session.get_modelmeta().custom_metadata_map
+            fallback_classes = [str(c) for c in self._manifest.get("classes", [])]
+            self._onnx_names = parse_onnx_names(meta_map.get("names"), fallback_classes)
+            self._onnx_input_name = inp.name
+            self._onnx_session = session
+            self._loaded_backend = "onnxruntime"
+        except FoodModelUnavailable:
+            raise
+        except Exception as exc:
+            raise FoodModelUnavailable(f"Không nạp được model ONNX: {exc}") from exc
+
+    def _load_ultralytics(self, path: Path) -> None:
         try:
             from ultralytics import YOLO
 
             self._model = YOLO(str(path))
+            self._loaded_backend = "ultralytics"
         except Exception as exc:
-            raise FoodModelUnavailable(f"Không nạp được model: {exc}") from exc
-        return self._model
+            raise FoodModelUnavailable(f"Không nạp được model PyTorch/Ultralytics: {exc}") from exc
 
-    def detect(self, image) -> list[Detection]:
-        model = self._load()
+    def _ensure_loaded(self) -> None:
+        if self._model is not None or self._onnx_session is not None:
+            return
+        with self._lock:
+            if self._model is not None or self._onnx_session is not None:
+                return
+            path = self.model_path
+            if path is None:
+                raise FoodModelUnavailable("Chưa có file trọng số Model B.")
+            if path.suffix.lower() == ".onnx":
+                self._load_onnx(path)
+            else:
+                self._load_ultralytics(path)
+
+    # ----- suy luan ----- #
+    def _detect_onnx(self, image) -> list[Detection]:
+        blob, scale, left, top, orig_w, orig_h = letterbox_image(image, self.imgsz)
+        with self._lock:
+            raw = self._onnx_session.run(None, {self._onnx_input_name: blob})[0]
+        return decode_yolov8_output(
+            raw_output=raw,
+            names=self._onnx_names,
+            scale=scale,
+            pad_left=left,
+            pad_top=top,
+            orig_w=orig_w,
+            orig_h=orig_h,
+            conf_threshold=self.conf,
+            iou_threshold=self.iou,
+        )
+
+    def _detect_ultralytics(self, image) -> list[Detection]:
         with self._lock:  # predictor cua ultralytics khong an toan khi goi dong thoi
-            result = model.predict(
+            result = self._model.predict(
                 source=image,
                 conf=self.conf,
                 iou=self.iou,
@@ -239,13 +715,42 @@ class FoodYoloService:
             detections.append(Detection(class_code, float(box.conf[0]), (x1, y1, x2, y2)))
         return detections
 
+    def detect(self, image) -> list[Detection]:
+        self._ensure_loaded()
+        if self._onnx_session is not None:
+            return self._detect_onnx(image)
+        return self._detect_ultralytics(image)
+
     def analyze(self, image_bytes: bytes, catalog: dict[str, dict[str, Any]]) -> dict[str, Any]:
         """Bytes anh -> payload `FoodAnalyzeResponse`. Ham dong bo, goi qua threadpool."""
         image = decode_image(image_bytes)
+        self._ensure_loaded()
         started = time.perf_counter()
         detections = self.detect(image)
         inference_ms = int(round((time.perf_counter() - started) * 1000))
-        return build_response_payload(detections, catalog, inference_ms, self.model_version)
+        return build_response_payload(
+            detections,
+            catalog,
+            inference_ms,
+            self.model_version,
+            cross_class_iou=self.cross_class_iou,
+        )
+
+    def info(self, catalog_size: int, stub_allowed: bool) -> dict[str, Any]:
+        path = self.model_path
+        return {
+            "available": self.available,
+            "backend": self.backend_name,
+            "model_version": self.model_version if self.available else "yolov8s-gymfood-stub",
+            "model_file": path.name if path else None,
+            "imgsz": self.imgsz,
+            "conf_threshold": self.conf,
+            "iou_threshold": self.iou,
+            "cross_class_iou_threshold": self.cross_class_iou,
+            "supported_classes": self.supported_classes,
+            "catalog_size": catalog_size,
+            "stub_fallback_enabled": stub_allowed,
+        }
 
     # Giu tuong thich voi ban stub cu
     @staticmethod
@@ -265,3 +770,9 @@ def get_food_service() -> FoodYoloService:
     if _service is None:
         _service = FoodYoloService()
     return _service
+
+
+def reset_food_service() -> None:
+    """Dung cho test khi doi bien moi truong hoac thay file trong so."""
+    global _service
+    _service = None

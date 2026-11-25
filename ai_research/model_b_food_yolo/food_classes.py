@@ -48,8 +48,18 @@ CORE_CLASSES_V1: list[tuple[str, tuple[str, ...]]] = [
         "COM_TAM_SUON",
         ("com tam", "com tam suon", "broken rice", "broken rice with grilled pork", "cơm tấm", "cơm tấm sườn"),
     ),
-    ("BANH_MI_THIT", ("banh mi", "banh mi thit", "vietnamese sandwich", "bánh mì", "bánh mì thịt")),
-    ("BUN_CHA", ("bun cha", "bún chả")),
+    (
+        "BANH_MI_THIT",
+        (
+            "banh mi",
+            "banh mi thit",
+            "vietnamese sandwich",
+            "grilled pork banh mi",
+            "bánh mì",
+            "bánh mì thịt",
+        ),
+    ),
+    ("BUN_CHA", ("bun cha", "bún chả", "grilled pork with vermicelli")),
 ]
 
 CLASS_CODES: list[str] = [code for code, _ in CORE_CLASSES_V1]

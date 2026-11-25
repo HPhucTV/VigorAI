@@ -17,6 +17,52 @@
 
 ---
 
+## Phiên 34 — 2026-11-25 20:35 | Thành viên: M4 (Pure AI Engineer) | Task: `T-M4-06` (`[x]`)
+- **Mục tiêu phiên:** Tích hợp trọng số **Model B v1.1 (`yolov8s-gymfood-v1.1`, 16/18 lớp)** train từ Google Colab T4 vào FastAPI backend, benchmark thực tế bằng ONNX Runtime CPU trên toàn bộ 245 ảnh test, kiểm tra bounding box trực quan trên món ăn Việt Nam và đóng `[x]` `T-M4-06`.
+- **Những file đã tạo / chỉnh sửa (`0` file `[LOCKED STUB]` bị chạm):**
+  - `backend/ai_models/weights/food_yolo_v1.onnx` (`44.77 MB`, `sha256: 5407422aa1f62a266e9398fd983e13f77558e1188890d1a723f73d9c8bc46637`) & `food_yolo_v1.pt` *(không commit Git; bản 6 lớp cũ backup tại `food_yolo_v1_6cls_backup.onnx`)*.
+  - `ai_research/evaluation_reports/model_b_v1_1_16classes/`: Lưu trọn bộ báo cáo Colab (`model_b_v3_train_report.json`, `model_b_manifest_generated.json`, `results.png`, `confusion_matrix.png`, `confusion_matrix_normalized.png`) và báo cáo benchmark CPU (`model_b_v1_1_onnx_eval.json`).
+  - `backend/ai_models/model_b_manifest.json`: Nâng cấp lên `yolov8s-gymfood-v1.1`, cập nhật `sha256`, toàn bộ `16` lớp trong `trained_classes` và các chỉ số benchmark Colab T4 + ONNX CPU.
+  - `backend/tests/test_ai_api.py`: Cập nhật `test_real_onnx_inference_end_to_end` đọc động `model_version` từ `model_b_manifest.json`, kiểm tra `GET /api/v1/ai/food-model/info` với ONNX thật và chạy suy luận trên `8` ảnh `model_b_v3/images/test`.
+  - `docs/taskboard.md`, `session_log.md`: Đóng `[x]` `T-M4-06` (`M4: 5 / 14 Done (35.7%)`, `Tổng: 35 / 63 Done (55.6%)`).
+- **Quyết định kỹ thuật / Lưu ý quan trọng:**
+  - Giữ ngưỡng `conf_threshold = 0.30` (thay vì `0.45`) vì chênh lệch F1 chỉ `+0.0021` (`0.7069` vs `0.7048`) nhưng `0.30` giữ Recall tốt hơn (`0.6448` vs `0.6131`) trên camera điện thoại.
+  - Shape ngõ ra ONNX xác nhận `[1, 22, 8400]` khớp 100% với 18 class slots của `FoodYoloService`; hai lớp ít dữ liệu (`BROWN_RICE`, `SWEET_POTATO`) và cải thiện các lớp yếu như `TOFU` sẽ xử lý trong đợt mở rộng dataset `T-M4-09`.
+- **Kiểm tra / Kết quả chạy thử:**
+  - `evaluate_model.py` (`food_yolo_v1.onnx` trên CPU, `245` ảnh `test` của `model_b_v3`, `conf=0.30`): **`mAP@0.5 = 0.7656`**, `Precision = 0.7771`, `Recall = 0.6448`, `F1 = 0.7048`; **`CPU inference mean = 82.84 ms`** (`p50 = 77.0 ms`, `p95 = 115.0 ms` `< 150 ms`), **`e2e mean = 91.13 ms`** (`p95 = 157.96 ms` `< 3.0 s`). Các món chủ lực: `BANH_MI_THIT 0.995`, `BEEF_PHO 0.995`, `BUN_CHA 0.995`, `BOILED_EGG 0.9879`, `BROCCOLI 0.9469`, `COM_TAM_SUON 0.9277`, `SALMON_FILLET 0.918`, `FRIED_EGG 0.8791`.
+  - `python -m pytest backend/tests/test_ai_api.py -v`: **33 / 33 PASS** (`5.28s`).
+  - `test_camera_local.py` trực quan hóa 3 ảnh món Việt (`BEEF_PHO` `87.2%` / `613.4 kcal` / `77ms`, `COM_TAM_SUON` `83.3%` / `1470.0 kcal` / `86ms`, `BANH_MI_THIT` `91.4%` / `1057.5 kcal` / `82ms`): bounding box ôm sát món ăn chính xác.
+- **Việc cần làm ở phiên kế tiếp:**
+  - Triển khai weight `food_yolo_v1.onnx` (`44.77 MB`) lên Cloud Storage (S3/Bucket/GitHub Release) và cấu hình `VIGOR_FOOD_MODEL_URL` + `VIGOR_FOOD_MODEL_SHA256` + `VIGOR_FOOD_ALLOW_STUB=0` + `INSTALL_AI_DEPS=true` trên Railway Production (phối hợp M3).
+  - Triển khai **AI Model C** (`T-M4-07`, `T-M4-08`) và mở rộng dataset `T-M4-09` (bổ sung `BROWN_RICE`, `SWEET_POTATO`, `TOFU`).
+
+---
+
+## Phiên 33 — 2026-11-25 17:55 | Thành viên: M4 (Pure AI Engineer) | Task: `T-M4-01` (`[x]`), `T-M4-03` (`[x]`), `T-M4-06` (`[~]`)
+- **Mục tiêu phiên:** Hoàn thiện trọn vẹn luồng Camera Quét Đồ ăn AI (`F19` / Model B): nâng cấp backend suy luận ONNX Runtime thuần không phụ thuộc PyTorch, đánh giá thực nghiệm `food_yolo_v1.onnx`, mở rộng tập dữ liệu sạch đạt 16/18 món cốt lõi (`model_b_v3`) và chuẩn bị sẵn notebook Colab train nâng cấp lên 16 lớp.
+- **Những file đã tạo / chỉnh sửa (`0` file `[LOCKED STUB]` bị chạm):**
+  - `backend/app/services/ai_food_yolo.py`: Cài đặt suy luận **ONNX Runtime thuần** (`onnxruntime + numpy + pillow`) với letterbox đúng chuẩn YOLOv8, class-aware NMS, khử trùng lặp chéo lớp (`suppress_cross_class_duplicates`, `IoU >= 0.75`), xử lý xoay ảnh EXIF điện thoại, giới hạn decompression bomb (`40 MP`), đọc `model_b_manifest.json` và tự động tải trọng số kèm xác minh SHA-256 từ `VIGOR_FOOD_MODEL_URL`.
+  - `backend/app/routers/ai.py` & `backend/app/schemas/ai_schema.py`: Bổ sung `GET /api/v1/ai/food-model/info` (`FoodModelInfoResponse`), chuẩn hóa `meal_type`, ghi log inference latency trên `POST /api/v1/ai/food-analyze`.
+  - `backend/ai_models/model_b_manifest.json` & `backend/ai_models/README.md`: Chốt manifest cho `food_yolo_v1.onnx` (`sha256: dad4c2e7...`) kèm hướng dẫn triển khai Railway/Docker.
+  - `backend/tests/test_ai_api.py`: Mở rộng lên **33 unit + ONNX + API tests** (letterbox, decode YOLOv8, cross-class suppression, EXIF rotation, remote SHA-256 verification, `/food-model/info`, end-to-end `food_yolo_v1.onnx`, `/readiness-and-overload` contract).
+  - `ai_research/model_b_food_yolo/fetch_open_datasets.py` *(mới)*, `food_classes.py`, `prepare_dataset.py` (`--max-images-per-class`), `ai_research/SOURCES.md`: Tự động tải & chuyển đổi `HoagMin/Vietnamese_StreetFood_Dataset` (CC BY 4.0) và `EduardoPacheco/FoodSeg103` (Apache 2.0) sang YOLO bbox; gộp cùng `pork-rice`, `food-detection`, `chicken` thành **`model_b_v3` (`3.048` ảnh: `2.315 train / 488 val / 245 test`, `16/18` lớp cốt lõi)** và đóng gói `ai_research/datasets/model_b_v3.zip` (`378.7 MB`).
+  - `ai_research/model_b_food_yolo/evaluate_model.py` *(mới)*, `test_camera_local.py` *(mới)*, `train_yolo.py`, `train_model_b_colab.ipynb` *(mới)*, `README.md`: Công cụ benchmark ONNX CPU, test trực quan ảnh thật, notebook Colab T4 1-click và lưu vết báo cáo tại `ai_research/evaluation_reports/model_b_v1/` & `model_b_v3_dataset_report.json`.
+  - `docs/taskboard.md`, `session_log.md`: Đóng `[x]` `T-M4-01` & `T-M4-03`, cập nhật `[~]` `T-M4-06` (`M4: 4/14 Done`, `Tổng: 34/63 Done`).
+- **Quyết định kỹ thuật / Lưu ý quan trọng:**
+  - Dùng **ONNX Runtime thuần** trên CPU cho FastAPI Production để tránh kéo PyTorch/Ultralytics nặng RAM khi deploy Railway (`Dockerfile.railway` chỉ cần `onnxruntime`, `numpy`, `pillow`), đồng thời vẫn giữ fallback `.pt` khi chạy local có `ultralytics`.
+  - Phát hiện khi `evaluate_model.py` tạo 2 `InferenceSession` song song bị tranh chấp threadpool CPU (`262 ms`), đổi về 1 session dùng chung giúp đo đúng tốc độ thực tế **`74.9 ms/ảnh`** (`p50 = 74.0 ms`, `p95 = 80.0 ms`, end-to-end **`80.13 ms`**).
+  - Không commit file trọng số `food_yolo_v1.onnx` (`44.77 MB`) và dataset lên Git (đã được `.gitignore` chặn); để chạy trên Railway Production, upload `food_yolo_v1.onnx` lên S3/Bucket rồi điền `VIGOR_FOOD_MODEL_URL` + `VIGOR_FOOD_ALLOW_STUB=0`.
+- **Kiểm tra / Kết quả chạy thử:**
+  - `python -m py_compile` toàn bộ 11 file Python M4: Exit `0`.
+  - `python -m pytest backend/tests/test_ai_api.py -v`: **33 / 33 PASS** (bao gồm `test_real_onnx_inference_end_to_end` trên ảnh thật).
+  - `evaluate_model.py` trên `food_yolo_v1.onnx` (42 ảnh `test` của `model_b_v2`): `mAP@0.5 = 0.8146`, `Precision = 0.8302`, `Recall = 0.8000`, `F1 = 0.8148`, `CPU mean = 74.9 ms`, `e2e mean = 80.13 ms` — **6/6 KPI PASS**.
+  - `prepare_dataset.py` trên `model_b_v3` (16/18 lớp): `[OK] data.yaml hop le, khong co bbox rong/lech chuan, khong ro ri giua cac tap`.
+  - Live FastAPI `uvicorn` HTTP (`VIGOR_FOOD_ALLOW_STUB=0`): `GET /openapi.json` (`200 OK`), `GET /api/v1/ai/food-model/info` (`200 OK`, `backend=onnxruntime`, `catalog=36`), `POST /api/v1/ai/food-analyze` (`200 OK`, trả về `Xà lách trộn 250.0g 50.0kcal` trong `83ms`), `GET /api/v1/ai/readiness-and-overload` (`200 OK`).
+- **Việc cần làm ở phiên kế tiếp:**
+  - Upload `ai_research/datasets/model_b_v3.zip` lên Google Drive và chạy `ai_research/model_b_food_yolo/train_model_b_colab.ipynb` (Colab T4) để nâng trọng số `food_yolo_v1.onnx` từ 6 lớp lên đủ **16/18 lớp** rồi đóng `[x]` `T-M4-06`; đồng thời triển khai `T-M4-05` & `T-M4-07` cho **Model C**.
+
+---
+
 ## Phiên 32 — 2026-11-23 11:20 | Thành viên: M4 (Pure AI Engineer) | Task: `T-M4-01` (`[~]`)
 - **Mục tiêu phiên:** Chuẩn bị pipeline dataset Model B cho dữ liệu Roboflow thật (bộ Pork rice, CC BY 4.0, 181 ảnh, `egg` = 161 khung).
 - **Những file đã tạo / chỉnh sửa (`0` file `[LOCKED STUB]` bị chạm):**

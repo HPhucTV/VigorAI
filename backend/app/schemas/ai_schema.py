@@ -29,6 +29,20 @@ class FoodAnalyzeResponse(BaseModel):
     disclaimer: str
 
 
+class FoodModelInfoResponse(BaseModel):
+    available: bool
+    backend: str  # onnxruntime | ultralytics | stub
+    model_version: str
+    model_file: str | None = None
+    imgsz: int
+    conf_threshold: float
+    iou_threshold: float
+    cross_class_iou_threshold: float
+    supported_classes: list[str]
+    catalog_size: int
+    stub_fallback_enabled: bool
+
+
 class WeightRecommendation(BaseModel):
     exercise_code: str
     action: str  # INCREASE | MAINTAIN | DELOAD
