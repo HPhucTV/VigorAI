@@ -17,6 +17,26 @@
 
 ---
 
+## Phiên 39 — 2026-11-25 11:46 | Thành viên: M1 + M2 + M4 | Task: Nộp Duyệt Thành công Closed Testing Play Console (`T-M1-07` Done, `T-M2-06` Review) & Merge PR #19 (`T-M4-01`)
+- **Mục tiêu phiên:**
+  1. Hoàn tất 100% các biểu mẫu kiểm duyệt và nộp thành công bản phát hành **Thử nghiệm kín (`Closed testing`)** trên Google Play Console cho ứng dụng `VigorAI: Tập Gym 3D & Calo` (`com.vigorai.app`).
+  2. Xử lý xung đột `session_log.md` và merge PR #19 của M4 (`vu` $\rightarrow$ `main`) nâng cấp pipeline dữ liệu Model B.
+  3. Rà soát và đồng bộ lại tiến độ toàn đội trong `docs/taskboard.md` (`32 / 63 Done` — `50.8%`).
+- **Những file đã tạo / chỉnh sửa (`0` file `[LOCKED STUB]` bị chạm):**
+  - Merge PR #19 (`9a6b008`): `ai_research/SOURCES.md`, `ai_research/model_b_food_yolo/{README.md,food_classes.py,prepare_dataset.py}`, `session_log.md`.
+  - Cập nhật tiến độ & đối soát: `docs/taskboard.md` (đóng `[x]` cho `T-M1-07`, cập nhật trạng thái đang xem xét cho `T-M2-06` & trạng thái sau PR #19 của `T-M4-01`), `docs/chplay_submission_checklist.md`, `session_log.md`.
+- **Trạng thái CH Play hiện tại:**
+  - Đã hoàn tất toàn bộ Store Listing (Icon **Iron Volt V**, ảnh đầu trang `1024×500`, ảnh chụp Phone/Tablet, danh mục *Sức khỏe và Thể hình*, email liên hệ) và toàn bộ tờ khai App Content (*Privacy Policy*, *App Access* `reviewer@vigorai.app`, *Ads = Không*, *Advertising ID = Không*, *Financial features = Không*, *Content rating*, *Target audience 18+*, *Data safety*, *Health apps* kèm giải trình `ACTIVITY_RECOGNITION`, *DSA Trader status*).
+  - Kênh **Thử nghiệm kín (`Virgo`)** đang ở trạng thái **`Đang xem xét`** (danh sách `Virgo` 16 testers đã chọn; khuyến nghị tích thêm `tester-A1` 15 testers để đảm bảo dư `>= 12` người opt-in liên tục 14 ngày).
+- **Kiểm tra / Kết quả chạy thử:**
+  - `python ai_research/model_b_food_yolo/prepare_dataset.py --help` trên Windows: Exit `0`.
+  - PR #19: `MERGED` sạch lên `main`, nhánh `HPhucTV` & `main` đã đồng bộ tại `9a6b008`/`92cbf37`.
+- **Việc cần làm ở phiên kế tiếp:**
+  - Theo dõi Play Console 24–72 giờ tới khi **Thử nghiệm kín** chuyển sang **`Có sẵn cho người thử nghiệm`**, copy link `Tham gia trên web` (`https://play.google.com/apps/testing/com.vigorai.app`) gửi cho 20–25 Gmail cài giữ liên tục **14 ngày** (`T-M1-12` / `T-M2-06`).
+  - Trong 14 ngày chờ: `M4` hoàn thành Model B YOLOv8 (`T-M4-06`) & Model C (`T-M4-07..08`) đẩy lên Railway (trước khi `M1`/`M2` bấm Apply Production `v1.1.0`), còn `M1`/`M2`/`M3` triển khai song song các hạng mục **Sprint 3** (`T-M1-13..14`, `T-M2-13..14`, `T-M3-12..13`).
+
+---
+
 ## Phiên 38 — 2026-11-25 10:17 | Thành viên: M1 | Task: Nâng `targetSdk = 36` theo yêu cầu Google Play & Đóng gói `.aab` `v1.0.0+2` (`T-M1-07`)
 - **Mục tiêu phiên:** Xử lý thông báo bắt buộc API cấp 36 từ Google Play Console và đóng gói lại `.aab` mới (`versionCode = 2`) phục vụ phát hành Closed Testing.
 - **Những file đã tạo / chỉnh sửa (`[OWNER: M1]`, `0` file `[LOCKED STUB]` bị chạm):**

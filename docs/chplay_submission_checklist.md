@@ -11,9 +11,9 @@
 
 | Hạng mục kiểm soát | Trạng thái | Ghi chú kỹ thuật |
 | :--- | :---: | :--- |
-| **Tài khoản Google Play Console (\$25) & Xác minh danh tính** | `[x]` | Đã tạo & xác minh xong; chuẩn bị nộp Closed Testing (`v1.0.0+1`) |
-| **Danh sách 20–25 Gmail Testers (Closed Testing 14 ngày liên tục)** | `[ ]` | Cần tối thiểu 12 testers opt-in liên tục đủ 14 ngày không gián đoạn |
-| **Upload Keystore RSA 2048-bit & Signed `.aab` (`v1.0.0+1`)** | `[x]` | Đã ký `CN=VigorAI`, trỏ `https://vigorai-production.up.railway.app` |
+| **Tài khoản Google Play Console (\$25) & Xác minh danh tính** | `[x]` | Đã tạo & xác minh xong; đã hoàn tất toàn bộ Store Listing & tờ khai App Content |
+| **Danh sách 20–25 Gmail Testers (Closed Testing 14 ngày liên tục)** | `[~]` | Đã tạo danh sách `Virgo` (16) + `tester-A1` (15) & đã nộp phát hành Closed Testing (`Đang xem xét`), chờ Google duyệt 24–72h để chạy 14 ngày |
+| **Upload Keystore RSA 2048-bit & Signed `.aab` (`v1.0.0+2`, `targetSdk 36`)** | `[x]` | Đã ký `CN=VigorAI`, trỏ `https://vigorai-production.up.railway.app` |
 | **URL Privacy Policy & Xóa tài khoản (`/api/v1/users/privacy-policy`, `/delete-account`)** | `[x]` | Đã live `200 OK` + test xóa qua Web (`POST /api/v1/users/delete-via-web`) |
 | **Điều kiện Apply Production (`v1.1.0`) cuối Tuần 5** | `[~]` | Đủ 14 ngày Closed Testing + tích hợp Sprint 2 (`F01`, `F03`–`F06`, `F19` UI, `F24` ảnh, Sync) |
 
