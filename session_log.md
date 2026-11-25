@@ -17,7 +17,7 @@
 
 ---
 
-## Phiên 36 — 2026-11-25 09:38 | Thành viên: M1 + M3 | Task: Chuẩn bị Trọn bộ Hồ sơ, Trang Privacy Policy, Signed `.aab` & Tài khoản Reviewer Nộp Google Play Console (`T-M1-07`)
+## Phiên 37 — 2026-11-25 09:38 | Thành viên: M1 + M3 | Task: Chuẩn bị Trọn bộ Hồ sơ, Trang Privacy Policy, Signed `.aab` & Tài khoản Reviewer Nộp Google Play Console (`T-M1-07`)
 - **Mục tiêu phiên:** Hoàn thiện toàn bộ tài nguyên kỹ thuật, pháp lý và Store Listing để người dùng đẩy bản `v1.0.0+1` lên Closed Testing trên Google Play Console.
 - **Những file đã tạo / chỉnh sửa (`[OWNER: M1]` + `[OWNER: M3]`, `0` file `[LOCKED STUB]` bị chạm):**
   - Backend Privacy Policy: Tạo mới `backend/app/templates/privacy_policy.html`, thêm endpoint `GET /api/v1/users/privacy-policy` trong `backend/app/routers/users.py`, gắn liên kết từ `backend/app/templates/delete_account.html`, và đẩy lên nhánh `main` (`ab3ca14`).
@@ -32,7 +32,7 @@
 
 ---
 
-## Phiên 35 — 2026-11-24 15:30 | Thành viên: M1 | Task: Thiết kế & Cài đặt App Icon "Iron Volt V", Sửa lỗi 2 Icon khi Khởi động & Build Release APK
+## Phiên 36 — 2026-11-24 15:30 | Thành viên: M1 | Task: Thiết kế & Cài đặt App Icon "Iron Volt V", Sửa lỗi 2 Icon khi Khởi động & Build Release APK
 - **Mục tiêu phiên:**
   1. Thiết kế 3 mẫu App Icon (Favicon) cho VigorAI trên Figma (`VigorAI — 3 App Icon (Favicon) Concepts`); người dùng chốt **Mẫu 01 — Iron Volt V**.
   2. Thay thế icon chữ `"V"` nền xanh cũ bằng **Mẫu 01 — Iron Volt V** cho toàn bộ Android Adaptive Icon Vector (`ic_launcher_background.xml`, `ic_launcher_foreground.xml`, `mipmap-anydpi-v26/ic_launcher.xml`), xuất bộ PNG đa độ phân giải (`mdpi` 48px → `xxxhdpi` 192px) và icon Play Store `512×512` (`vigorai_playstore_512.png`).
@@ -52,7 +52,7 @@
 
 ---
 
-## Phiên 34 — 2026-11-24 14:08 | Thành viên: M1 + M2 | Task: Thiết kế Figma 3 Mẫu UI + Triển khai Mẫu 01 Dual Theme, Sửa Nhảy Màn hình Khởi động & Giật Chuyển Tab
+## Phiên 35 — 2026-11-24 14:08 | Thành viên: M1 + M2 | Task: Thiết kế Figma 3 Mẫu UI + Triển khai Mẫu 01 Dual Theme, Sửa Nhảy Màn hình Khởi động & Giật Chuyển Tab
 - **Mục tiêu phiên:**
   1. Kết nối Figma MCP tạo file `VigorAI — 3 Premium UI Design Concepts` gồm 3 mẫu UI cao cấp (9 màn hình + Variable Collection + Reusable Components) để người dùng chọn; người dùng chốt **Mẫu 01 — Obsidian Performance Lab** kèm hỗ trợ **Light Mode**.
   2. Triển khai Mẫu 01 Dual Theme (`Obsidian Performance Lab` Dark `#090B0F` / Volt `#CCFF00` / Cyan `#38BDF8` & `Alabaster Performance Lab` Light `#F4F6F9` / Porcelain `#FFFFFF` / Ink `#0F172A`), nới biên `20–24px`, giảm mật độ card bằng Dual Hero Card + Bento Grid 2×2 và sân khấu 3D tràn viền với Floating HUD.
@@ -70,7 +70,7 @@
 
 ---
 
-## Phiên 33 — 2026-11-23 12:09 | Thành viên: M1 + M2 | Task: Nâng cấp UI/UX Dual Theme, Onboarding 3D 6 bước, Smart Routine Generator, 3D Coaching Guide & 5-Tab Shell
+## Phiên 34 — 2026-11-23 12:09 | Thành viên: M1 + M2 | Task: Nâng cấp UI/UX Dual Theme, Onboarding 3D 6 bước, Smart Routine Generator, 3D Coaching Guide & 5-Tab Shell
 - **Mục tiêu phiên:** Triển khai trọn bộ 3 chặng nâng cấp trải nghiệm VigorAI:
   - Chặng 1 (`[OWNER: M1]`): Dual Theme Sáng (`Athletic Clean`) / Tối (`Dark Sporty Carbon`), `UserFitnessProfile` offline-first và Onboarding Wizard 3D 6 bước có tương tác trực tiếp với mô hình 3D + Medical Disclaimer.
   - Chặng 2 (`[OWNER: M2]`): Bộ sinh lịch tập thông minh `SmartRoutineGenerator` (thích ứng theo địa điểm/dụng cụ, tạng người, thời lượng, nhóm cơ ưu tiên), 5 Chương trình VĐV chuyên sâu, thư viện `ExerciseCoachingGuide` 4 phần tiếng Việt cho toàn bộ 39 bài tập gắn scrubber 3D `Chuẩn / Lỗi sai`, và `RoutinesScreen` 3 phân đoạn.
@@ -92,6 +92,21 @@
   - `flutter build apk --release --dart-define=MVP_CLOSED_TESTING=false`: Thành công, xuất `mobile/build/app/outputs/flutter-apk/app-release.apk` (`69,689,361` bytes / `66.5 MB`).
 - **Việc cần làm ở phiên kế tiếp:**
   - Kiểm thử trực quan trên thiết bị Android thật (`Sáng`/`Tối`, Onboarding 3D 6 bước, `/profile` tái tính toán Realtime, 5 chương trình VĐV và 3D Coaching Guide) rồi đóng gói/commit khi người dùng xác nhận.
+
+---
+
+## Phiên 33 — 2026-11-23 11:20 | Thành viên: M4 (Pure AI Engineer) | Task: `T-M4-01` (`[~]`)
+- **Mục tiêu phiên:** Chuẩn bị pipeline dataset Model B cho dữ liệu Roboflow thật (bộ Pork rice, CC BY 4.0, 181 ảnh, `egg` = 161 khung).
+- **Những file đã tạo / chỉnh sửa (`0` file `[LOCKED STUB]` bị chạm):**
+  - `ai_research/model_b_food_yolo/prepare_dataset.py`: thêm `--map "nguồn:nhãn=CLASS"` (gán nhãn riêng từng bộ), gom bản augment Roboflow (`.rf.`) về ảnh gốc khi chia, val/test chỉ giữ 1 ảnh mỗi nhóm, validator bắt rò rỉ nhóm, báo cáo `source_class_mapping`; tên file đầu ra đổi thành `<nguồn>__<hash12>__<mã-nhóm>` (ngắn, ~40 ký tự) kèm `manifest.csv` tra ngược tên gốc. Sửa lỗi đường dẫn > 260 ký tự trên Windows (tên file Roboflow rất dài làm `FileNotFoundError`): mọi thao tác đọc file nguồn đi qua `fs()` thêm tiền tố `\\?\`. Phần Windows chưa được chạy thử trên máy Windows thật.
+  - `ai_research/model_b_food_yolo/food_classes.py`: thêm alias `plain rice`, `nasi putih` cho `WHITE_RICE` (không thêm `egg` vào alias chung vì mơ hồ giữa trứng luộc/ốp la).
+  - `ai_research/model_b_food_yolo/README.md`, `ai_research/SOURCES.md` (mới): hướng dẫn và nhật ký nguồn/giấy phép dữ liệu.
+- **Quyết định kỹ thuật / Lưu ý quan trọng:**
+  - Nhãn nguồn chung chung (`egg`) chỉ gán qua `--map` sau khi xem ảnh; bộ Pork rice là trứng hầm kiểu Thái nên chỉ là nguồn bổ sung cho `BOILED_EGG`.
+  - Bộ có augment (ví dụ foodvn: 3 bản/ảnh, xoay ±35°) có số ảnh thật chỉ ~1/3 và bbox xoay bị nới rộng; ưu tiên bộ không augment hoặc tạo version không augment qua Fork.
+  - Giải nén dataset vào `ai_research/datasets/raw/<tên>/` (bị `.gitignore` chặn), không giải nén ở gốc repo.
+- **Kiểm tra / Kết quả chạy thử:** Chạy trên 3 bộ giả kiểu Roboflow (có augment ×3): 105 nhóm ảnh gốc, 0 nhóm nằm ở nhiều tập, val/test tối đa 1 ảnh/nhóm; `--map` sai class/sai nguồn/sai định dạng đều báo lỗi rõ; chủ động chép 1 bản augment từ train sang val thì validator báo cả rò rỉ nội dung lẫn rò rỉ augment. Chưa chạy trên dữ liệu thật của nhóm.
+- **Việc cần làm ở phiên kế tiếp:** Tải thêm bộ cơm trắng và các món còn thiếu (trứng luộc, trứng ốp la, ức gà...), ghi vào `SOURCES.md`, chạy `prepare_dataset.py` với các `--map` tương ứng, đạt 8–10 lớp đủ ảnh để train `v1.0` (`T-M4-04`); song song làm `T-M4-05` (benchmark Model C).
 
 ---
 
