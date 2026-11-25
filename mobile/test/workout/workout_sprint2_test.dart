@@ -9,8 +9,12 @@ import 'package:vigorai_app/core/database/app_database.dart';
 import 'package:vigorai_app/core/database/workout_tables.drift.dart';
 import 'package:vigorai_app/core/theme/app_theme.dart';
 import 'package:vigorai_app/features/ai_analytics/data/ai_analytics_repository.dart';
+import 'package:vigorai_app/features/auth_privacy/data/user_fitness_profile.dart';
+import 'package:vigorai_app/features/gym3d/data/exercise_coaching_guide.dart';
 import 'package:vigorai_app/features/gym3d/data/exercise_repository.dart';
 import 'package:vigorai_app/features/gym3d/presentation/widgets/muscle_3d_viewer_widget.dart';
+import 'package:vigorai_app/features/workout/data/workout_repository.dart';
+import 'package:vigorai_app/features/workout/domain/smart_routine_generator.dart';
 import 'package:vigorai_app/features/workout/domain/workout_calculators.dart';
 
 void main() {
@@ -637,6 +641,119 @@ void main() {
         final ex = await repo.getExerciseByCode(code);
         expect(ex, isNotNull);
         expect(ex!.id, 'uuid-${code.toLowerCase()}');
+      }
+    });
+  });
+
+  group('SmartRoutineGenerator, 5 Pro Programs & 4-Part 3D Coaching Guide', () {
+    test('adapts equipment by TrainingLocation, Somatotype, Duration & 5 Pro Programs cleanly', () async {
+      final rawMock = jsonDecode(
+        await rootBundle.loadString('assets/mock_json/mock_m2_exercises.json'),
+      ) as Map<String, dynamic>;
+      final allExercises = ((rawMock['exercises'] as List)
+              .cast<Map<String, dynamic>>())
+          .map(ExerciseModel.fromJson)
+          .toList();
+      final byCode = {for (final e in allExercises) e.code.toUpperCase(): e};
+
+      // 1. Home Dumbbell location must strictly yield DUMBBELL / BODYWEIGHT via muscle-overlap swap
+      final homeDbProfile = const UserFitnessProfile(
+        trainingLocation: TrainingLocation.homeDumbbell,
+        somatotype: Somatotype.ectomorph,
+        sessionDurationMin: 30,
+        sessionsPerWeek: 3,
+        weeklyDays: [1, 3, 5],
+        selectedProgram: ProgramChoiceType.aiCustom,
+      );
+      final homePlan = SmartRoutineGenerator.generatePlan(
+        profile: homeDbProfile,
+        allExercises: allExercises,
+      );
+      expect(homePlan.length, 3);
+      for (final routine in homePlan) {
+        expect(routine.exercises.length, lessThanOrEqualTo(4));
+        for (final item in routine.exercises) {
+          final ex = byCode[item.exerciseCode]!;
+          expect(
+            ex.equipmentType == 'DUMBBELL' || ex.equipmentType == 'BODYWEIGHT',
+            isTrue,
+            reason: '${ex.code} (${ex.equipmentType}) leaked into homeDumbbell plan',
+          );
+          if (item.exerciseCode != 'PLANK') {
+            expect(item.targetRepMin, 6);
+            expect(item.targetRepMax, 10);
+          }
+        }
+      }
+
+      // 2. Bodyweight-only location keeps BODYWEIGHT/LUNGE & raises reps to 12-20
+      final bwProfile = const UserFitnessProfile(
+        trainingLocation: TrainingLocation.bodyweightOnly,
+        somatotype: Somatotype.endomorph,
+        sessionDurationMin: 55,
+      );
+      final bwPlan = SmartRoutineGenerator.generatePlan(
+        profile: bwProfile,
+        allExercises: allExercises,
+      );
+      for (final routine in bwPlan) {
+        for (final item in routine.exercises) {
+          final ex = byCode[item.exerciseCode]!;
+          expect(
+            ex.equipmentType == 'BODYWEIGHT' || item.exerciseCode == 'WALKING_LUNGE',
+            isTrue,
+          );
+          expect(item.targetRepMin, greaterThanOrEqualTo(12));
+        }
+      }
+
+      // 3. All 5 Pro Athlete programs produce non-empty valid exercises & persist in Drift SQLite
+      final db = AppDatabase.forTesting(NativeDatabase.memory());
+      addTearDown(db.close);
+      final dio = Dio();
+      final exRepo = ExerciseRepository(db, dio, useMockApi: true);
+      final workoutRepo = WorkoutRepository(db, dio, exRepo);
+
+      for (final catalog in SmartRoutineGenerator.proProgramsCatalog) {
+        final plan = SmartRoutineGenerator.generatePlan(
+          profile: UserFitnessProfile(
+            selectedProgram: catalog.type,
+            trainingLocation: TrainingLocation.fullGym,
+            sessionDurationMin: 80,
+            experienceLevel: ExperienceLevel.advanced,
+          ),
+          allExercises: allExercises,
+        );
+        expect(plan, isNotEmpty);
+        await workoutRepo.applyGeneratedPlan(plan);
+      }
+
+      final loadedRoutines = await workoutRepo.loadRoutines();
+      expect(
+        loadedRoutines.where((r) => r.id.startsWith('ai-plan-')).length,
+        greaterThanOrEqualTo(3),
+      );
+      expect(WorkoutRepository.pickTodayRoutine(loadedRoutines), isNotNull);
+    });
+
+    test('provides complete 4-part Vietnamese Coaching Guide for all 39 exercises', () async {
+      final rawMock = jsonDecode(
+        await rootBundle.loadString('assets/mock_json/mock_m2_exercises.json'),
+      ) as Map<String, dynamic>;
+      final allExercises = ((rawMock['exercises'] as List)
+              .cast<Map<String, dynamic>>())
+          .map(ExerciseModel.fromJson)
+          .toList();
+
+      expect(allExercises.length, 39);
+      for (final ex in allExercises) {
+        final guide = ExerciseCoachingGuide.forExercise(ex);
+        expect(guide.setupSteps, isNotEmpty, reason: ex.code);
+        expect(guide.eccentricDetail.isNotEmpty, isTrue, reason: ex.code);
+        expect(guide.isometricDetail.isNotEmpty, isTrue, reason: ex.code);
+        expect(guide.concentricDetail.isNotEmpty, isTrue, reason: ex.code);
+        expect(guide.mindMuscleCue.isNotEmpty, isTrue, reason: ex.code);
+        expect(guide.badFormDetails, isNotEmpty, reason: ex.code);
       }
     });
   });

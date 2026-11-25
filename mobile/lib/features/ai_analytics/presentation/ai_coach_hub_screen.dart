@@ -9,10 +9,44 @@ import '../readiness_3d/readiness_recovery_3d_view.dart';
 import '../volume_analytics/volume_analytics_view.dart';
 
 class AiCoachHubScreen extends ConsumerWidget {
-  const AiCoachHubScreen({super.key});
+  final bool embedded;
+  final bool isActive;
+
+  const AiCoachHubScreen({
+    super.key,
+    this.embedded = false,
+    this.isActive = true,
+  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    const tabBar = TabBar(
+      tabs: [
+        Tab(icon: Icon(Icons.accessibility_new, size: 18), text: 'Phục hồi 3D'),
+        Tab(icon: Icon(Icons.bar_chart, size: 18), text: 'Volume & PR'),
+        Tab(icon: Icon(Icons.radar, size: 18), text: 'Radar Cơ'),
+      ],
+    );
+    final tabViews = TabBarView(
+      children: [
+        ReadinessRecovery3DView(isActive: isActive),
+        const VolumeAnalyticsView(),
+        const MuscleRadarView(),
+      ],
+    );
+
+    if (embedded) {
+      return DefaultTabController(
+        length: 3,
+        child: Column(
+          children: [
+            tabBar,
+            Expanded(child: tabViews),
+          ],
+        ),
+      );
+    }
+
     return DefaultTabController(
       length: 3,
       child: Scaffold(
@@ -35,21 +69,9 @@ class AiCoachHubScreen extends ConsumerWidget {
               onPressed: () => context.push('/workout/live'),
             ),
           ],
-          bottom: const TabBar(
-            tabs: [
-              Tab(icon: Icon(Icons.accessibility_new, size: 18), text: 'Phục hồi 3D'),
-              Tab(icon: Icon(Icons.bar_chart, size: 18), text: 'Volume & PR'),
-              Tab(icon: Icon(Icons.radar, size: 18), text: 'Radar Cơ'),
-            ],
-          ),
+          bottom: tabBar,
         ),
-        body: const TabBarView(
-          children: [
-            ReadinessRecovery3DView(),
-            VolumeAnalyticsView(),
-            MuscleRadarView(),
-          ],
-        ),
+        body: tabViews,
       ),
     );
   }

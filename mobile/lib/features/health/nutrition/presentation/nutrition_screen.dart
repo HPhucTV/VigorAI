@@ -42,7 +42,7 @@ class NutritionScreen extends ConsumerWidget {
         label: const Text('Thêm món'),
       ),
       body: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 12, 16, 88),
+        padding: const EdgeInsets.fromLTRB(20, 14, 20, 88),
         children: [
           // The BMR / TDEE / Muc tieu Macro
           Card(
@@ -104,9 +104,12 @@ class NutritionScreen extends ConsumerWidget {
                     color: AppColors.calorieOrange,
                   ),
                   const SizedBox(height: 10),
-                  const Text(
+                  Text(
                     'Nguồn công thức: Mifflin-St Jeor (1990) & hệ số hoạt động thể chất. Thông tin dinh dưỡng chỉ mang tính tham khảo.',
-                    style: TextStyle(fontSize: 11, color: Colors.black54),
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: AppColors.secondaryText(context),
+                    ),
                   ),
                 ],
               ),
@@ -116,7 +119,7 @@ class NutritionScreen extends ConsumerWidget {
 
           // Nut mo nhanh Quet mon an AI (F19)
           Card(
-            color: const Color(0xFFFFF3E0),
+            color: AppColors.tintedSurface(context, AppColors.calorieOrange),
             child: ListTile(
               leading: const CircleAvatar(
                 backgroundColor: AppColors.calorieOrange,
@@ -172,9 +175,12 @@ class NutritionScreen extends ConsumerWidget {
                     ),
                     const SizedBox(height: 6),
                     if (slotMeals.isEmpty)
-                      const Text(
+                      Text(
                         'Chưa có món nào trong bữa này.',
-                        style: TextStyle(fontSize: 13, color: Colors.black54),
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: AppColors.secondaryText(context),
+                        ),
                       )
                     else
                       ...slotMeals.map(

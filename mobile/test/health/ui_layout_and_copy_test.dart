@@ -2,15 +2,21 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:vigorai_app/core/database/health_tables.drift.dart';
+import 'package:vigorai_app/core/database/workout_tables.drift.dart';
 import 'package:vigorai_app/core/platform/workmanager_reminder_service.dart';
 import 'package:vigorai_app/core/sync/sync_queue_manager.dart';
 import 'package:vigorai_app/core/theme/app_theme.dart';
+import 'package:vigorai_app/features/ai_analytics/data/ai_analytics_repository.dart';
 import 'package:vigorai_app/features/auth_privacy/data/auth_repository.dart';
+import 'package:vigorai_app/features/auth_privacy/presentation/app_launch_gate.dart';
 import 'package:vigorai_app/features/auth_privacy/presentation/auth_controller.dart';
 import 'package:vigorai_app/features/auth_privacy/presentation/login_screen.dart';
 import 'package:vigorai_app/features/auth_privacy/presentation/onboarding_disclaimer_screen.dart';
+import 'package:vigorai_app/features/auth_privacy/presentation/profile_settings_screen.dart';
 import 'package:vigorai_app/features/auth_privacy/presentation/register_screen.dart';
+import 'package:vigorai_app/features/gym3d/data/exercise_repository.dart';
 import 'package:vigorai_app/features/health/biometrics/presentation/biometrics_screen.dart';
 import 'package:vigorai_app/features/health/data/health_repository.dart';
 import 'package:vigorai_app/features/health/food_scan/presentation/food_scan_screen.dart';
@@ -21,6 +27,7 @@ import 'package:vigorai_app/features/health/progress_photos/data/progress_photos
 import 'package:vigorai_app/features/health/progress_photos/presentation/progress_photos_screen.dart';
 import 'package:vigorai_app/features/health/sleep/presentation/sleep_screen.dart';
 import 'package:vigorai_app/features/health/supplements/presentation/supplements_screen.dart';
+import 'package:vigorai_app/features/workout/data/workout_repository.dart';
 
 class _StubAuthRepository implements AuthRepository {
   @override
@@ -93,6 +100,7 @@ Future<void> _pumpNarrowScreen(
   double width = 360.0,
   double height = 780.0,
   double textScale = 1.3,
+  ThemeData? themeData,
 }) async {
   tester.view.devicePixelRatio = 1.0;
   tester.view.physicalSize = Size(width, height);
@@ -130,7 +138,8 @@ Future<void> _pumpNarrowScreen(
         ...extraOverrides,
       ],
       child: MaterialApp(
-        theme: AppTheme.lightTheme,
+        theme: themeData ?? AppTheme.lightTheme,
+        darkTheme: AppTheme.darkTheme,
         builder: (context, child) {
           final mq = MediaQuery.of(context);
           return MediaQuery(
@@ -313,92 +322,174 @@ void main() {
       );
     }
 
+    for (final themeEntry in [
+      (label: 'Light', theme: AppTheme.lightTheme),
+      (label: 'Dark', theme: AppTheme.darkTheme),
+    ]) {
+      testWidgets(
+        'HealthDashboardScreen 5-tab shell (${themeEntry.label}) has zero overflow and non-overlapping headers on 360dp + 1.3x',
+        (tester) async {
+          final state = _sampleHealthState(
+            biometrics: [
+              BiometricLogModel(
+                id: 'b-1',
+                weightKg: 70.0,
+                bodyFatPct: 18.0,
+                muscleMassKg: 35.0,
+                bmi: 23.6,
+                loggedDateIso: '2026-11-22',
+                updatedAt: DateTime.utc(2026, 11, 22),
+              ),
+            ],
+            waterMl: 0,
+            targetWaterMl: 2443,
+            weeklyAdherence: 0.0,
+            pendingSyncCount: 3,
+          );
+
+          final sampleRoutine = WorkoutRoutineModel(
+            id: 'ai-plan-test-day1',
+            name: 'CBum Push — Ngực trên & Vai',
+            splitType: 'PUSH_PULL_LEGS',
+            scheduledWeekdays: [DateTime.now().weekday],
+            updatedAt: DateTime.utc(2026, 11, 23),
+            exercises: const [
+              RoutineExerciseItem(
+                exerciseCode: 'BARBELL_BENCH_PRESS',
+                orderIndex: 0,
+              ),
+            ],
+          );
+
+          await _pumpNarrowScreen(
+            tester,
+            home: const HealthDashboardScreen(),
+            healthState: state,
+            themeData: themeEntry.theme,
+            extraOverrides: [
+              workoutRoutinesProvider.overrideWith((_) async => [sampleRoutine]),
+              exercisesListProvider.overrideWith((_) async => const [
+                    ExerciseModel(
+                      id: 'ex-bench',
+                      code: 'BARBELL_BENCH_PRESS',
+                      nameVi: 'Đẩy ngực ngang với tạ đòn',
+                      equipmentType: 'BARBELL',
+                      model3dGlbUrl: 'assets/3d_bundled/barbell_bench_press.glb',
+                      assetChecksum: 'abc',
+                      primaryMuscles: ['Mat_Muscle_Chest'],
+                    ),
+                  ]),
+              aiReadinessProvider.overrideWith(
+                (_) async => AiAnalyticsRepository.newUserFallbackSnapshot(),
+              ),
+            ],
+            width: 360.0,
+            textScale: 1.3,
+          );
+
+          // Tab 0 (Hom nay): Hero Card, Circular Avatar, Sync chip, Water header
+          expect(find.byKey(const Key('profile_avatar_button')), findsOneWidget);
+          expect(find.text('CBum Push — Ngực trên & Vai'), findsOneWidget);
+          expect(find.text('Bắt đầu tập ngay'), findsOneWidget);
+
+          await tester.scrollUntilVisible(find.text('Lượng nước thông minh'), 200);
+          final waterTitleRect =
+              tester.getRect(find.text('Lượng nước thông minh'));
+          final waterValRect = tester.getRect(find.text('0 / 2443 ml'));
+          expect(waterTitleRect.right, lessThanOrEqualTo(waterValRect.left));
+
+          final tab0Text = _collectAllVisibleStrings(tester).join('\n');
+          expect(tab0Text, contains('Đồng bộ (3)'));
+          for (final forbidden in const [
+            'Offline-First',
+            'Mock API',
+            '(F03)',
+            '(F06)',
+            '(F19)',
+            '(F24)',
+            '(F26)',
+            '(M2)',
+            '(M4)',
+            'SQLite',
+            'Mifflin-St Jeor',
+            '3 bài mẫu MVP',
+            'Ảnh Progress',
+            'cục bộ',
+          ]) {
+            expect(tab0Text, isNot(contains(forbidden)));
+          }
+
+      // Switch to Tab 3 (Dinh duong): FoodScan Card & Supplement header
+          await tester.tap(find.text('Dinh dưỡng'));
+          await tester.pumpAndSettle();
+          expect(find.text('Quét món ăn bằng AI'), findsOneWidget);
+
+          await tester.scrollUntilVisible(
+            find.text('Thực phẩm bổ sung hôm nay'),
+            200,
+          );
+          final suppTitleRect =
+              tester.getRect(find.text('Thực phẩm bổ sung hôm nay'));
+          final suppValRect = tester.getRect(find.text('0% tuần'));
+          expect(suppTitleRect.right, lessThanOrEqualTo(suppValRect.left));
+
+          // Switch across remaining tabs (Tab 1, Tab 2, Tab 4) smoothly with zero overflow
+          await tester.tap(find.text('Lịch tập'));
+          await tester.pumpAndSettle();
+          expect(find.text('Lịch tập trong tuần'), findsOneWidget);
+
+          await tester.tap(find.text('3D Gym'));
+          await tester.pumpAndSettle();
+          expect(find.textContaining('bài tập 3D tương tác'), findsOneWidget);
+
+          await tester.tap(find.text('AI & Cơ thể'));
+          await tester.pumpAndSettle();
+          expect(find.text('Phục hồi 3D'), findsOneWidget);
+        },
+      );
+    }
+
     testWidgets(
-      'HealthDashboardScreen has zero overflow and non-overlapping headers on 360dp + 1.3x',
+      'ProfileSettingsScreen renders Light & Dark Mode cleanly on 360dp + 1.3x with Delete Account & Medical Disclaimer',
       (tester) async {
-        final state = _sampleHealthState(
-          biometrics: [
-            BiometricLogModel(
-              id: 'b-1',
-              weightKg: 70.0,
-              bodyFatPct: 18.0,
-              muscleMassKg: 35.0,
-              bmi: 23.6,
-              loggedDateIso: '2026-11-22',
-              updatedAt: DateTime.utc(2026, 11, 22),
+        final state = _sampleHealthState(biometrics: const []);
+        for (final theme in [AppTheme.lightTheme, AppTheme.darkTheme]) {
+          await _pumpNarrowScreen(
+            tester,
+            home: ProfileSettingsScreen(
+              key: ValueKey('profile-${theme.brightness}'),
             ),
-          ],
-          waterMl: 0,
-          targetWaterMl: 2443,
-          weeklyAdherence: 0.0,
-          pendingSyncCount: 3,
-        );
-
-        await _pumpNarrowScreen(
-          tester,
-          home: const HealthDashboardScreen(),
-          healthState: state,
-          width: 360.0,
-          textScale: 1.3,
-        );
-
-        // Verify non-overlapping headers on water & supplement cards
-        final waterTitleRect = tester.getRect(find.text('Lượng nước thông minh'));
-        final waterValRect = tester.getRect(find.text('0 / 2443 ml'));
-        expect(waterTitleRect.right, lessThanOrEqualTo(waterValRect.left));
-
-        // Verify equal height for Food Scan & Progress Photos cards
-        await tester.scrollUntilVisible(find.text('Quét món AI'), 200);
-        final foodCardRect = tester.getRect(
-          find
-              .ancestor(
-                of: find.text('Quét món AI'),
-                matching: find.byType(Card),
+            healthState: state,
+            themeData: theme,
+            width: 360.0,
+            textScale: 1.3,
+          );
+          expect(find.text('Hồ sơ & Cài đặt'), findsOneWidget);
+          expect(find.text('Giao diện hiển thị'), findsOneWidget);
+          final mainListScrollable = find
+              .descendant(
+                of: find.byType(ListView),
+                matching: find.byType(Scrollable),
               )
-              .first,
-        );
-        final photoCardRect = tester.getRect(
-          find
-              .ancestor(
-                of: find.text('Ảnh tiến độ'),
-                matching: find.byType(Card),
-              )
-              .first,
-        );
-        expect(foodCardRect.height, closeTo(photoCardRect.height, 0.5));
-
-        await tester.scrollUntilVisible(
-          find.text('Thực phẩm bổ sung hôm nay'),
-          200,
-        );
-        final suppTitleRect =
-            tester.getRect(find.text('Thực phẩm bổ sung hôm nay'));
-        final suppValRect = tester.getRect(find.text('0% tuần'));
-        expect(suppTitleRect.right, lessThanOrEqualTo(suppValRect.left));
-
-        await tester.scrollUntilVisible(find.text('Xóa tài khoản'), 200);
-
-        // Verify cleaned copy on Dashboard
-        final allText = _collectAllVisibleStrings(tester).join('\n');
-        for (final forbidden in const [
-          'Offline-First',
-          'Mock API',
-          '(F03)',
-          '(F06)',
-          '(F19)',
-          '(F24)',
-          '(F26)',
-          '(M2)',
-          '(M4)',
-          'SQLite',
-          'Mifflin-St Jeor',
-          '3 bài mẫu MVP',
-          'Ảnh Progress',
-          'cục bộ',
-        ]) {
-          expect(allText, isNot(contains(forbidden)));
+              .first;
+          await tester.scrollUntilVisible(
+            find.text('Xóa tài khoản'),
+            250,
+            scrollable: mainListScrollable,
+          );
+          final allText = _collectAllVisibleStrings(tester).join('\n');
+          expect(allText, contains('Xem lại Miễn trừ Trách nhiệm Y tế'));
+          expect(allText, contains('Xóa tài khoản'));
+          for (final forbidden in const [
+            'Offline-First',
+            'SQLite',
+            'SharedPreferences',
+            'CH Play',
+            '(F26)',
+          ]) {
+            expect(allText, isNot(contains(forbidden)));
+          }
         }
-        expect(allText, contains('Đồng bộ (3)'));
       },
     );
   });
@@ -406,11 +497,12 @@ void main() {
   group('Note.md Section 1 — M1 Screens Copy, CH Play Disclaimers & Narrow Layout',
       () {
     testWidgets(
-        'OnboardingDisclaimerScreen preserves medical disclaimer & citations without IT jargon',
+        'OnboardingDisclaimerScreen 6-step wizard, quick login modal & Step 6 medical disclaimer on 360dp',
         (tester) async {
+      // 1. Step 1 + Quick Login Medical Disclaimer dialog (360dp + 1.3x)
       await _pumpNarrowScreen(
         tester,
-        home: const OnboardingDisclaimerScreen(),
+        home: const OnboardingDisclaimerScreen(initialStep: 0),
         authState: const AuthState(
           isInitialized: true,
           disclaimerAccepted: false,
@@ -418,27 +510,66 @@ void main() {
         ),
         width: 360.0,
         height: 820.0,
+        textScale: 1.3,
+      );
+
+      expect(find.text('Bước 1/6'), findsOneWidget);
+      expect(find.textContaining('Mô hình 3D: Nam'), findsOneWidget);
+      await tester.tap(find.text('Nữ'));
+      await tester.pumpAndSettle();
+      expect(find.text('Mô hình 3D: Nữ - Fitness'), findsOneWidget);
+      await tester.tap(find.text('Đăng nhập'));
+      await tester.pumpAndSettle();
+
+      final dialogText = _collectAllVisibleStrings(tester).join('\n');
+      expect(dialogText, contains('Mifflin-St Jeor'));
+      expect(dialogText, contains('Epley (1985) & Brzycki (1993)'));
+      final quickLoginBtn = tester.widget<FilledButton>(
+        find.widgetWithText(FilledButton, 'Vào Đăng nhập'),
+      );
+      expect(quickLoginBtn.onPressed, isNull);
+      await tester.tap(find.text('Đóng'));
+      await tester.pumpAndSettle();
+
+      // 2. Step 6 summary & mandatory medical disclaimer checkbox in Dark Mode
+      await _pumpNarrowScreen(
+        tester,
+        home: const OnboardingDisclaimerScreen(
+          key: ValueKey('onboarding-step6'),
+          initialStep: 5,
+        ),
+        authState: const AuthState(
+          isInitialized: true,
+          disclaimerAccepted: false,
+          isAuthenticated: false,
+        ),
+        themeData: AppTheme.darkTheme,
+        width: 360.0,
+        height: 820.0,
         textScale: 1.0,
       );
 
-      final allText = _collectAllVisibleStrings(tester).join('\n');
-      expect(allText, contains('Mifflin-St Jeor'));
-      expect(allText, contains('Epley (1985) & Brzycki (1993)'));
+      final step6Text = _collectAllVisibleStrings(tester).join('\n');
+      expect(step6Text, contains('Bước 6/6'));
+      expect(step6Text, contains('Mifflin-St Jeor'));
+      expect(step6Text, contains('Epley (1985) & Brzycki (1993)'));
       for (final forbidden in const [
         'Offline-First',
         'Blender MCP',
         'YOLOv8',
         'Android Health Connect',
         'CH Play Mandatory',
+        '(Bulk)',
+        '(Cut)',
       ]) {
-        expect(allText, isNot(contains(forbidden)));
+        expect(step6Text, isNot(contains(forbidden)));
       }
 
-      // Continue button must remain disabled until checkbox is ticked
-      final continueBtn = tester.widget<FilledButton>(
-        find.widgetWithText(FilledButton, 'Đồng ý & Tiếp tục Đăng nhập'),
+      // Finish button must remain disabled until checkbox is ticked
+      final finishBtn = tester.widget<FilledButton>(
+        find.widgetWithText(FilledButton, 'Hoàn tất & Tạo tài khoản'),
       );
-      expect(continueBtn.onPressed, isNull);
+      expect(finishBtn.onPressed, isNull);
     });
 
     testWidgets(
@@ -587,5 +718,99 @@ void main() {
         }
       }
     });
+
+    testWidgets(
+      'AppLaunchGate prevents Onboarding/Login flash on cold start and routes directly',
+      (tester) async {
+        GoRouter buildTestRouter() => GoRouter(
+              initialLocation: '/onboarding',
+              routes: [
+                GoRoute(
+                  path: '/onboarding',
+                  builder: (_, __) => const AppLaunchGate(),
+                ),
+                GoRoute(
+                  path: '/login',
+                  builder: (_, __) => const Scaffold(body: Text('LOGIN_TARGET')),
+                ),
+                GoRoute(
+                  path: '/health',
+                  builder: (_, __) =>
+                      const Scaffold(body: Text('HEALTH_TARGET')),
+                ),
+              ],
+            );
+
+        // 1. Uninitialized: shows launch splash, never flashes Bước 1/6 or Login
+        await tester.pumpWidget(
+          ProviderScope(
+            key: UniqueKey(),
+            overrides: [
+              authControllerProvider.overrideWith(
+                (_) => _FakeAuthController(
+                  const AuthState(isInitialized: false),
+                ),
+              ),
+            ],
+            child: MaterialApp.router(
+              theme: AppTheme.darkTheme,
+              routerConfig: buildTestRouter(),
+            ),
+          ),
+        );
+        await tester.pump();
+        expect(find.byKey(const Key('vigor_launch_splash')), findsOneWidget);
+        expect(find.text('Bước 1/6'), findsNothing);
+        expect(find.text('LOGIN_TARGET'), findsNothing);
+
+        // 2. Initialized + Authenticated: jumps straight to /health
+        await tester.pumpWidget(
+          ProviderScope(
+            key: UniqueKey(),
+            overrides: [
+              authControllerProvider.overrideWith(
+                (_) => _FakeAuthController(
+                  const AuthState(
+                    isInitialized: true,
+                    disclaimerAccepted: true,
+                    isAuthenticated: true,
+                  ),
+                ),
+              ),
+            ],
+            child: MaterialApp.router(
+              theme: AppTheme.lightTheme,
+              routerConfig: buildTestRouter(),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+        expect(find.text('HEALTH_TARGET'), findsOneWidget);
+
+        // 3. Initialized + Disclaimer accepted + Logged out: jumps straight to /login
+        await tester.pumpWidget(
+          ProviderScope(
+            key: UniqueKey(),
+            overrides: [
+              authControllerProvider.overrideWith(
+                (_) => _FakeAuthController(
+                  const AuthState(
+                    isInitialized: true,
+                    disclaimerAccepted: true,
+                    isAuthenticated: false,
+                  ),
+                ),
+              ),
+            ],
+            child: MaterialApp.router(
+              theme: AppTheme.darkTheme,
+              routerConfig: buildTestRouter(),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+        expect(find.text('LOGIN_TARGET'), findsOneWidget);
+      },
+    );
   });
 }

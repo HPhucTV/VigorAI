@@ -38,12 +38,12 @@ class BiometricsScreen extends ConsumerWidget {
         label: const Text('Ghi nhận'),
       ),
       body: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 12, 16, 88),
+        padding: const EdgeInsets.fromLTRB(20, 14, 20, 88),
         children: [
           if (latest != null) ...[
             Card(
               child: Padding(
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.all(18),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -58,10 +58,10 @@ class BiometricsScreen extends ConsumerWidget {
                             child: Text(
                               '${latest.weightKg.toStringAsFixed(1)} kg',
                               maxLines: 1,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 28,
                                 fontWeight: FontWeight.bold,
-                                color: AppColors.primary,
+                                color: AppColors.telemetryCyan(context),
                               ),
                             ),
                           ),
@@ -77,10 +77,14 @@ class BiometricsScreen extends ConsumerWidget {
                                 vertical: 6,
                               ),
                               decoration: BoxDecoration(
-                                color: const Color(0xFFE3F2FD),
+                                color: AppColors.tintedSurface(
+                                  context,
+                                  AppColors.telemetryCyan(context),
+                                ),
                                 borderRadius: BorderRadius.circular(12),
                                 border: Border.all(
-                                  color: AppColors.primary.withValues(alpha: 0.25),
+                                  color: AppColors.telemetryCyan(context)
+                                      .withValues(alpha: 0.3),
                                 ),
                               ),
                               child: FittedBox(
@@ -89,10 +93,10 @@ class BiometricsScreen extends ConsumerWidget {
                                   'BMI ${latest.bmi.toStringAsFixed(1)} · '
                                   '${BiometricLogModel.classifyAsianBmi(latest.bmi)}',
                                   maxLines: 1,
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontSize: 13,
                                     fontWeight: FontWeight.w600,
-                                    color: AppColors.primary,
+                                    color: AppColors.telemetryCyan(context),
                                   ),
                                 ),
                               ),
@@ -104,7 +108,10 @@ class BiometricsScreen extends ConsumerWidget {
                     const SizedBox(height: 4),
                     Text(
                       'Cập nhật: ${latest.loggedDateIso}',
-                      style: const TextStyle(fontSize: 13, color: Colors.black54),
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: AppColors.secondaryText(context),
+                      ),
                     ),
                     const SizedBox(height: 12),
                     IntrinsicHeight(
@@ -536,7 +543,7 @@ class _MetricTile extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
-        color: const Color(0xFFF3F6FA),
+        color: AppColors.subtleSurface(context),
         borderRadius: BorderRadius.circular(10),
       ),
       child: Column(
@@ -547,7 +554,10 @@ class _MetricTile extends StatelessWidget {
             label,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: const TextStyle(fontSize: 12, color: Colors.black54),
+            style: TextStyle(
+              fontSize: 12,
+              color: AppColors.secondaryText(context),
+            ),
           ),
           const SizedBox(height: 6),
           FittedBox(

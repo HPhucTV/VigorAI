@@ -10,7 +10,9 @@ import '../data/exercise_repository.dart';
 import 'widgets/muscle_3d_viewer_widget.dart';
 
 class Gym3DLibraryScreen extends ConsumerStatefulWidget {
-  const Gym3DLibraryScreen({super.key});
+  final bool embedded;
+
+  const Gym3DLibraryScreen({super.key, this.embedded = false});
 
   @override
   ConsumerState<Gym3DLibraryScreen> createState() => _Gym3DLibraryScreenState();
@@ -49,204 +51,277 @@ class _Gym3DLibraryScreenState extends ConsumerState<Gym3DLibraryScreen> {
   Widget build(BuildContext context) {
     final exercisesAsync = ref.watch(exercisesListProvider);
     final avatarPreset = ref.watch(bodyAvatarPresetProvider);
+    final primaryColor = Theme.of(context).colorScheme.primary;
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Phòng tập 3D Tương tác'),
-        actions: [
-          PopupMenuButton<BodyAvatarPreset>(
-            tooltip: 'Chọn mô hình cơ thể 3D',
-            initialValue: avatarPreset,
-            onSelected: (preset) {
-              ref.read(bodyAvatarPresetProvider.notifier).state = preset;
-            },
-            itemBuilder: (_) => BodyAvatarPreset.values
-                .map(
-                  (preset) => PopupMenuItem<BodyAvatarPreset>(
-                    value: preset,
+    Widget buildAvatarMenuButton() => PopupMenuButton<BodyAvatarPreset>(
+          tooltip: 'Chọn mô hình cơ thể 3D',
+          initialValue: avatarPreset,
+          onSelected: (preset) {
+            ref.read(bodyAvatarPresetProvider.notifier).state = preset;
+          },
+          itemBuilder: (_) => BodyAvatarPreset.values
+              .map(
+                (preset) => PopupMenuItem<BodyAvatarPreset>(
+                  value: preset,
+                  child: Row(
+                    children: [
+                      Icon(
+                        preset == avatarPreset
+                            ? Icons.radio_button_checked
+                            : Icons.radio_button_unchecked,
+                        size: 18,
+                        color: primaryColor,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(preset.labelVi),
+                    ],
+                  ),
+                ),
+              )
+              .toList(),
+          child: Chip(
+            avatar: Icon(Icons.accessibility_new, size: 16, color: primaryColor),
+            label: Text(
+              avatarPreset.shortLabelVi,
+              style: const TextStyle(fontSize: 12),
+            ),
+            visualDensity: VisualDensity.compact,
+          ),
+        );
+
+    final body = exercisesAsync.when(
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (err, _) => Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.error_outline,
+                  size: 42, color: AppColors.warningRed),
+              const SizedBox(height: 12),
+              Text('Không thể tải kho bài tập 3D: $err'),
+              const SizedBox(height: 12),
+              FilledButton(
+                onPressed: () => ref.invalidate(exercisesListProvider),
+                child: const Text('Thử lại'),
+              ),
+            ],
+          ),
+        ),
+      ),
+      data: (allExercises) {
+        final visiblePool = (!widget.embedded && FeatureFlags.isMvpClosedTesting)
+            ? allExercises.where((e) => e.isBundled).toList()
+            : allExercises;
+
+        final filtered = visiblePool.where((e) {
+          if (_selectedMuscle != 'ALL') {
+            final hitsMuscle = e.primaryMuscles.contains(_selectedMuscle) ||
+                e.secondaryMuscles.contains(_selectedMuscle);
+            if (!hitsMuscle) return false;
+          }
+          if (_selectedEquipment != 'ALL' &&
+              e.equipmentType != _selectedEquipment) {
+            return false;
+          }
+          if (_searchQuery.trim().isNotEmpty) {
+            final q = _searchQuery.trim().toLowerCase();
+            return e.nameVi.toLowerCase().contains(q) ||
+                e.nameEn.toLowerCase().contains(q) ||
+                e.code.toLowerCase().contains(q);
+          }
+          return true;
+        }).toList();
+
+        return Column(
+          children: [
+            if (widget.embedded)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 10, 16, 2),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        '${filtered.length} bài tập 3D tương tác',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    buildAvatarMenuButton(),
+                  ],
+                ),
+              )
+            else if (FeatureFlags.isMvpClosedTesting)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+                child: Card(
+                  color: AppColors.tintedSurface(context, primaryColor),
+                  child: Padding(
+                    padding: const EdgeInsets.all(12),
                     child: Row(
                       children: [
-                        Icon(
-                          preset == avatarPreset
-                              ? Icons.radio_button_checked
-                              : Icons.radio_button_unchecked,
-                          size: 18,
-                          color: AppColors.primary,
+                        Icon(Icons.view_in_ar, color: primaryColor),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            'Đã có sẵn ${visiblePool.length} bài tập 3D — xoay 360°, Đúng/Sai & Bản đồ cơ.',
+                            style: const TextStyle(fontSize: 13),
+                          ),
                         ),
-                        const SizedBox(width: 8),
-                        Text(preset.labelVi),
                       ],
                     ),
                   ),
-                )
-                .toList(),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-              child: Chip(
-                avatar: const Icon(Icons.accessibility_new, size: 16),
-                label: Text(
-                  avatarPreset.shortLabelVi,
-                  style: const TextStyle(fontSize: 12),
                 ),
-                visualDensity: VisualDensity.compact,
               ),
-            ),
-          ),
-        ],
-      ),
-      body: exercisesAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (err, _) => Center(
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(Icons.error_outline, size: 42, color: AppColors.warningRed),
-                const SizedBox(height: 12),
-                Text('Không thể tải kho bài tập 3D: $err'),
-                const SizedBox(height: 12),
-                FilledButton(
-                  onPressed: () => ref.invalidate(exercisesListProvider),
-                  child: const Text('Thử lại'),
-                ),
-              ],
-            ),
-          ),
-        ),
-        data: (allExercises) {
-          final visiblePool = FeatureFlags.isMvpClosedTesting
-              ? allExercises.where((e) => e.isBundled).toList()
-              : allExercises;
-
-          final filtered = visiblePool.where((e) {
-            if (_selectedMuscle != 'ALL') {
-              final hitsMuscle = e.primaryMuscles.contains(_selectedMuscle) ||
-                  e.secondaryMuscles.contains(_selectedMuscle);
-              if (!hitsMuscle) return false;
-            }
-            if (_selectedEquipment != 'ALL' &&
-                e.equipmentType != _selectedEquipment) {
-              return false;
-            }
-            if (_searchQuery.trim().isNotEmpty) {
-              final q = _searchQuery.trim().toLowerCase();
-              return e.nameVi.toLowerCase().contains(q) ||
-                  e.nameEn.toLowerCase().contains(q) ||
-                  e.code.toLowerCase().contains(q);
-            }
-            return true;
-          }).toList();
-
-          return Column(
-            children: [
-              if (FeatureFlags.isMvpClosedTesting)
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
-                  child: Card(
-                    color: const Color(0xFFE3F2FD),
-                    child: Padding(
-                      padding: const EdgeInsets.all(12),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 10, 20, 8),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      decoration: const InputDecoration(
+                        hintText: 'Tìm bài tập (Đẩy ngực, Squat...)',
+                        prefixIcon: Icon(Icons.search),
+                        isDense: true,
+                      ),
+                      onChanged: (v) => setState(() => _searchQuery = v),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  PopupMenuButton<String>(
+                    tooltip: 'Lọc theo dụng cụ',
+                    initialValue: _selectedEquipment,
+                    onSelected: (v) => setState(() => _selectedEquipment = v),
+                    itemBuilder: (_) => _equipmentFilters.entries
+                        .map(
+                          (e) => PopupMenuItem<String>(
+                            value: e.key,
+                            child: Text(e.value),
+                          ),
+                        )
+                        .toList(),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 11,
+                      ),
+                      decoration: BoxDecoration(
+                        color: _selectedEquipment == 'ALL'
+                            ? AppColors.elevatedSurface(context)
+                            : AppColors.tintedSurface(
+                                context,
+                                AppColors.telemetryCyan(context),
+                              ),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: _selectedEquipment == 'ALL'
+                              ? AppColors.subtleBorder(context)
+                              : AppColors.telemetryCyan(context),
+                        ),
+                      ),
                       child: Row(
+                        mainAxisSize: MainAxisSize.min,
                         children: [
-                          const Icon(Icons.view_in_ar, color: AppColors.primary),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: Text(
-                              'Đã có sẵn ${visiblePool.length} bài tập 3D — xoay 360°, Đúng/Sai & Bản đồ cơ.',
-                              style: const TextStyle(fontSize: 13),
+                          Icon(
+                            Icons.tune_rounded,
+                            size: 16,
+                            color: _selectedEquipment == 'ALL'
+                                ? AppColors.secondaryText(context)
+                                : AppColors.telemetryCyan(context),
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            _selectedEquipment == 'ALL'
+                                ? 'Dụng cụ'
+                                : (_equipmentFilters[_selectedEquipment] ??
+                                    _selectedEquipment),
+                            style: const TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
                             ),
                           ),
                         ],
                       ),
                     ),
                   ),
-                ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 10, 16, 6),
-                child: TextField(
-                  decoration: const InputDecoration(
-                    hintText: 'Tìm bài tập (Đẩy ngực, Incline, Ép cáp...)',
-                    prefixIcon: Icon(Icons.search),
-                    isDense: true,
-                  ),
-                  onChanged: (v) => setState(() => _searchQuery = v),
-                ),
+                ],
               ),
-              SizedBox(
-                height: 40,
-                child: ListView(
-                  scrollDirection: Axis.horizontal,
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  children: _muscleFilters.entries.map((entry) {
-                    final selected = _selectedMuscle == entry.key;
-                    return Padding(
-                      padding: const EdgeInsets.only(right: 8),
-                      child: FilterChip(
-                        label: Text(entry.value),
-                        selected: selected,
-                        visualDensity: VisualDensity.compact,
-                        onSelected: (_) =>
-                            setState(() => _selectedMuscle = entry.key),
+            ),
+            SizedBox(
+              height: 40,
+              child: ListView(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                children: _muscleFilters.entries.map((entry) {
+                  final selected = _selectedMuscle == entry.key;
+                  return Padding(
+                    padding: const EdgeInsets.only(right: 8),
+                    child: FilterChip(
+                      label: Text(entry.value),
+                      selected: selected,
+                      visualDensity: VisualDensity.compact,
+                      onSelected: (_) =>
+                          setState(() => _selectedMuscle = entry.key),
+                    ),
+                  );
+                }).toList(),
+              ),
+            ),
+            const SizedBox(height: 4),
+            Expanded(
+              child: RefreshIndicator(
+                onRefresh: () async {
+                  await ref
+                      .read(exerciseRepositoryProvider)
+                      .loadExercises(forceRefresh: true);
+                  ref.invalidate(exercisesListProvider);
+                },
+                child: filtered.isEmpty
+                    ? ListView(
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        children: const [
+                          SizedBox(height: 120),
+                          Center(
+                            child: Text('Không tìm thấy bài tập phù hợp.'),
+                          ),
+                        ],
+                      )
+                    : ListView.separated(
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        padding: const EdgeInsets.fromLTRB(20, 10, 20, 24),
+                        itemCount: filtered.length,
+                        separatorBuilder: (_, __) => const SizedBox(height: 12),
+                        itemBuilder: (context, index) =>
+                            _Exercise3DCard(exercise: filtered[index]),
                       ),
-                    );
-                  }).toList(),
-                ),
               ),
-              const SizedBox(height: 4),
-              SizedBox(
-                height: 40,
-                child: ListView(
-                  scrollDirection: Axis.horizontal,
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  children: _equipmentFilters.entries.map((entry) {
-                    final selected = _selectedEquipment == entry.key;
-                    return Padding(
-                      padding: const EdgeInsets.only(right: 8),
-                      child: ChoiceChip(
-                        label: Text(entry.value),
-                        selected: selected,
-                        visualDensity: VisualDensity.compact,
-                        onSelected: (_) =>
-                            setState(() => _selectedEquipment = entry.key),
-                      ),
-                    );
-                  }).toList(),
-                ),
-              ),
-              Expanded(
-                child: RefreshIndicator(
-                  onRefresh: () async {
-                    await ref
-                        .read(exerciseRepositoryProvider)
-                        .loadExercises(forceRefresh: true);
-                    ref.invalidate(exercisesListProvider);
-                  },
-                  child: filtered.isEmpty
-                      ? ListView(
-                          physics: const AlwaysScrollableScrollPhysics(),
-                          children: const [
-                            SizedBox(height: 120),
-                            Center(
-                              child: Text('Không tìm thấy bài tập phù hợp.'),
-                            ),
-                          ],
-                        )
-                      : ListView.separated(
-                          physics: const AlwaysScrollableScrollPhysics(),
-                          padding: const EdgeInsets.all(16),
-                          itemCount: filtered.length,
-                          separatorBuilder: (_, __) =>
-                              const SizedBox(height: 10),
-                          itemBuilder: (context, index) =>
-                              _Exercise3DCard(exercise: filtered[index]),
-                        ),
-                ),
-              ),
-            ],
-          );
-        },
+            ),
+          ],
+        );
+      },
+    );
+
+    if (widget.embedded) {
+      return body;
+    }
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Phòng tập 3D Tương tác'),
+        actions: [
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            child: buildAvatarMenuButton(),
+          ),
+        ],
       ),
+      body: body,
     );
   }
 }
@@ -272,20 +347,25 @@ class _Exercise3DCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cyan = AppColors.telemetryCyan(context);
     return Card(
       child: InkWell(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(24),
         onTap: () => context.push('/gym3d/exercise/${exercise.code}'),
         child: Padding(
-          padding: const EdgeInsets.all(14),
+          padding: const EdgeInsets.all(16),
           child: Row(
             children: [
-              CircleAvatar(
-                radius: 24,
-                backgroundColor: AppColors.primary.withValues(alpha: 0.12),
+              Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  color: cyan.withValues(alpha: 0.14),
+                  borderRadius: BorderRadius.circular(16),
+                ),
                 child: Icon(
                   _iconForEquipment(exercise.equipmentType),
-                  color: AppColors.primary,
+                  color: cyan,
                 ),
               ),
               const SizedBox(width: 14),

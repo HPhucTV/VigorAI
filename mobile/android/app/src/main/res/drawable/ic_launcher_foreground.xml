@@ -1,10 +1,93 @@
 <?xml version="1.0" encoding="utf-8"?>
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
     android:width="108dp"
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
+
+    <!-- Left outer steel weight plate (x: 24..28, y: 40..66) -->
+    <path android:pathData="M25.4,40 H26.6 A1.4,1.4 0 0,1 28,41.4 V64.6 A1.4,1.4 0 0,1 26.6,66 H25.4 A1.4,1.4 0 0,1 24,64.6 V41.4 A1.4,1.4 0 0,1 25.4,40 Z">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:type="linear"
+                android:startX="24"
+                android:startY="40"
+                android:endX="28"
+                android:endY="66"
+                android:startColor="#FF94A3B8"
+                android:endColor="#FF475569" />
+        </aapt:attr>
+    </path>
+
+    <!-- Left inner electric-blue plate (x: 29.5..33.5, y: 44..62) -->
     <path
-        android:fillColor="#FFFFFF"
-        android:pathData="M34,34 L54,76 L74,34 L64,34 L54,58 L44,34 Z" />
+        android:fillColor="#E038BDF8"
+        android:pathData="M30.9,44 H32.1 A1.4,1.4 0 0,1 33.5,45.4 V60.6 A1.4,1.4 0 0,1 32.1,62 H30.9 A1.4,1.4 0 0,1 29.5,60.6 V45.4 A1.4,1.4 0 0,1 30.9,44 Z" />
+
+    <!-- Left collar bar -->
+    <path
+        android:fillColor="#FF64748B"
+        android:pathData="M33.5,51.2 H38.5 V54.8 H33.5 Z" />
+
+    <!-- Right outer steel weight plate (x: 80..84, y: 40..66) -->
+    <path android:pathData="M81.4,40 H82.6 A1.4,1.4 0 0,1 84,41.4 V64.6 A1.4,1.4 0 0,1 82.6,66 H81.4 A1.4,1.4 0 0,1 80,64.6 V41.4 A1.4,1.4 0 0,1 81.4,40 Z">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:type="linear"
+                android:startX="80"
+                android:startY="40"
+                android:endX="84"
+                android:endY="66"
+                android:startColor="#FF94A3B8"
+                android:endColor="#FF475569" />
+        </aapt:attr>
+    </path>
+
+    <!-- Right inner electric-blue plate (x: 74.5..78.5, y: 44..62) -->
+    <path
+        android:fillColor="#E038BDF8"
+        android:pathData="M75.9,44 H77.1 A1.4,1.4 0 0,1 78.5,45.4 V60.6 A1.4,1.4 0 0,1 77.1,62 H75.9 A1.4,1.4 0 0,1 74.5,60.6 V45.4 A1.4,1.4 0 0,1 75.9,44 Z" />
+
+    <!-- Right collar bar -->
+    <path
+        android:fillColor="#FF64748B"
+        android:pathData="M69.5,51.2 H74.5 V54.8 H69.5 Z" />
+
+    <!-- Left white-silver V blade -->
+    <path android:pathData="M34.5,35.5 L44.2,35.5 L53.8,63.2 L48.8,76.5 Z">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:type="linear"
+                android:startX="34.5"
+                android:startY="35.5"
+                android:endX="53.8"
+                android:endY="76.5"
+                android:startColor="#FFFFFFFF"
+                android:endColor="#FFCBD5E1" />
+        </aapt:attr>
+    </path>
+
+    <!-- Right electric-volt lightning V blade -->
+    <path android:pathData="M63.8,35.5 L73.5,35.5 L58.2,76.5 L48.8,76.5 L53.8,63.2 Z">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:type="linear"
+                android:startX="63.8"
+                android:startY="35.5"
+                android:endX="53.5"
+                android:endY="76.5"
+                android:startColor="#FFE6FF5C"
+                android:centerColor="#FFCCFF00"
+                android:endColor="#FF9BE000" />
+        </aapt:attr>
+    </path>
+
+    <!-- Top 4-point AI spark star -->
+    <path
+        android:fillColor="#FF38BDF8"
+        android:pathData="M54,30 L55.8,34.7 L60.5,36.5 L55.8,38.3 L54,43 L52.2,38.3 L47.5,36.5 L52.2,34.7 Z" />
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M54,34.3 A2.2,2.2 0 1,1 53.99,34.3 Z" />
 </vector>

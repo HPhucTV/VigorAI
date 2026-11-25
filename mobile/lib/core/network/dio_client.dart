@@ -17,6 +17,8 @@ class StorageKeys {
   static const String disclaimerAcceptedAt = 'vigorai_medical_disclaimer_at';
   static const String currentUserJson = 'vigorai_current_user_json';
   static const String lastSyncUtc = 'vigorai_last_sync_utc';
+  static const String fitnessProfileJson = 'vigorai_user_fitness_profile_json';
+  static const String themeModePreference = 'vigorai_theme_mode_preference';
 }
 
 final secureStorageProvider = Provider<FlutterSecureStorage>((ref) {
@@ -236,6 +238,12 @@ class MockApiInterceptor extends Interceptor {
         userMap['gender'] = body['gender'] ?? userMap['gender'];
         userMap['height_cm'] = body['height_cm'] ?? userMap['height_cm'];
         userMap['fitness_goal'] = body['fitness_goal'] ?? userMap['fitness_goal'];
+        if (body['birth_date'] != null) {
+          userMap['birth_date'] = body['birth_date'];
+        }
+        if (body['activity_level'] != null) {
+          userMap['activity_level'] = body['activity_level'];
+        }
         userMap['medical_disclaimer_accepted'] = true;
 
         handler.resolve(

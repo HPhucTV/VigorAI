@@ -54,7 +54,7 @@ class _VolumeAnalyticsViewState extends ConsumerState<VolumeAnalyticsView> {
           onRefresh: () async =>
               ref.invalidate(analyticsSummaryProvider(_selectedDays)),
           child: ListView(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.fromLTRB(20, 14, 20, 24),
             children: [
               // 1. Period Filter (7d, 30d, 90d, 1y)
               SingleChildScrollView(
@@ -85,17 +85,20 @@ class _VolumeAnalyticsViewState extends ConsumerState<VolumeAnalyticsView> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Text(
+                            Text(
                               'Tổng Volume Load',
-                              style: TextStyle(fontSize: 12, color: Colors.black54),
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: AppColors.secondaryText(context),
+                              ),
                             ),
                             const SizedBox(height: 4),
                             Text(
                               '${summary.totalVolumeKg.toStringAsFixed(0)} kg',
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 20,
                                 fontWeight: FontWeight.bold,
-                                color: AppColors.primary,
+                                color: AppColors.telemetryCyan(context),
                               ),
                             ),
                             Text(
@@ -110,25 +113,28 @@ class _VolumeAnalyticsViewState extends ConsumerState<VolumeAnalyticsView> {
                   const SizedBox(width: 10),
                   Expanded(
                     child: Card(
-                      color: const Color(0xFFFFF3E0),
+                      color: AppColors.tintedSurface(
+                        context,
+                        AppColors.calorieOrange,
+                      ),
                       child: Padding(
                         padding: const EdgeInsets.all(14),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Row(
+                            Row(
                               children: [
-                                Icon(
+                                const Icon(
                                   Icons.local_fire_department,
                                   color: AppColors.calorieOrange,
                                   size: 18,
                                 ),
-                                SizedBox(width: 4),
+                                const SizedBox(width: 4),
                                 Text(
                                   'Chuỗi Tập luyện',
                                   style: TextStyle(
                                     fontSize: 12,
-                                    color: Colors.black54,
+                                    color: AppColors.secondaryText(context),
                                   ),
                                 ),
                               ],
@@ -168,13 +174,15 @@ class _VolumeAnalyticsViewState extends ConsumerState<VolumeAnalyticsView> {
                       ),
                       const SizedBox(height: 12),
                       if (summary.weeklyVolume.isEmpty)
-                        const Padding(
-                          padding: EdgeInsets.symmetric(vertical: 28),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 28),
                           child: Center(
                             child: Text(
                               'Chưa có buổi tập hoàn thành trong khoảng thời gian này.\nHãy hoàn thành 1 buổi tập để xem biểu đồ!',
                               textAlign: TextAlign.center,
-                              style: TextStyle(color: Colors.black54),
+                              style: TextStyle(
+                                color: AppColors.secondaryText(context),
+                              ),
                             ),
                           ),
                         )
@@ -322,9 +330,12 @@ class _VolumeAnalyticsViewState extends ConsumerState<VolumeAnalyticsView> {
                   (pr) => Card(
                     margin: const EdgeInsets.only(bottom: 8),
                     child: ListTile(
-                      leading: const CircleAvatar(
-                        backgroundColor: Color(0xFFFFF3E0),
-                        child: Icon(
+                      leading: CircleAvatar(
+                        backgroundColor: AppColors.tintedSurface(
+                          context,
+                          AppColors.calorieOrange,
+                        ),
+                        child: const Icon(
                           Icons.emoji_events,
                           color: AppColors.calorieOrange,
                         ),

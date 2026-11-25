@@ -182,7 +182,7 @@ class _PlateCalculatorSheetContentState
             ),
             const SizedBox(height: 12),
             Card(
-              color: const Color(0xFFE3F2FD),
+              color: AppColors.tintedSurface(context, AppColors.primary),
               child: Padding(
                 padding: const EdgeInsets.all(12),
                 child: Column(
@@ -218,7 +218,7 @@ class _PlateCalculatorSheetContentState
             if (result.warningMessage != null) ...[
               const SizedBox(height: 8),
               Card(
-                color: const Color(0xFFFFF3E0),
+                color: AppColors.tintedSurface(context, AppColors.calorieOrange),
                 child: Padding(
                   padding: const EdgeInsets.all(12),
                   child: Row(

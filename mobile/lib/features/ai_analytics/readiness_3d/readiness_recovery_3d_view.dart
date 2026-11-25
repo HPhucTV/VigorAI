@@ -1,4 +1,8 @@
 // [OWNER: M2] Man hinh AI Readiness Dashboard, Ban do Phuc hoi Co bap 3D & Goi y Tai trong (T-M2-10 / F20, F21, F23)
+import 'dart:async';
+import 'dart:io' show Platform;
+
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -10,7 +14,9 @@ import '../../gym3d/presentation/widgets/muscle_3d_viewer_widget.dart';
 import '../data/ai_analytics_repository.dart';
 
 class ReadinessRecovery3DView extends ConsumerStatefulWidget {
-  const ReadinessRecovery3DView({super.key});
+  final bool isActive;
+
+  const ReadinessRecovery3DView({super.key, this.isActive = true});
 
   @override
   ConsumerState<ReadinessRecovery3DView> createState() =>
@@ -21,6 +27,46 @@ class _ReadinessRecovery3DViewState
     extends ConsumerState<ReadinessRecovery3DView> {
   CameraPreset3D _cameraPreset = CameraPreset3D.front;
   String? _selectedMuscleId;
+  bool _mountWebView = false;
+  Timer? _deferTimer;
+
+  bool get _isFlutterTest =>
+      !kIsWeb && Platform.environment.containsKey('FLUTTER_TEST');
+
+  @override
+  void initState() {
+    super.initState();
+    _syncWebViewMount(widget.isActive);
+  }
+
+  @override
+  void didUpdateWidget(covariant ReadinessRecovery3DView oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.isActive != widget.isActive) {
+      _syncWebViewMount(widget.isActive);
+    }
+  }
+
+  @override
+  void dispose() {
+    _deferTimer?.cancel();
+    super.dispose();
+  }
+
+  void _syncWebViewMount(bool active) {
+    _deferTimer?.cancel();
+    if (!active || _isFlutterTest) {
+      if (_mountWebView) {
+        setState(() => _mountWebView = false);
+      }
+      return;
+    }
+    _deferTimer = Timer(const Duration(milliseconds: 220), () {
+      if (mounted && widget.isActive && !_mountWebView) {
+        setState(() => _mountWebView = true);
+      }
+    });
+  }
 
   Color _scoreColor(double score) {
     if (score >= 75.0) return AppColors.muscleRecoveredGreen;
@@ -77,7 +123,7 @@ class _ReadinessRecovery3DViewState
     return RefreshIndicator(
       onRefresh: () async => ref.invalidate(aiReadinessProvider),
       child: ListView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.fromLTRB(20, 14, 20, 24),
         children: [
           // 1. Readiness Score Gauge Card (F20)
           Card(
@@ -94,7 +140,7 @@ class _ReadinessRecovery3DViewState
                         CircularProgressIndicator(
                           value: (snapshot.readinessScore / 100.0).clamp(0.0, 1.0),
                           strokeWidth: 9,
-                          backgroundColor: Colors.grey.shade200,
+                          backgroundColor: AppColors.subtleSurface(context),
                           color: scoreColor,
                         ),
                         Center(
@@ -121,11 +167,11 @@ class _ReadinessRecovery3DViewState
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
+                        Text(
                           'Điểm Sẵn sàng Tập luyện',
                           style: TextStyle(
                             fontSize: 13,
-                            color: Colors.black54,
+                            color: AppColors.secondaryText(context),
                           ),
                         ),
                         const SizedBox(height: 4),
@@ -154,19 +200,25 @@ class _ReadinessRecovery3DViewState
           // 2. AI Insights
           if (snapshot.insights.isNotEmpty)
             Card(
-              color: const Color(0xFFF3F6FB),
+              color: AppColors.subtleSurface(context),
               child: Padding(
                 padding: const EdgeInsets.all(14),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Row(
+                    Row(
                       children: [
-                        Icon(Icons.auto_awesome, color: AppColors.primary, size: 18),
-                        SizedBox(width: 6),
-                        Text(
-                          'Phân tích từ AI Sinh lý & Tập luyện',
-                          style: TextStyle(fontWeight: FontWeight.bold),
+                        Icon(
+                          Icons.auto_awesome,
+                          color: AppColors.telemetryCyan(context),
+                          size: 18,
+                        ),
+                        const SizedBox(width: 6),
+                        const Expanded(
+                          child: Text(
+                            'Phân tích từ AI Sinh lý & Tập luyện',
+                            style: TextStyle(fontWeight: FontWeight.bold),
+                          ),
                         ),
                       ],
                     ),
@@ -183,52 +235,100 @@ class _ReadinessRecovery3DViewState
             ),
           const SizedBox(height: 12),
 
-          // 3. 3D Muscle Recovery Map (F23)
+          // 3. 3D Muscle Recovery Map (F23) with Floating Camera HUD
           const Text(
             'Bản đồ Phục hồi Cơ bắp 3D (Chạm vào từng bó cơ)',
-            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+            style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
           ),
-          const SizedBox(height: 8),
-          Muscle3DViewerWidget(
-            glbAssetOrUrl: avatarPreset.baseMannequinAssetPath,
-            muscleColorsMap: muscleColors,
-            cameraPreset: _cameraPreset,
-            avatarPreset: avatarPreset,
-            isPlaying: false,
-            height: 320,
-            onMuscleTap: (matId) {
-              setState(() => _selectedMuscleId = matId);
-            },
+          const SizedBox(height: 10),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(26),
+            child: Stack(
+              children: [
+                if (_mountWebView)
+                  Muscle3DViewerWidget(
+                    glbAssetOrUrl: avatarPreset.baseMannequinAssetPath,
+                    muscleColorsMap: muscleColors,
+                    cameraPreset: _cameraPreset,
+                    avatarPreset: avatarPreset,
+                    isPlaying: false,
+                    height: 330,
+                    onMuscleTap: (matId) {
+                      setState(() => _selectedMuscleId = matId);
+                    },
+                  )
+                else
+                  Container(
+                    height: 330,
+                    decoration: const BoxDecoration(
+                      gradient: RadialGradient(
+                        colors: [Color(0xFF192336), Color(0xFF090B0F)],
+                        radius: 0.9,
+                      ),
+                    ),
+                    child: Center(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.accessibility_new_rounded,
+                            size: 52,
+                            color: AppColors.volt.withValues(alpha: 0.85),
+                          ),
+                          const SizedBox(height: 10),
+                          Text(
+                            _isFlutterTest
+                                ? 'Mô hình Phục hồi Cơ bắp 3D'
+                                : 'Đang chuẩn bị mô hình 3D...',
+                            style: const TextStyle(
+                              color: Colors.white70,
+                              fontSize: 13,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                Positioned(
+                  left: 12,
+                  right: 12,
+                  bottom: 12,
+                  child: Row(
+                    children: [
+                      _CamBtn(
+                        label: 'Trước',
+                        selected: _cameraPreset == CameraPreset3D.front,
+                        onTap: () =>
+                            setState(() => _cameraPreset = CameraPreset3D.front),
+                      ),
+                      const SizedBox(width: 6),
+                      _CamBtn(
+                        label: 'Ngang',
+                        selected: _cameraPreset == CameraPreset3D.side,
+                        onTap: () =>
+                            setState(() => _cameraPreset = CameraPreset3D.side),
+                      ),
+                      const SizedBox(width: 6),
+                      _CamBtn(
+                        label: 'Sau',
+                        selected: _cameraPreset == CameraPreset3D.back,
+                        onTap: () =>
+                            setState(() => _cameraPreset = CameraPreset3D.back),
+                      ),
+                      const SizedBox(width: 6),
+                      _CamBtn(
+                        label: 'Trên',
+                        selected: _cameraPreset == CameraPreset3D.top,
+                        onTap: () =>
+                            setState(() => _cameraPreset = CameraPreset3D.top),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           ),
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              _CamBtn(
-                label: 'Trước',
-                selected: _cameraPreset == CameraPreset3D.front,
-                onTap: () => setState(() => _cameraPreset = CameraPreset3D.front),
-              ),
-              const SizedBox(width: 6),
-              _CamBtn(
-                label: 'Ngang',
-                selected: _cameraPreset == CameraPreset3D.side,
-                onTap: () => setState(() => _cameraPreset = CameraPreset3D.side),
-              ),
-              const SizedBox(width: 6),
-              _CamBtn(
-                label: 'Sau',
-                selected: _cameraPreset == CameraPreset3D.back,
-                onTap: () => setState(() => _cameraPreset = CameraPreset3D.back),
-              ),
-              const SizedBox(width: 6),
-              _CamBtn(
-                label: 'Trên',
-                selected: _cameraPreset == CameraPreset3D.top,
-                onTap: () => setState(() => _cameraPreset = CameraPreset3D.top),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 10),
           const Wrap(
             spacing: 10,
             runSpacing: 4,
@@ -277,9 +377,12 @@ class _ReadinessRecovery3DViewState
               final isIncrease = rec.action == 'INCREASE';
               return Card(
                 color: isDeload
-                    ? const Color(0xFFFFEBEE)
+                    ? AppColors.tintedSurface(context, AppColors.warningRed)
                     : isIncrease
-                        ? const Color(0xFFE8F5E9)
+                        ? AppColors.tintedSurface(
+                            context,
+                            AppColors.muscleRecoveredGreen,
+                          )
                         : null,
                 margin: const EdgeInsets.only(bottom: 8),
                 child: ListTile(
@@ -320,7 +423,7 @@ class _ReadinessRecovery3DViewState
             }),
           const SizedBox(height: 8),
           Card(
-            color: const Color(0xFFFFF8E1),
+            color: AppColors.tintedSurface(context, AppColors.calorieOrange),
             child: Padding(
               padding: const EdgeInsets.all(12),
               child: Row(
@@ -402,12 +505,32 @@ class _CamBtn extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Expanded(
-      child: ChoiceChip(
-        label: Center(child: Text(label, style: const TextStyle(fontSize: 12))),
-        selected: selected,
-        showCheckmark: false,
-        visualDensity: VisualDensity.compact,
-        onSelected: (_) => onTap(),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(100),
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          decoration: BoxDecoration(
+            color: selected
+                ? AppColors.volt
+                : Colors.black.withValues(alpha: 0.65),
+            borderRadius: BorderRadius.circular(100),
+            border: Border.all(
+              color: selected
+                  ? AppColors.volt
+                  : Colors.white.withValues(alpha: 0.16),
+            ),
+          ),
+          alignment: Alignment.center,
+          child: Text(
+            label,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
+              color: selected ? const Color(0xFF090B0F) : Colors.white,
+            ),
+          ),
+        ),
       ),
     );
   }
