@@ -1,6 +1,15 @@
 # [OWNER: M4] AI Router (Model B Food YOLOv8 & Model C Readiness/Overload)
-from fastapi import APIRouter, File, Form, UploadFile
+import logging
+import os
 
+from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
+from fastapi.concurrency import run_in_threadpool
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.db.seed_catalog_and_exercises import FOOD_CATALOG_SEED
+from app.db.session import get_db
+from app.models.entities import FoodNutritionCatalog
 from app.schemas.ai_schema import (
     DetectedFoodItem,
     FoodAnalyzeResponse,
@@ -8,17 +17,41 @@ from app.schemas.ai_schema import (
     TotalNutritionSummary,
     WeightRecommendation,
 )
+from app.services.ai_food_yolo import (
+    FoodModelUnavailable,
+    InvalidImageError,
+    get_food_service,
+)
 
+logger = logging.getLogger(__name__)
 router = APIRouter()
 
+MAX_UPLOAD_BYTES = 5 * 1024 * 1024  # app gui anh < 300KB, 5MB la tran an toan
 
-@router.post("/food-analyze", response_model=FoodAnalyzeResponse)
-async def analyze_food_image(
-    image: UploadFile = File(...),
-    meal_type: str = Form(default="LUNCH"),
-) -> FoodAnalyzeResponse:
-    """Stub chuan hop dong JSON cho AI Model B (T-M4-03 / T-M4-10)."""
-    _ = (image.filename, meal_type)
+
+async def load_catalog_map(db: AsyncSession | None) -> dict[str, dict]:
+    """Bang tra dinh duong theo class_code: lay ban seed lam nen, DB (M3 co the sua) ghi de len."""
+    catalog = {entry["class_code"]: dict(entry) for entry in FOOD_CATALOG_SEED}
+    try:
+        rows = (await db.execute(select(FoodNutritionCatalog))).scalars().all()
+    except Exception:  # DB loi hoac khong co: van dung duoc ban seed
+        logger.warning("Khong doc duoc food_nutrition_catalog tu DB, dung ban seed.")
+        return catalog
+    for row in rows:
+        catalog[row.class_code] = {
+            "class_code": row.class_code,
+            "name_vi": row.name_vi,
+            "kcal_per_100g": row.kcal_per_100g,
+            "protein_per_100g": row.protein_per_100g,
+            "carbs_per_100g": row.carbs_per_100g,
+            "fat_per_100g": row.fat_per_100g,
+            "default_serving_g": row.default_serving_g,
+        }
+    return catalog
+
+
+def _stub_food_response() -> FoodAnalyzeResponse:
+    """Du lieu gia chuan hop dong JSON, dung khi chua co trong so Model B (cho M1 test giao dien)."""
     return FoodAnalyzeResponse(
         inference_time_ms=112,
         model_version="yolov8s-gymfood-stub",
@@ -57,6 +90,43 @@ async def analyze_food_image(
             "vui lòng kiểm tra lại khẩu phần gram trước khi lưu."
         ),
     )
+
+
+def _stub_allowed() -> bool:
+    # Mac dinh cho phep tra du lieu gia de M1 test; dat VIGOR_FOOD_ALLOW_STUB=0 tren Production.
+    return os.environ.get("VIGOR_FOOD_ALLOW_STUB", "1") != "0"
+
+
+@router.post("/food-analyze", response_model=FoodAnalyzeResponse)
+async def analyze_food_image(
+    image: UploadFile = File(...),
+    meal_type: str = Form(default="LUNCH"),
+    db: AsyncSession = Depends(get_db),
+) -> FoodAnalyzeResponse:
+    """Nhan dien mon an (YOLOv8) -> uoc luong gram -> Calo/Macro (T-M4-04 / T-M4-06)."""
+    _ = meal_type  # chua dung de suy luan; giu cho hop dong API
+    data = await image.read(MAX_UPLOAD_BYTES + 1)
+    if not data:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Ảnh tải lên bị rỗng.")
+    if len(data) > MAX_UPLOAD_BYTES:
+        raise HTTPException(413, "Ảnh vượt quá 5MB.")
+
+    service = get_food_service()
+    if not service.available:
+        if _stub_allowed():
+            return _stub_food_response()
+        raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, "Model nhận diện món ăn chưa sẵn sàng.")
+
+    catalog = await load_catalog_map(db)
+    try:
+        payload = await run_in_threadpool(service.analyze, data, catalog)
+    except InvalidImageError:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Không đọc được ảnh tải lên.")
+    except FoodModelUnavailable:
+        if _stub_allowed():
+            return _stub_food_response()
+        raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, "Model nhận diện món ăn chưa sẵn sàng.")
+    return FoodAnalyzeResponse(**payload)
 
 
 @router.get("/readiness-and-overload", response_model=ReadinessAndOverloadResponse)

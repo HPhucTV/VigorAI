@@ -31,3 +31,25 @@ Script loại bbox rỗng/lệch chuẩn/tràn biên, ảnh trùng nội dung, c
 **Tên file đầu ra ngắn:** ảnh trong `--out` có dạng `<nguồn>__<hash12>__<mã-nhóm>.jpg` để không vượt giới hạn 260 ký tự của Windows (tên file Roboflow gốc rất dài, làm OpenCV/YOLO không mở được). Bảng tra tên gốc nằm ở `manifest.csv` trong thư mục `--out`. Script đọc được cả file nguồn có đường dẫn dài.
 
 **Bản augment của Roboflow:** các file `<tên>_jpg.rf.<mã>.jpg` cùng `<tên>` là bản biến đổi của một ảnh gốc. Script gom chúng thành một nhóm, cả nhóm vào cùng một tập (không rò rỉ giữa train và val/test), và ở val/test chỉ giữ một ảnh mỗi nhóm. Validator báo lỗi nếu một ảnh gốc xuất hiện ở hai tập. Vẫn nên ưu tiên bộ không augment, vì bbox của ảnh xoay bị nới rộng.
+
+## Đợt 1 — Huấn luyện YOLOv8 (`T-M4-06`)
+
+`train_yolo.py` huấn luyện, đánh giá trên tập test, xuất ONNX và ghi `ai_research/evaluation_reports/model_b_train_report.json` (P, R, mAP@0.5, AP theo lớp, tốc độ, đạt/không đạt KPI).
+
+**Chạy trên Google Colab (khuyến nghị, GPU T4 miễn phí):**
+1. Nén thư mục `ai_research/datasets/model_b_v2` thành `model_b_v2.zip` (chỉ thư mục đã xử lý, không nén `raw/`), tải lên Google Drive.
+2. Trên Colab: *Runtime → Change runtime type → T4 GPU*, rồi:
+   ```python
+   from google.colab import drive; drive.mount('/content/drive')
+   !pip install -q ultralytics
+   !unzip -q /content/drive/MyDrive/model_b_v2.zip -d /content/data
+   ```
+3. Tải `train_yolo.py` lên Colab và chạy:
+   ```
+   !python train_yolo.py --data /content/data/model_b_v2/data.yaml --model yolov8s.pt --epochs 100 --project /content/runs
+   ```
+4. Tải về `best.pt`, `best.onnx`, `results.png`, `confusion_matrix.png` và `model_b_train_report.json`. Không commit `*.pt`/`*.onnx` lên Git (đã bị `.gitignore` chặn).
+
+**Chạy trên máy cá nhân (chỉ để thử):** `python train_yolo.py --model yolov8n.pt --imgsz 416 --epochs 30` (rất chậm nếu không có GPU NVIDIA). Cần `pip install ultralytics`.
+
+**Đọc kết quả:** chỉ số tổng chỉ tính trên các lớp có ảnh ở tập test. Khi mỗi lớp chỉ có vài ảnh test, mAP dao động mạnh; coi đó là bước kiểm chứng pipeline, chưa phải KPI cuối. Tốc độ `< 150 ms/ảnh` phải đo lại trên server thật.
