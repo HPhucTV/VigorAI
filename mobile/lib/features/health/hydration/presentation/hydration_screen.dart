@@ -27,7 +27,7 @@ class HydrationScreen extends ConsumerWidget {
         title: const Text('Lượng nước Thông minh'),
       ),
       body: ListView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.fromLTRB(20, 14, 20, 24),
         children: [
           Card(
             child: Padding(
@@ -171,9 +171,12 @@ class HydrationScreen extends ConsumerWidget {
                     style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
                   ),
                   const SizedBox(height: 6),
-                  const Text(
+                  Text(
                     'Tự động cộng thêm khi bạn hoàn thành buổi tập, hoặc chọn nhanh mức vận động hôm nay:',
-                    style: TextStyle(fontSize: 13, color: Colors.black54),
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: AppColors.secondaryText(context),
+                    ),
                   ),
                   const SizedBox(height: 10),
                   Row(

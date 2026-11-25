@@ -17,7 +17,85 @@
 
 ---
 
-## Phiên 32 — 2026-11-23 11:20 | Thành viên: M4 (Pure AI Engineer) | Task: `T-M4-01` (`[~]`)
+## Phiên 37 — 2026-11-25 09:38 | Thành viên: M1 + M3 | Task: Chuẩn bị Trọn bộ Hồ sơ, Trang Privacy Policy, Signed `.aab` & Tài khoản Reviewer Nộp Google Play Console (`T-M1-07`)
+- **Mục tiêu phiên:** Hoàn thiện toàn bộ tài nguyên kỹ thuật, pháp lý và Store Listing để người dùng đẩy bản `v1.0.0+1` lên Closed Testing trên Google Play Console.
+- **Những file đã tạo / chỉnh sửa (`[OWNER: M1]` + `[OWNER: M3]`, `0` file `[LOCKED STUB]` bị chạm):**
+  - Backend Privacy Policy: Tạo mới `backend/app/templates/privacy_policy.html`, thêm endpoint `GET /api/v1/users/privacy-policy` trong `backend/app/routers/users.py`, gắn liên kết từ `backend/app/templates/delete_account.html`, và đẩy lên nhánh `main` (`ab3ca14`).
+  - Tài liệu kiểm soát: Cập nhật `docs/chplay_submission_checklist.md`.
+  - Bộ tài nguyên nộp Store tại `mobile/build/play_store_kit/` (ngoài Git): `VigorAI-v1.0.0+1-release.aab` (`68,794,214` bytes), `01_app_icon_512x512.png`, `02_feature_graphic_1024x500.png`, 5 ảnh `phone_01..05` (`1080×1920`), 4 ảnh `tablet_7in/10in` (`1920×1080`), `testers_25_gmail_template.csv` và `HUONG_DAN_NOP_CH_PLAY_A_Z.md`.
+- **Kiểm tra / Kết quả chạy thử:**
+  - `flutter build appbundle --release --dart-define=USE_MOCK_API=false --dart-define=API_BASE_URL=https://vigorai-production.up.railway.app --dart-define=MVP_CLOSED_TESTING=false --dart-define=ENABLE_HEALTH_CONNECT=false`: Exit `0`, ký bằng Upload Keystore `CN=VigorAI` (`SHA384withRSA, 2048-bit RSA`), Merged `AndroidManifest.xml` có `0` quyền cấm và `0` quyền Health Connect / Foreground Service Health.
+  - Kiểm tra HTTP trực tiếp Railway: `/api/v1/users/privacy-policy` trả `200 OK`, `/delete-account` trả `200 OK`.
+  - Tạo sẵn tài khoản Reviewer Demo `reviewer@vigorai.app` kèm dữ liệu sinh trắc học & nhật ký ngày trên server live.
+- **Việc cần làm ở phiên kế tiếp:**
+  - Người dùng tạo app (`VigorAI: Tập Gym 3D & Calo`, package `com.vigorai.app`) và upload bộ `mobile/build/play_store_kit/` lên Google Play Console Closed Testing (20–25 Gmail chạy 14 ngày).
+
+---
+
+## Phiên 36 — 2026-11-24 15:30 | Thành viên: M1 | Task: Thiết kế & Cài đặt App Icon "Iron Volt V", Sửa lỗi 2 Icon khi Khởi động & Build Release APK
+- **Mục tiêu phiên:**
+  1. Thiết kế 3 mẫu App Icon (Favicon) cho VigorAI trên Figma (`VigorAI — 3 App Icon (Favicon) Concepts`); người dùng chốt **Mẫu 01 — Iron Volt V**.
+  2. Thay thế icon chữ `"V"` nền xanh cũ bằng **Mẫu 01 — Iron Volt V** cho toàn bộ Android Adaptive Icon Vector (`ic_launcher_background.xml`, `ic_launcher_foreground.xml`, `mipmap-anydpi-v26/ic_launcher.xml`), xuất bộ PNG đa độ phân giải (`mdpi` 48px → `xxxhdpi` 192px) và icon Play Store `512×512` (`vigorai_playstore_512.png`).
+  3. Khắc phục triệt để lỗi hiện **2 icon liên tiếp** khi mở app (Android 12+ system SplashScreen + `_VigorLaunchSplash` của Flutter) bằng cách đồng bộ nền `LaunchTheme` (`values/colors.xml` `#F4F6F9`, `values-night/colors.xml` `#090B0F`, `drawable-v21/launch_background.xml`) và bỏ icon/text trùng lặp khỏi `_VigorLaunchSplash`.
+  4. Thay biểu tượng tạ chung trên `LoginScreen` bằng huy hiệu `CustomPaint` mini **Iron Volt V** và build Release APK kiểm thử máy thật.
+- **Những file đã tạo / chỉnh sửa (`[OWNER: M1]`, `0` file `[LOCKED STUB]` bị chạm):**
+  - Tạo mới (2 file): `mobile/android/app/src/main/res/drawable/ic_launcher_background.xml`, `mobile/android/app/src/main/res/values-night/colors.xml`.
+  - Cập nhật Android resources: `mobile/android/app/src/main/res/drawable/ic_launcher_foreground.xml`, `mobile/android/app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml`, `mobile/android/app/src/main/res/values/colors.xml`, `mobile/android/app/src/main/res/drawable-v21/launch_background.xml`, `mobile/android/app/src/main/res/mipmap-{mdpi,hdpi,xhdpi,xxhdpi,xxxhdpi}/ic_launcher.png`.
+  - Cập nhật Flutter UI & Test: `mobile/lib/features/auth_privacy/presentation/app_launch_gate.dart`, `mobile/lib/features/auth_privacy/presentation/login_screen.dart`, `mobile/test/health/ui_layout_and_copy_test.dart`.
+- **Kiểm tra / Kết quả chạy thử:**
+  - `flutter analyze --no-fatal-infos`: Exit `0` (**0** errors, **0** warnings).
+  - `flutter test test/health/ test/workout/`: **46 / 46 PASS**.
+  - `flutter build apk --release --dart-define=MVP_CLOSED_TESTING=false`: Thành công, xuất `mobile/build/app/outputs/flutter-apk/app-release.apk` (`69,899,597` bytes / `66.7 MB`).
+  - `git status -s`: Chỉ chạm các file thuộc `[OWNER: M1]` + `session_log.md`; `0` file `[LOCKED STUB]` bị sửa.
+- **Việc cần làm ở phiên kế tiếp:**
+  - Cài `app-release.apk` lên máy Android thật để kiểm tra icon **Iron Volt V** trên launcher, luồng mở app chỉ còn 1 splash duy nhất và logo mới trên `LoginScreen`.
+
+---
+
+## Phiên 35 — 2026-11-24 14:08 | Thành viên: M1 + M2 | Task: Thiết kế Figma 3 Mẫu UI + Triển khai Mẫu 01 Dual Theme, Sửa Nhảy Màn hình Khởi động & Giật Chuyển Tab
+- **Mục tiêu phiên:**
+  1. Kết nối Figma MCP tạo file `VigorAI — 3 Premium UI Design Concepts` gồm 3 mẫu UI cao cấp (9 màn hình + Variable Collection + Reusable Components) để người dùng chọn; người dùng chốt **Mẫu 01 — Obsidian Performance Lab** kèm hỗ trợ **Light Mode**.
+  2. Triển khai Mẫu 01 Dual Theme (`Obsidian Performance Lab` Dark `#090B0F` / Volt `#CCFF00` / Cyan `#38BDF8` & `Alabaster Performance Lab` Light `#F4F6F9` / Porcelain `#FFFFFF` / Ink `#0F172A`), nới biên `20–24px`, giảm mật độ card bằng Dual Hero Card + Bento Grid 2×2 và sân khấu 3D tràn viền với Floating HUD.
+  3. Khắc phục triệt để tình trạng nhảy màn hình lúc khởi động (`Onboarding -> Login -> Dashboard`) bằng `AppLaunchGate` + đọc song song `Future.wait` trong `AuthController.restoreSession()`.
+  4. Khắc phục giật lag khi chuyển 5 tab trong `MainNavigationShell` bằng cách tách `select(...)` trên Riverpod providers, pre-warm provider sau 350ms, bọc `RepaintBoundary` + `_SmoothTabViewport` (`180ms`), và trì hoãn/ngủ đông `Muscle3DViewerWidget` khi Tab 4 không active.
+- **Những file đã tạo / chỉnh sửa (`[OWNER: M1]` + `[OWNER: M2]`, `0` file `[LOCKED STUB]` bị chạm):**
+  - Tạo mới (1 file `[OWNER: M1]`): `mobile/lib/features/auth_privacy/presentation/app_launch_gate.dart`.
+  - `[OWNER: M1]`: `mobile/lib/core/theme/app_theme.dart`, `mobile/lib/core/router/health_routes.dart`, `mobile/lib/features/auth_privacy/presentation/auth_controller.dart`, `mobile/lib/features/auth_privacy/presentation/login_screen.dart`, `mobile/lib/features/auth_privacy/presentation/register_screen.dart`, `mobile/lib/features/health/presentation/health_dashboard_screen.dart`, `mobile/lib/features/health/{biometrics,food_scan,hydration,nutrition,progress_photos,sleep,supplements}/presentation/*.dart`, `mobile/test/health/ui_layout_and_copy_test.dart`.
+  - `[OWNER: M2]`: `mobile/lib/features/ai_analytics/presentation/ai_coach_hub_screen.dart`, `mobile/lib/features/ai_analytics/readiness_3d/readiness_recovery_3d_view.dart`, `mobile/lib/features/ai_analytics/volume_analytics/volume_analytics_view.dart`, `mobile/lib/features/ai_analytics/muscle_balance/muscle_radar_view.dart`, `mobile/lib/features/gym3d/presentation/{gym3d_library_screen,exercise_3d_detail_screen}.dart`, `mobile/lib/features/workout/presentation/{routines_screen,live_workout_logger_screen}.dart`.
+- **Kiểm tra / Kết quả chạy thử:**
+  - `flutter analyze --no-fatal-infos`: Exit `0` (**0** errors, **0** warnings).
+  - `flutter test test/health/ test/workout/`: **46 / 46 PASS** (bao gồm test `AppLaunchGate` không nháy Onboarding/Login khi đã đăng nhập hoặc đã chấp nhận miễn trừ, và test chuyển cả 5 tab ở `360dp + 1.3x` cả Light & Dark Mode).
+- **Việc cần làm ở phiên kế tiếp:**
+  - Cài thử lên máy Android thật / emulator để nghiệm thu trực quan Mẫu 01 Dual Theme, tốc độ chuyển tab và luồng khởi động mới.
+
+---
+
+## Phiên 34 — 2026-11-23 12:09 | Thành viên: M1 + M2 | Task: Nâng cấp UI/UX Dual Theme, Onboarding 3D 6 bước, Smart Routine Generator, 3D Coaching Guide & 5-Tab Shell
+- **Mục tiêu phiên:** Triển khai trọn bộ 3 chặng nâng cấp trải nghiệm VigorAI:
+  - Chặng 1 (`[OWNER: M1]`): Dual Theme Sáng (`Athletic Clean`) / Tối (`Dark Sporty Carbon`), `UserFitnessProfile` offline-first và Onboarding Wizard 3D 6 bước có tương tác trực tiếp với mô hình 3D + Medical Disclaimer.
+  - Chặng 2 (`[OWNER: M2]`): Bộ sinh lịch tập thông minh `SmartRoutineGenerator` (thích ứng theo địa điểm/dụng cụ, tạng người, thời lượng, nhóm cơ ưu tiên), 5 Chương trình VĐV chuyên sâu, thư viện `ExerciseCoachingGuide` 4 phần tiếng Việt cho toàn bộ 39 bài tập gắn scrubber 3D `Chuẩn / Lỗi sai`, và `RoutinesScreen` 3 phân đoạn.
+  - Chặng 3 (`[OWNER: M1]` + `[OWNER: M2]`): Khung điều hướng `MainNavigationShell` 5 tab tại `/health`, Avatar `36×36 dp` mở `/profile` (`ProfileSettingsScreen`) tái tính toán Realtime BMI/BMR/TDEE/Macros/Nước & đồng bộ gợi ý đổi lịch, cùng đồng bộ Dark Mode toàn bộ các màn hình.
+- **Những file đã tạo / chỉnh sửa (`[OWNER: M1]` + `[OWNER: M2]`, `0` file `[LOCKED STUB]` bị chạm):**
+  - Tạo mới (4 file): `mobile/lib/features/auth_privacy/data/user_fitness_profile.dart`, `mobile/lib/features/auth_privacy/presentation/profile_settings_screen.dart`, `mobile/lib/features/workout/domain/smart_routine_generator.dart`, `mobile/lib/features/gym3d/data/exercise_coaching_guide.dart`.
+  - Chặng 1 & Core (`[OWNER: M1]`): `mobile/lib/core/network/dio_client.dart`, `mobile/lib/core/theme/app_theme.dart`, `mobile/lib/features/auth_privacy/data/auth_repository.dart`, `mobile/lib/features/auth_privacy/presentation/auth_controller.dart`, `mobile/lib/features/auth_privacy/presentation/onboarding_disclaimer_screen.dart`, `mobile/lib/features/auth_privacy/presentation/register_screen.dart`, `mobile/lib/features/auth_privacy/presentation/login_screen.dart`, `mobile/lib/features/health/data/health_repository.dart`.
+  - Chặng 2 (`[OWNER: M2]`): `mobile/lib/features/workout/data/workout_repository.dart`, `mobile/lib/features/workout/presentation/routines_screen.dart`, `mobile/lib/features/workout/presentation/live_workout_logger_screen.dart`, `mobile/lib/features/workout/presentation/widgets/plate_calculator_sheet.dart`, `mobile/lib/features/gym3d/presentation/exercise_3d_detail_screen.dart`, `mobile/lib/features/gym3d/presentation/gym3d_library_screen.dart`.
+  - Chặng 3 Shell, Router & Dark Mode Sweep (`[OWNER: M1]` + `[OWNER: M2]`): `mobile/lib/core/router/{health_routes,gym3d_workout_routes,ai_analytics_routes}.dart`, `mobile/lib/features/health/presentation/health_dashboard_screen.dart`, `mobile/lib/features/health/{biometrics,food_scan,hydration,nutrition,progress_photos,sleep,supplements}/presentation/*.dart`, `mobile/lib/features/ai_analytics/{presentation/ai_coach_hub_screen,muscle_balance/muscle_radar_view,readiness_3d/readiness_recovery_3d_view,volume_analytics/volume_analytics_view}.dart`.
+  - Kiểm thử (2 file): `mobile/test/health/ui_layout_and_copy_test.dart`, `mobile/test/workout/workout_sprint2_test.dart`.
+- **Quyết định kỹ thuật / Lưu ý quan trọng:**
+  - Lưu `UserFitnessProfile` và `AppThemePreference` qua `FlutterSecureStorage` (`dio_client.dart`), tránh thêm gói ngoài nên `0` chạm `mobile/pubspec.yaml`; tự động xóa sạch khi chạy `deleteAccountAndLocalData()`.
+  - Tạo `VigorAdaptiveTheme` trong `app_theme.dart` bọc các route/dialog/sheet để hỗ trợ chuyển 3 chế độ `Theo máy` / `Sáng` / `Tối` mượt `250ms` mà không đụng `mobile/lib/main.dart`.
+  - Tạo `_SafeOnboarding3DStage` kiểm tra `FLUTTER_TEST` để giữ nguyên `Muscle3DViewerWidget` thật trên thiết bị Android và an toàn khi chạy `flutter test` headless không có `WebViewPlatform`.
+  - Giữ 100% ràng buộc CH Play: không thêm quyền Android bị cấm, giữ nguyên văn `medicalDisclaimerText`, trích dẫn `Mifflin-St Jeor (1990)`, `Epley (1985) & Brzycki (1993)`, `WHO Asia-Pacific BMI`, và xóa tài khoản 2 kênh tại `/profile`.
+- **Kiểm tra / Kết quả chạy thử:**
+  - `flutter analyze --no-fatal-infos`: Exit `0` (`0` errors, `0` warnings).
+  - `flutter test test/health/ test/workout/`: **45/45 PASS** (gồm test `360dp + 1.3x` Light & Dark Mode cho 5-Tab Shell, Profile Hub, Onboarding 6 bước + modal Đăng nhập nhanh; unit test `SmartRoutineGenerator`, 5 Pro Programs trên Drift SQLite và `ExerciseCoachingGuide` cho cả 39 bài tập).
+  - `flutter build apk --release --dart-define=MVP_CLOSED_TESTING=false`: Thành công, xuất `mobile/build/app/outputs/flutter-apk/app-release.apk` (`69,689,361` bytes / `66.5 MB`).
+- **Việc cần làm ở phiên kế tiếp:**
+  - Kiểm thử trực quan trên thiết bị Android thật (`Sáng`/`Tối`, Onboarding 3D 6 bước, `/profile` tái tính toán Realtime, 5 chương trình VĐV và 3D Coaching Guide) rồi đóng gói/commit khi người dùng xác nhận.
+
+---
+
+## Phiên 33 — 2026-11-23 11:20 | Thành viên: M4 (Pure AI Engineer) | Task: `T-M4-01` (`[~]`)
 - **Mục tiêu phiên:** Chuẩn bị pipeline dataset Model B cho dữ liệu Roboflow thật (bộ Pork rice, CC BY 4.0, 181 ảnh, `egg` = 161 khung).
 - **Những file đã tạo / chỉnh sửa (`0` file `[LOCKED STUB]` bị chạm):**
   - `ai_research/model_b_food_yolo/prepare_dataset.py`: thêm `--map "nguồn:nhãn=CLASS"` (gán nhãn riêng từng bộ), gom bản augment Roboflow (`.rf.`) về ảnh gốc khi chia, val/test chỉ giữ 1 ảnh mỗi nhóm, validator bắt rò rỉ nhóm, báo cáo `source_class_mapping`; tên file đầu ra đổi thành `<nguồn>__<hash12>__<mã-nhóm>` (ngắn, ~40 ký tự) kèm `manifest.csv` tra ngược tên gốc. Sửa lỗi đường dẫn > 260 ký tự trên Windows (tên file Roboflow rất dài làm `FileNotFoundError`): mọi thao tác đọc file nguồn đi qua `fs()` thêm tiền tố `\\?\`. Phần Windows chưa được chạy thử trên máy Windows thật.
@@ -29,6 +107,27 @@
   - Giải nén dataset vào `ai_research/datasets/raw/<tên>/` (bị `.gitignore` chặn), không giải nén ở gốc repo.
 - **Kiểm tra / Kết quả chạy thử:** Chạy trên 3 bộ giả kiểu Roboflow (có augment ×3): 105 nhóm ảnh gốc, 0 nhóm nằm ở nhiều tập, val/test tối đa 1 ảnh/nhóm; `--map` sai class/sai nguồn/sai định dạng đều báo lỗi rõ; chủ động chép 1 bản augment từ train sang val thì validator báo cả rò rỉ nội dung lẫn rò rỉ augment. Chưa chạy trên dữ liệu thật của nhóm.
 - **Việc cần làm ở phiên kế tiếp:** Tải thêm bộ cơm trắng và các món còn thiếu (trứng luộc, trứng ốp la, ức gà...), ghi vào `SOURCES.md`, chạy `prepare_dataset.py` với các `--map` tương ứng, đạt 8–10 lớp đủ ảnh để train `v1.0` (`T-M4-04`); song song làm `T-M4-05` (benchmark Model C).
+
+---
+
+## Phiên 32 — 2026-11-23 11:04 | Thành viên: M2 | Task: Sửa hình học 3D Mannequin (nắm tay, khớp vai/cổ tay), khử xoay 360° Quaternion & va chạm thiết bị/sàn
+- **Mục tiêu phiên:** Khắc phục tình trạng bàn tay đơ/cổ tay lật ngược, sụp cấu trúc vùng vai trên (`Mesh_Muscle_Shoulders`, `Mesh_Muscle_Traps`), lỗi xoay 360° Quaternion khi nội suy giữa các keyframe, và các điểm va chạm/xuyên địa hình/chân trên bộ tài nguyên 3D (`hanging_leg_raise`, `barbell_deadlift`, `cable_crunch`, `cable_face_pull`, `push_up`, `plank`, v.v.), sau đó xuất lại `.blend`/`.glb` và đồng bộ SHA-256 theo cấu trúc slim-bundle (`T-M3-09`).
+- **Những file đã tạo / chỉnh sửa (`[OWNER: M2]`, `0` file `[LOCKED STUB]` bị chạm):**
+  - `assets_3d/scripts_blender_mcp/build_base_mannequin.py`: Thêm `_curl_fingers_into_grip_pose` (`grip_hands=True` cho 29 bài cầm nắm, giữ xòe phẳng `grip_hands=False` cho `push_up`, `plank`, `base_mannequin`, `base_mannequin_female`); mở rộng vùng tam giác `Mesh_Muscle_Shoulders` phần delta chữ V; thêm `_smooth_and_lock_skin_weights` khóa 100% trọng số ngón tay/lòng bàn tay vào `Hand_L`/`Hand_R` + làm mượt Laplacian 4 vòng vùng vai-đòn và cổ tay; bật `use_deform_preserve_volume = True` (Dual Quaternion Skinning).
+  - `assets_3d/scripts_blender_mcp/build_mvp_exercises.py`: Cập nhật nhịp xương đòn `Clavicle`, kẹp cổ tay `<= 14°` trên sàn `> 0.12m`, đồng bộ dấu quaternion `_LAST_KEYED_QUAT` trong `_key_all_pose_bones` / `_begin_action`, loại bỏ điểm kỳ dị `atan2`/`swing_z` trong `_aim_bone_world`, và sửa `_pose_push_up` (IK 2 xương cho chân giữ mũi chân trên thảm `min_z = +0.004..+0.005 m` + lòng bàn tay úp phẳng `n_palm = (0, 0, -1)`).
+  - `assets_3d/scripts_blender_mcp/build_sprint2_exercises.py`: Đồng bộ nhịp xương đòn `Clavicle`, `_LAST_KEYED_QUAT`, khử kỳ dị `atan2`/`swing_z` trong `_aim_bone_world`, bổ sung `_get_posed_fist_center` & `_solve_arm_grip_ik`, sửa va chạm dây qua đầu/nệm ghế (`cable_crunch`, `dumbbell_shoulder_press`, `barbell_hip_thrust`), sửa roll/pole 6 bài (`cable_face_pull`, `cable_crunch`, `straight_arm_cable_pulldown`, `dumbbell_shoulder_press`, `skull_crusher`, `barbell_bicep_curl`), sửa hướng bàn chân theo trục cẳng chân trong `_pose_hanging_leg_raise`, chỉnh khoảng trống trước gối/ống đồng trong `_pose_barbell_deadlift`, và cập nhật `EXERCISE_SPECS` + `sync_manifest_and_mock_json` giữ đúng slim bundle 5 file lõi / 28 bài CDN Railway.
+  - Tài nguyên đã xuất: `assets_3d/source_blend/*.blend` (32 file), `assets_3d/exported_glb/*.glb` (33 file; lượt chỉnh cuối xuất lại 2 bài `HANGING_LEG_RAISE` và `BARBELL_DEADLIFT` theo `--only`), `mobile/assets/3d_bundled/*.glb` (giữ đúng 5 file lõi: `base_mannequin.glb`, `base_mannequin_female.glb`, `barbell_squat.glb`, `push_up.glb`, `barbell_bench_press.glb`, tổng `6,867,500` bytes / ~`6.55 MiB` `< 40 MB`), và đồng bộ SHA-256 trong `assets_3d/exported_glb/assets_manifest.json` + `mobile/assets/mock_json/mock_m2_exercises.json`.
+- **Quyết định kỹ thuật / Lưu ý quan trọng:**
+  - Giữ toàn bộ 33 `.glb` không bật nén Draco (`KHR_draco_mesh_compression = False`, max `12,796 triangles <= 25,000`) để `model_viewer_plus` dựng 100% offline không cần WASM CDN; 28 bài mở rộng tiếp tục phục vụ qua Railway CDN (`assets_3d/exported_glb/`) giữ gói APK/AAB nhẹ `< 40 MB`.
+  - Chuẩn hóa dấu quaternion (`prev_q.dot(q) < 0.0 -> -q`) ngay trước `keyframe_insert` và căn trực tiếp trục `Z` của `Forearm_L/R` không qua `atan2` giúp triệt tiêu hoàn toàn hiện tượng nhảy xoay 360° khi nội suy frame.
+- **Kiểm tra / Kết quả chạy thử:**
+  - Kiểm định 100 frame (`f = 1..100`) toàn bộ **30/30** file `.blend`: mọi xương trên cả `Anim_GoodForm` & `Anim_BadForm` đều mượt `< 12 deg/frame` và `0` lần đảo dấu quaternion (`ZERO q_flips`).
+  - Kiểm định riêng sau lượt sửa 2 bài (`abs_hanging_leg_raise.blend`, `back_barbell_deadlift.blend`):
+    - `abs_hanging_leg_raise.blend`: `min_fwd = +0.552`, `min_zdot >= +0.995`, `max_step <= 3.9 deg/frame`, `q_flips = 0`.
+    - `back_barbell_deadlift.blend` (World-space `BVHTree.overlap` thanh đòn với gối/ống đồng/bàn chân/cơ/đầu): `hits = []`, `min_z >= +0.003 m`, `max_grip <= 0.31 cm`, `max_step <= 3.3 deg/frame`, `q_flips = 0`.
+  - `flutter test test/workout/` trong `mobile/`: **19/19 PASS** (`All tests passed!`).
+- **Việc cần làm ở phiên kế tiếp:**
+  - Người dùng kiểm tra trực quan cuối `abs_hanging_leg_raise.blend` và `back_barbell_deadlift.blend` trong ứng dụng/Blender và kiểm thử đồng bộ CDN các bài `.glb` vừa cập nhật SHA-256 trên môi trường thật.
 
 ---
 

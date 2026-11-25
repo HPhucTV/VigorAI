@@ -1,5 +1,6 @@
 # [OWNER: M3] Users & CH Play Account Deletion / Data Export Router (T-M3-04)
 import html
+from pathlib import Path
 from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, Form, status
@@ -14,6 +15,7 @@ from app.services.auth_service import AuthService
 
 router = APIRouter()
 auth_service = AuthService()
+_TEMPLATES_DIR = Path(__file__).resolve().parents[1] / "templates"
 
 
 @router.get(
@@ -92,3 +94,13 @@ async def delete_account_via_web(
 </body>
 </html>"""
     return HTMLResponse(content=body, status_code=status.HTTP_200_OK)
+
+
+@router.get(
+    "/privacy-policy",
+    response_class=HTMLResponse,
+    summary="Trang Chinh sach Quyen rieng tu cong khai cho Google Play Console",
+)
+async def public_privacy_policy_page() -> HTMLResponse:
+    content = (_TEMPLATES_DIR / "privacy_policy.html").read_text(encoding="utf-8")
+    return HTMLResponse(content=content, status_code=status.HTTP_200_OK)

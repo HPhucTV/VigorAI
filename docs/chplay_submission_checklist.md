@@ -1,8 +1,9 @@
 # Hồ sơ Chuẩn bị & Kiểm soát Phát hành Google Play Console (CH Play)
 
 > **Phạm vi sở hữu:** `[OWNER: M1]` — Tuân thủ `AGENTS.md` (Mục 3) & `docs/roadmap.md` (Mốc 1 $\rightarrow$ Mốc 2 $\rightarrow$ Mốc 3).
-> **Ứng dụng:** `VigorAI: 3D Gym & Health Log` (`com.vigorai.app`)
-> **Trang web Xóa tài khoản công khai (Data Safety URL):** `https://vigorai-production.up.railway.app/delete-account`
+> **Ứng dụng:** `VigorAI: Tập Gym 3D & Calo` (`com.vigorai.app`)
+> **Trang web Chính sách Quyền riêng tư công khai (`Privacy Policy URL`):** `https://vigorai-production.up.railway.app/api/v1/users/privacy-policy`
+> **Trang web Xóa tài khoản công khai (`Data Safety Delete URL`):** `https://vigorai-production.up.railway.app/delete-account`
 
 ---
 
@@ -10,10 +11,10 @@
 
 | Hạng mục kiểm soát | Trạng thái | Ghi chú kỹ thuật |
 | :--- | :---: | :--- |
-| **Tài khoản Google Play Console (\$25) & Xác minh danh tính** | `[ ]` | Thực hiện ở `T-M1-07` |
+| **Tài khoản Google Play Console (\$25) & Xác minh danh tính** | `[x]` | Đã tạo & xác minh xong; chuẩn bị nộp Closed Testing (`v1.0.0+1`) |
 | **Danh sách 20–25 Gmail Testers (Closed Testing 14 ngày liên tục)** | `[ ]` | Cần tối thiểu 12 testers opt-in liên tục đủ 14 ngày không gián đoạn |
 | **Upload Keystore RSA 2048-bit & Signed `.aab` (`v1.0.0+1`)** | `[x]` | Đã ký `CN=VigorAI`, trỏ `https://vigorai-production.up.railway.app` |
-| **URL Xóa tài khoản công khai (`/delete-account`)** | `[x]` | Đã live `200 OK` + test xóa qua Web (`POST /api/v1/users/delete-via-web`) |
+| **URL Privacy Policy & Xóa tài khoản (`/api/v1/users/privacy-policy`, `/delete-account`)** | `[x]` | Đã live `200 OK` + test xóa qua Web (`POST /api/v1/users/delete-via-web`) |
 | **Điều kiện Apply Production (`v1.1.0`) cuối Tuần 5** | `[~]` | Đủ 14 ngày Closed Testing + tích hợp Sprint 2 (`F01`, `F03`–`F06`, `F19` UI, `F24` ảnh, Sync) |
 
 ---

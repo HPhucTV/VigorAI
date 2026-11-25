@@ -119,7 +119,7 @@ class _FoodScanScreenState extends ConsumerState<FoodScanScreen> {
         title: const Text('Quét Món ăn AI'),
       ),
       body: ListView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.fromLTRB(20, 14, 20, 24),
         children: [
           // Chon anh bang Android Photo Picker API (khong xin READ_MEDIA_IMAGES)
           Row(
@@ -206,22 +206,28 @@ class _FoodScanScreenState extends ConsumerState<FoodScanScreen> {
             Container(
               constraints: const BoxConstraints(minHeight: 160),
               decoration: BoxDecoration(
-                color: const Color(0xFFF3F6FA),
+                color: AppColors.subtleSurface(context),
                 borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: Colors.black12),
+                border: Border.all(color: AppColors.subtleBorder(context)),
               ),
-              child: const Center(
+              child: Center(
                 child: Padding(
-                  padding: EdgeInsets.all(20),
+                  padding: const EdgeInsets.all(20),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(Icons.fastfood_outlined, size: 42, color: Colors.black45),
-                      SizedBox(height: 8),
+                      Icon(
+                        Icons.fastfood_outlined,
+                        size: 42,
+                        color: AppColors.secondaryText(context),
+                      ),
+                      const SizedBox(height: 8),
                       Text(
                         'Chụp hoặc chọn ảnh bữa ăn để AI nhận diện và ước tính dinh dưỡng.',
                         textAlign: TextAlign.center,
-                        style: TextStyle(color: Colors.black54),
+                        style: TextStyle(
+                          color: AppColors.secondaryText(context),
+                        ),
                       ),
                     ],
                   ),
@@ -232,7 +238,7 @@ class _FoodScanScreenState extends ConsumerState<FoodScanScreen> {
           if (_errorMessage != null) ...[
             const SizedBox(height: 10),
             Card(
-              color: Colors.red.shade50,
+              color: AppColors.tintedSurface(context, AppColors.warningRed),
               child: Padding(
                 padding: const EdgeInsets.all(12),
                 child: Text(_errorMessage!),
@@ -243,7 +249,7 @@ class _FoodScanScreenState extends ConsumerState<FoodScanScreen> {
           if (res != null) ...[
             const SizedBox(height: 14),
             Card(
-              color: const Color(0xFFFFF8E1),
+              color: AppColors.tintedSurface(context, AppColors.calorieOrange),
               child: Padding(
                 padding: const EdgeInsets.all(14),
                 child: Column(
@@ -321,18 +327,25 @@ class _FoodScanScreenState extends ConsumerState<FoodScanScreen> {
 
             // Bat buoc hien thi Disclaimer duoi ket qua AI Model B (AGENTS.md & F26)
             Card(
-              color: const Color(0xFFF3F6FA),
+              color: AppColors.subtleSurface(context),
               child: Padding(
                 padding: const EdgeInsets.all(12),
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Icon(Icons.info_outline, size: 18, color: Colors.black54),
+                    Icon(
+                      Icons.info_outline,
+                      size: 18,
+                      color: AppColors.secondaryText(context),
+                    ),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
                         res.disclaimer,
-                        style: const TextStyle(fontSize: 12, color: Colors.black54),
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: AppColors.secondaryText(context),
+                        ),
                       ),
                     ),
                   ],

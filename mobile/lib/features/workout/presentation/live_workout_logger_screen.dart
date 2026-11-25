@@ -705,7 +705,10 @@ class _LiveWorkoutLoggerScreenState
         children: [
           if (_restoredFromCrash)
             MaterialBanner(
-              backgroundColor: const Color(0xFFE8F5E9),
+              backgroundColor: AppColors.tintedSurface(
+                context,
+                AppColors.muscleRecoveredGreen,
+              ),
               content: const Text(
                 'Đã khôi phục buổi tập dang dở của bạn.',
                 style: TextStyle(fontSize: 12),
@@ -719,11 +722,11 @@ class _LiveWorkoutLoggerScreenState
             ),
           if (_isResting)
             Container(
-              color: const Color(0xFF12161F),
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              color: const Color(0xFF12161E),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
               child: Row(
                 children: [
-                  const Icon(Icons.timer, color: AppColors.accent),
+                  const Icon(Icons.timer, color: AppColors.volt),
                   const SizedBox(width: 8),
                   Text(
                     'Nghỉ giữa hiệp: ${_formatDuration(_restRemainingSeconds)}',
@@ -755,7 +758,7 @@ class _LiveWorkoutLoggerScreenState
             ),
           Expanded(
             child: ListView(
-              padding: const EdgeInsets.fromLTRB(14, 12, 14, 96),
+              padding: const EdgeInsets.fromLTRB(20, 14, 20, 96),
               children: [
                 ..._blocks.map((block) => _buildExerciseBlockCard(block)),
                 const SizedBox(height: 8),
@@ -827,7 +830,7 @@ class _LiveWorkoutLoggerScreenState
                 ),
                 IconButton(
                   tooltip: 'Xem 3D',
-                  icon: const Icon(Icons.view_in_ar, color: AppColors.primary),
+                  icon: Icon(Icons.view_in_ar, color: AppColors.telemetryCyan(context)),
                   onPressed: () => context.push('/gym3d/exercise/${ex.code}'),
                 ),
                 IconButton(
@@ -844,10 +847,13 @@ class _LiveWorkoutLoggerScreenState
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
                   color: aiRec.action == 'DELOAD'
-                      ? const Color(0xFFFFEBEE)
+                      ? AppColors.tintedSurface(context, AppColors.warningRed)
                       : aiRec.action == 'INCREASE'
-                          ? const Color(0xFFE8F5E9)
-                          : const Color(0xFFE3F2FD),
+                          ? AppColors.tintedSurface(
+                              context,
+                              AppColors.muscleRecoveredGreen,
+                            )
+                          : AppColors.tintedSurface(context, AppColors.primary),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Row(
@@ -979,15 +985,15 @@ class _LiveWorkoutLoggerScreenState
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
       decoration: BoxDecoration(
         color: row.isCompleted
-            ? const Color(0xFFE8F5E9)
-            : Colors.grey.shade50,
+            ? AppColors.tintedSurface(context, AppColors.muscleRecoveredGreen)
+            : AppColors.subtleSurface(context),
         borderRadius: BorderRadius.circular(10),
         border: Border.all(
           color: row.isPr
               ? AppColors.calorieOrange
               : row.isCompleted
-                  ? Colors.green.shade200
-                  : Colors.grey.shade300,
+                  ? AppColors.muscleRecoveredGreen.withValues(alpha: 0.45)
+                  : AppColors.subtleBorder(context),
         ),
       ),
       child: Column(
@@ -1117,7 +1123,10 @@ class _LiveWorkoutLoggerScreenState
                       ? '1RM ước tính: ${row.estimated1rm.toStringAsFixed(1)} kg · ${row.lockedExerciseNameVi ?? row.lockedExerciseCode}'
                       : '1RM ước tính (Epley/Brzycki): ${row.estimated1rm.toStringAsFixed(1)} kg',
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(fontSize: 11, color: Colors.black54),
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: AppColors.secondaryText(context),
+                  ),
                 ),
               ),
               if (row.isPr)

@@ -23,17 +23,20 @@ class SupplementsScreen extends ConsumerWidget {
         label: const Text('Thêm lịch'),
       ),
       body: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 12, 16, 88),
+        padding: const EdgeInsets.fromLTRB(20, 14, 20, 88),
         children: [
           Card(
             child: Padding(
               padding: const EdgeInsets.all(16),
               child: Row(
                 children: [
-                  const CircleAvatar(
+                  CircleAvatar(
                     radius: 26,
-                    backgroundColor: Color(0xFFE8F5E9),
-                    child: Icon(
+                    backgroundColor: AppColors.tintedSurface(
+                      context,
+                      AppColors.muscleRecoveredGreen,
+                    ),
+                    child: const Icon(
                       Icons.medication_outlined,
                       color: AppColors.muscleRecoveredGreen,
                     ),
@@ -51,9 +54,12 @@ class SupplementsScreen extends ConsumerWidget {
                           ),
                         ),
                         const SizedBox(height: 4),
-                        const Text(
+                        Text(
                           'Bấm "Đã uống" ngay trong ứng dụng hoặc trên thanh thông báo.',
-                          style: TextStyle(fontSize: 13, color: Colors.black54),
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: AppColors.secondaryText(context),
+                          ),
                         ),
                       ],
                     ),
