@@ -17,6 +17,21 @@
 
 ---
 
+## Phiên 36 — 2026-11-25 09:38 | Thành viên: M1 + M3 | Task: Chuẩn bị Trọn bộ Hồ sơ, Trang Privacy Policy, Signed `.aab` & Tài khoản Reviewer Nộp Google Play Console (`T-M1-07`)
+- **Mục tiêu phiên:** Hoàn thiện toàn bộ tài nguyên kỹ thuật, pháp lý và Store Listing để người dùng đẩy bản `v1.0.0+1` lên Closed Testing trên Google Play Console.
+- **Những file đã tạo / chỉnh sửa (`[OWNER: M1]` + `[OWNER: M3]`, `0` file `[LOCKED STUB]` bị chạm):**
+  - Backend Privacy Policy: Tạo mới `backend/app/templates/privacy_policy.html`, thêm endpoint `GET /api/v1/users/privacy-policy` trong `backend/app/routers/users.py`, gắn liên kết từ `backend/app/templates/delete_account.html`, và đẩy lên nhánh `main` (`ab3ca14`).
+  - Tài liệu kiểm soát: Cập nhật `docs/chplay_submission_checklist.md`.
+  - Bộ tài nguyên nộp Store tại `mobile/build/play_store_kit/` (ngoài Git): `VigorAI-v1.0.0+1-release.aab` (`68,794,214` bytes), `01_app_icon_512x512.png`, `02_feature_graphic_1024x500.png`, 5 ảnh `phone_01..05` (`1080×1920`), 4 ảnh `tablet_7in/10in` (`1920×1080`), `testers_25_gmail_template.csv` và `HUONG_DAN_NOP_CH_PLAY_A_Z.md`.
+- **Kiểm tra / Kết quả chạy thử:**
+  - `flutter build appbundle --release --dart-define=USE_MOCK_API=false --dart-define=API_BASE_URL=https://vigorai-production.up.railway.app --dart-define=MVP_CLOSED_TESTING=false --dart-define=ENABLE_HEALTH_CONNECT=false`: Exit `0`, ký bằng Upload Keystore `CN=VigorAI` (`SHA384withRSA, 2048-bit RSA`), Merged `AndroidManifest.xml` có `0` quyền cấm và `0` quyền Health Connect / Foreground Service Health.
+  - Kiểm tra HTTP trực tiếp Railway: `/api/v1/users/privacy-policy` trả `200 OK`, `/delete-account` trả `200 OK`.
+  - Tạo sẵn tài khoản Reviewer Demo `reviewer@vigorai.app` kèm dữ liệu sinh trắc học & nhật ký ngày trên server live.
+- **Việc cần làm ở phiên kế tiếp:**
+  - Người dùng tạo app (`VigorAI: Tập Gym 3D & Calo`, package `com.vigorai.app`) và upload bộ `mobile/build/play_store_kit/` lên Google Play Console Closed Testing (20–25 Gmail chạy 14 ngày).
+
+---
+
 ## Phiên 35 — 2026-11-24 15:30 | Thành viên: M1 | Task: Thiết kế & Cài đặt App Icon "Iron Volt V", Sửa lỗi 2 Icon khi Khởi động & Build Release APK
 - **Mục tiêu phiên:**
   1. Thiết kế 3 mẫu App Icon (Favicon) cho VigorAI trên Figma (`VigorAI — 3 App Icon (Favicon) Concepts`); người dùng chốt **Mẫu 01 — Iron Volt V**.
