@@ -283,7 +283,7 @@ def test_seed_catalog_covers_all_core_classes():
     seeded = {e["class_code"]: e for e in FOOD_CATALOG_SEED}
     for e in food.EXTENDED_BEVERAGE_SNACK_CATALOG:
         seeded.setdefault(e["class_code"], e)
-    assert len(classes.CLASS_CODES) == 30
+    assert len(classes.CLASS_CODES) == 50
     for code in classes.CLASS_CODES:
         assert code in seeded, f"{code} thieu trong catalog"
         for key in ("name_vi", "kcal_per_100g", "protein_per_100g", "carbs_per_100g", "fat_per_100g", "default_serving_g"):
@@ -296,7 +296,7 @@ def test_manifest_json_is_valid_and_matches_core_classes():
     data = json.loads(manifest_path.read_text(encoding="utf-8"))
     assert data["model_version"]
     assert data["active_file"].endswith(".onnx")
-    assert len(data["classes"]) in (18, 30)
+    assert len(data["classes"]) in (18, 30, 40, 50)
     assert data["imgsz"] == 640
 
 
@@ -619,10 +619,15 @@ def test_real_onnx_inference_end_to_end(client, monkeypatch):
     assert blank_body["model_version"] == expected_version
     assert blank_body["disclaimer"]
 
-    # 2. Anh mon an that tu tap test (uu tien model_b_v3 16 lop, fallback model_b_v2)
-    v3_dir = REPO_ROOT / "ai_research" / "datasets" / "model_b_v3" / "images" / "test"
-    v2_dir = REPO_ROOT / "ai_research" / "datasets" / "model_b_v2" / "images" / "test"
-    test_dir = v3_dir if v3_dir.is_dir() else v2_dir
+    # 2. Anh mon an that tu tap test (uu tien model_b_v6 50 lop, fallback v5/v4/v3/v2)
+    test_dir = next(
+        (
+            REPO_ROOT / "ai_research" / "datasets" / name / "images" / "test"
+            for name in ("model_b_v6", "model_b_v5", "model_b_v4", "model_b_v3", "model_b_v2")
+            if (REPO_ROOT / "ai_research" / "datasets" / name / "images" / "test").is_dir()
+        ),
+        REPO_ROOT / "ai_research" / "datasets" / "model_b_v2" / "images" / "test",
+    )
     if test_dir.is_dir():
         test_imgs = sorted(test_dir.glob("*.jpg"))[:8]
         detected_any = False

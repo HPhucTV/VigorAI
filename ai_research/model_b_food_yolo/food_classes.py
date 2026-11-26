@@ -1,9 +1,10 @@
-# [OWNER: M4] 30 lop mon an, nuoc uong & snack cho AI Model B v1.2 (T-M4-01, T-M4-09)
-"""Danh sach 30 lop v1.2 + bang alias de gop nhan tu Roboflow / HuggingFace / COCO ve `class_code`.
+# [OWNER: M4] 50 lop mon an Viet, do Gym, nuoc uong & snack cho AI Model B v1.4 (T-M4-01, T-M4-09, T-M4-10)
+"""Danh sach 50 lop v1.4 + bang alias de gop nhan tu Roboflow / HuggingFace / COCO ve `class_code`.
 
 18 lop dau (0..17) giu nguyen thu tu v1.0/v1.1 khop `food_nutrition_catalog` (seed boi M3).
-12 lop mo rong (18..29) bo sung nhom Nuoc uong & Banh snack / Do an nhanh (khop catalog mo rong
-trong `ai_food_yolo.py` de tra khoang Calo uoc tinh ngay ma khong can sua code M3).
+12 lop mo rong v1.2 (18..29) bo sung nhom Nuoc uong & Banh snack / Do an nhanh.
+10 lop mo rong v1.3 (30..39) bat nhom Mon Viet tu `vn-streetfood` + `food-detection`.
+10 lop mo rong v1.4 (40..49) bo sung Mon an & Dac san Viet Nam pho bien tu `vn-food-combined`.
 """
 from __future__ import annotations
 
@@ -31,7 +32,7 @@ CORE_CLASSES_V1: list[tuple[str, tuple[str, ...]]] = [
         ("chicken breast", "grilled chicken", "grilled chicken breast", "ức gà"),
     ),
     ("BOILED_EGG", ("boiled egg", "hard boiled egg", "boiled eggs", "trứng luộc", "trứng gà luộc")),
-    ("FRIED_EGG", ("fried egg", "fried eggs", "sunny side up", "trứng ốp la")),
+    ("FRIED_EGG", ("fried egg", "fried eggs", "sunny side up", "telur-dadar", "omelette", "trứng ốp la", "trứng chiên", "trứng tráng")),
     ("BEEF_STEAK", ("beef steak", "steak", "beef", "bò bít tết", "bít tết")),
     ("SALMON_FILLET", ("salmon", "salmon fillet", "grilled salmon", "cá hồi")),
     ("STEAMED_SHRIMP", ("shrimp", "steamed shrimp", "boiled shrimp", "prawn", "tôm", "tôm hấp")),
@@ -57,7 +58,7 @@ CORE_CLASSES_V1: list[tuple[str, tuple[str, ...]]] = [
             "bánh mì thịt",
         ),
     ),
-    ("BUN_CHA", ("bun cha", "bún chả", "grilled pork with vermicelli")),
+    ("BUN_CHA", ("bun cha", "bún chả", "grilled pork with vermicelli", "grilled pork vermicelli", "bun thit nuong", "bún thịt nướng")),
     # Nuoc uong & Giai khat (18..20)
     (
         "BOTTLED_DRINK",
@@ -167,6 +168,88 @@ CORE_CLASSES_V1: list[tuple[str, tuple[str, ...]]] = [
     (
         "BURGER_PIZZA_FASTFOOD",
         ("burger", "hamburg", "pizza", "hot dog", "fastfood", "hamburger"),
+    ),
+    # Mon Viet pho bien bo sung cho v1.3 (30..39)
+    (
+        "RAU_MUONG_XAO",
+        ("rau muong", "rau muong xao", "rau muống", "rau muống xào", "rau muống xào tỏi", "morning glory", "water spinach", "kangkung"),
+    ),
+    (
+        "BUN_BO_HUE",
+        ("bun bo hue", "bún bò huế", "bún bò", "hue style spicy beef noodle soup", "hue-style spicy beef noodle soup"),
+    ),
+    (
+        "COM_CHIEN",
+        ("com chien", "com rang", "com-rang-dua-bo", "cơm chiên", "cơm rang", "fried rice", "nasi goreng", "nasi-goreng"),
+    ),
+    (
+        "XOI_MAN",
+        ("xoi", "xoi man", "xoi-xeo", "xoi-gac", "xôi", "xôi mặn", "xôi xéo", "xôi gấc", "sticky rice"),
+    ),
+    (
+        "GOI_CUON_NEM",
+        ("goi cuon", "cha gio", "nem ran", "gỏi cuốn", "chả giò", "nem rán", "spring rolls", "spring roll"),
+    ),
+    (
+        "BUN_DAU",
+        ("bun dau", "bun dau mam tom", "bún đậu", "bún đậu mắm tôm", "vermicelli with tofu"),
+    ),
+    (
+        "CHAO_THIT",
+        ("chao", "chao long", "chao thit", "chao-vit", "cháo", "cháo lòng", "cháo thịt", "porridge", "pork offal porridge", "bubur"),
+    ),
+    (
+        "BANH_CUON",
+        ("banh cuon", "bánh cuốn", "steamed rice rolls"),
+    ),
+    (
+        "BANH_GIO",
+        ("banh gio", "bánh giò", "vietnamese pyramid rice dumpling"),
+    ),
+    (
+        "COM_XANH",
+        ("com xanh", "banh com", "cốm", "bánh cốm", "flattened green rice"),
+    ),
+    # 10 mon an & dac san Viet Nam bo sung cho v1.4 (40..49)
+    (
+        "CANH_CHUA_CA",
+        ("canh chua", "canh-chua", "canh chua ca", "canh chua cá lóc", "sour fish soup"),
+    ),
+    (
+        "BANH_XEO",
+        ("banh xeo", "banh-xeo", "bánh xèo", "banh khot", "banh-khot", "bánh khọt"),
+    ),
+    (
+        "BUN_RIEU",
+        ("bun rieu", "bun-rieu", "bún riêu", "bún riêu cua"),
+    ),
+    (
+        "HU_TIEU",
+        ("hu tieu", "hu-tieu", "hủ tiếu", "banh canh", "banh-canh", "bánh canh"),
+    ),
+    (
+        "BANH_BAO",
+        ("banh bao", "banh-bao", "bánh bao"),
+    ),
+    (
+        "BANH_CHUNG_TET",
+        ("banh chung", "banh-chung", "bánh chưng", "banh tet", "banh-tet", "bánh tét"),
+    ),
+    (
+        "THIT_KHO_TRUNG",
+        ("thit kho", "thit kho tau", "thit-kho-tau", "thịt kho tàu", "thịt kho trứng"),
+    ),
+    (
+        "CA_KHO_TO",
+        ("ca kho", "ca kho to", "ca-kho-to", "cá kho tộ", "cá kho"),
+    ),
+    (
+        "MI_QUANG_XAO",
+        ("mi quang", "mi-quang", "mì quảng", "cao lau", "cao-lau", "cao lầu", "mi xao", "mi-xao-gion", "mì xào"),
+    ),
+    (
+        "COM_GA_XOI_MO",
+        ("com ga", "com ga xoi mo", "com-ga-xoi-mo", "cơm gà", "cơm gà xối mỡ", "ga-chien-nuoc-mam"),
     ),
 ]
 

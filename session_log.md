@@ -17,7 +17,32 @@
 
 ---
 
-## Phiên 43 — 2026-11-26 19:03 | Thành viên: M2 (+ Git Sync `origin/main`) | Task: Pull `origin/main` (`b9837cc`) & Dựng 8 Mô hình 3D Chuyển động Còn thiếu (Đạt 39/39 Bài tập)
+## Phiên 45 — 2026-11-26 21:55 | Thành viên: M3 + M4 | Task: Xử lý Xung đột PR #21 (`vu` $\rightarrow$ `main`), Merge AI Model B v1.4 (50 lớp / 66 món) & Redeploy Railway
+- **Mục tiêu phiên:** Xử lý xung đột `session_log.md` trên PR #21 (`vu:abc20b3` $\rightarrow$ `main:16934b1`), hợp nhất bản nâng cấp **AI Model B `yolov8s-gymfood-v1.4` (`50` lớp / `66` món)** mà vẫn bảo toàn bản vá `numpy`/ONNX + **39/39 mô hình 3D chuyển động** trên `main`, rồi kích hoạt redeploy lại lên Railway Production.
+- **Những file đã xử lý (`0` file `[LOCKED STUB]` bị chạm):**
+  - Hợp nhất sạch PR #21 gồm: `ai_research/SOURCES.md`, `ai_research/model_b_food_yolo/{food_classes,fetch_open_datasets}.py`, `ai_research/evaluation_reports/model_b_v1_{3_38classes,4_48classes}/`, `ai_research/evaluation_reports/model_b_v{5,6}_dataset_report.json`, `backend/ai_models/model_b_manifest.json`, `backend/app/services/ai_food_yolo.py` (giữ cả 66 món VN/Gym + bộ bảo vệ optional import `numpy`/`PIL` & `Dockerfile.railway`), `backend/tests/test_ai_api.py`, `docs/taskboard.md`, `session_log.md`.
+
+---
+
+## Phiên 44 — 2026-11-26 21:16 | Thành viên: M4 (Pure AI Engineer) | Task: `T-M4-09` (`[x]`), `T-M4-10` (`[~]`)
+- **Mục tiêu phiên:** Tải thêm dữ liệu món ăn Việt Nam còn thiếu từ `jeandeanny/vn-food-combined-2026`, nâng cấp AI Model B từ `40` lên đủ **`50` lớp (`yolov8s-gymfood-v1.4`, `48/50` lớp hoạt động, `9.286` ảnh)** — vừa tăng gấp 5 lần ảnh cho `GOI_CUON_NEM`, `BANH_CUON`, `BANH_GIO`, vừa bật thêm **10 món Việt phổ biến** (`Canh chua cá lóc`, `Bánh xèo`, `Bún riêu`, `Hủ tiếu`, `Bánh bao`, `Bánh chưng/tét`, `Thịt kho tàu`, `Cá kho tộ`, `Mì Quảng/Cao lầu`, `Cơm gà xối mỡ`) rồi deploy nóng lên Railway Production.
+- **Những file đã tạo / chỉnh sửa (`0` file `[LOCKED STUB]` và `0` file `M3` bị chạm):**
+  - `ai_research/model_b_food_yolo/fetch_open_datasets.py`, `food_classes.py`, `ai_research/SOURCES.md`: Bổ sung `fetch_vn_food_combined` + `estimate_dish_bbox()` (saliency màu + Sobel trích `3.070` ảnh từ `12.128` mẫu `jeandeanny/vn-food-combined-2026`, tự xóa từng parquet shard sau xử lý); mở rộng `CORE_CLASSES_V1` lên **50 lớp** (`40..49`: `CANH_CHUA_CA`, `BANH_XEO`, `BUN_RIEU`, `HU_TIEU`, `BANH_BAO`, `BANH_CHUNG_TET`, `THIT_KHO_TRUNG`, `CA_KHO_TO`, `MI_QUANG_XAO`, `COM_GA_XOI_MO`); dựng `model_b_v6` (**9.286 ảnh**: `7.179 train / 1.406 val / 701 test`, `48/50` lớp hoạt động, `0` lỗi bbox, `0` rò rỉ augment).
+  - `backend/app/services/ai_food_yolo.py`: Bổ sung `9` mục món Việt mới vào `EXTENDED_BEVERAGE_SNACK_CATALOG` (`CANH_CHUA_CA` dùng sẵn trong `FOOD_CATALOG_SEED`), nâng tổng catalog API lên **66 món** với khoảng calo `~min – max kcal`.
+  - `backend/ai_models/model_b_manifest.json`, `backend/tests/test_ai_api.py`, `ai_research/evaluation_reports/model_b_v6_dataset_report.json`, `ai_research/evaluation_reports/model_b_v1_4_48classes/`: Fine-tune `30 epochs` trên Colab T4 (`v1_3_best.pt` → `v1.4`), tích hợp `best.onnx` (`44,823,290 B`, `sha256: 0258abaed54cf0670b520cf2d951ec640696fcd3e921885bb86aeb2c85d12a32`, output shape `[1, 54, 8400]`) & `best.pt` (backup bản `v1.3` tại `food_yolo_v1_3_40cls_backup.onnx`).
+  - `docs/taskboard.md`, `session_log.md`: Cập nhật số liệu `v1.4` trên `T-M4-09` (`[x]`) và `T-M4-10` (`[~]`).
+- **Kiểm tra / Kết quả chạy thử:**
+  - **Colab T4 (`30 epochs`):** `mAP@0.5 = 0.7897`, **`mAP@0.5:0.95 = 0.6181 >= 0.58`**, `Precision = 0.8146`, `Recall = 0.7397`, `F1 = 0.7753`, `T4 infer = 8.55 ms`.
+  - **`evaluate_model.py` (`food_yolo_v1.onnx` trên `701` ảnh `test`, `conf=0.30`):** **`mAP@0.5 = 0.7987`** (tăng **`+10.83%`** so với `v1.3`), **`Precision = 0.8129`**, **`Recall = 0.7388`**, **`F1 = 0.7740`** (tại `conf=0.40`: `P = 0.838`, `F1 = 0.7769`). Nổi bật trên ONNX: `GOI_CUON_NEM 98.4%`, `BANH_XEO 98.0%`, `BOTTLED_DRINK 95.8%`, `RAU_MUONG_XAO 95.6%`, `BANH_CHUNG_TET 94.9%`, `BANH_BAO 94.8%`, `BANH_GIO 94.0%`, `CA_KHO_TO 93.7%`, `COM_GA_XOI_MO 91.2%`, `BUN_BO_HUE 90.4%`, `THIT_KHO_TRUNG 90.3%`, `BUN_RIEU 89.4%`, `BANH_CUON 84.2%`, `CANH_CHUA_CA 79.3%`, `MI_QUANG_XAO 74.9%`, `HU_TIEU 67.3%`.
+  - `python -m pytest backend/tests/test_ai_api.py -v`: **34 / 34 PASS** với trọng số `v1.4` thật.
+  - **Live Railway (`1a927ccd-b0ae-4daa-92b0-e62e7c7b411a` `[SUCCESS]`):** `/food-model/info` trả `model_version: "yolov8s-gymfood-v1.4"`, `50` classes, `catalog_size: 66`, `stub_fallback_enabled: false`; smoke-test HTTPS **8 / 8 PASS** (`BANH_XEO 91.5%`, `BUN_RIEU 86.3%`, `HU_TIEU 97.9%`, `CANH_CHUA_CA 49.2%`, `THIT_KHO_TRUNG 98.4%`, `BANH_CUON 96.6%`, `GOI_CUON_NEM 69.4%`, `BOTTLED_DRINK 88.6%`).
+- **Việc cần làm ở phiên kế tiếp:**
+  - Chụp thêm vài chục ảnh thật cho 2 lớp `0` ảnh còn lại (`BROWN_RICE` Cơm gạo lứt, `SWEET_POTATO` Khoai lang luộc) và đẩy nhẹ `mAP@0.5` từ `0.7987` lên `>= 0.80` để đóng `[x]` `T-M4-10`.
+  - Triển khai **AI Model C** (`T-M4-05`, `T-M4-07`, `T-M4-08`).
+
+---
+
+## Phiên 43 (M2 — 8 Mô hình 3D Chuyển động & Hotfix Deploy) — 2026-11-26 19:03 | Thành viên: M2 (+ Git Sync `origin/main`) | Task: Pull `origin/main` (`b9837cc`) & Dựng 8 Mô hình 3D Chuyển động Còn thiếu (Đạt 39/39 Bài tập)
 - **Mục tiêu phiên:**
   1. Kéo code mới nhất từ `origin/main` (`53bcc0a..b9837cc`, PR #20 M4 Model B v1.2) về nhánh `HPhucTV` an toàn, bảo toàn trọn vẹn công việc Phiên 40 và xử lý sạch xung đột `session_log.md`.
   2. Khắc phục triệt để lỗi 8 bài tập 3D đứng yên do rơi về `base_mannequin.glb`: `BARBELL_OVERHEAD_PRESS`, `ONE_ARM_DUMBBELL_ROW`, `GOBLET_SQUAT`, `KETTLEBELL_SWING`, `MACHINE_CHEST_PRESS`, `CABLE_BICEP_CURL`, `CLOSE_GRIP_BENCH_PRESS`, `STANDING_CALF_RAISE`.
@@ -34,6 +59,23 @@
   - `flutter test --no-pub`: **`49 / 49` tests passed**.
 - **Lưu ý triển khai Server thật (`https://vigorai-production.up.railway.app`):**
   - Khi push lần đầu (`b306f80`), phát hiện deploy trên Railway bị lỗi `failure` (lỗi có sẵn từ PR #20 `b9837cc`): `backend/app/services/ai_food_yolo.py` import `numpy` ở top-level trong khi `backend/Dockerfile.railway` (`INSTALL_AI_DEPS=false`) loại bỏ `numpy`/`pillow`/`onnxruntime`. Đã hotfix bằng cách bọc optional import `numpy`/`PIL` trong `ai_food_yolo.py` và giữ bộ ONNX Runtime gọn nhẹ (`onnxruntime`, `numpy`, `pillow` + `libgomp1`) trong `Dockerfile.railway` trước khi redeploy lại lên `main`.
+
+---
+
+## Phiên 43 (M4 — Model B v1.3 40 lớp) — 2026-11-26 17:05 | Thành viên: M4 (Pure AI Engineer) | Task: `T-M4-09` (`[x]`), `T-M4-10` (`[~]`)
+- **Mục tiêu phiên:** Hoàn tất mở rộng Dataset Đợt 2 (`model_b_v5` — **40 lớp / 38 lớp hoạt động, 7.656 ảnh**) bằng cách bật toàn bộ nhóm món Việt có sẵn (`Bún bò Huế`, `Cơm chiên`, `Xôi`, `Gỏi cuốn / Chả giò`, `Bún đậu`, `Cháo lòng / Cháo thịt`, `Bánh cuốn`, `Bánh giò`, `Cốm`, `Rau muống xào`), đóng `[x]` `T-M4-09`, fine-tune **`yolov8s-gymfood-v1.3`** trên Colab T4, đánh giá ONNX CPU và deploy nóng lên Railway Production (tự động tương thích bản APK `v1.2` đang chạy trên điện thoại).
+- **Những file đã tạo / chỉnh sửa (`0` file `[LOCKED STUB]` và `0` file `M3` bị chạm):**
+  - `ai_research/model_b_food_yolo/food_classes.py`, `ai_research/SOURCES.md`: Mở rộng `CORE_CLASSES_V1` từ `30` lên **40 lớp** (`30..39`: `RAU_MUONG_XAO`, `BUN_BO_HUE`, `COM_CHIEN`, `XOI_MAN`, `GOI_CUON_NEM`, `BUN_DAU`, `CHAO_THIT`, `BANH_CUON`, `BANH_GIO`, `COM_XANH`) + gộp thêm alias cho `FRIED_EGG` (`telur-dadar`) và `BUN_CHA` (`Grilled Pork Vermicelli`); dựng `model_b_v5` (**7.656 ảnh**: `6.104 train / 1.034 val / 518 test`, `38/40` lớp hoạt động, `0` lỗi bbox, `0` rò rỉ augment).
+  - `backend/app/services/ai_food_yolo.py`: Bổ sung `9` mục món Việt mới vào `EXTENDED_BEVERAGE_SNACK_CATALOG` (`RAU_MUONG_XAO` dùng sẵn trong `FOOD_CATALOG_SEED`), nâng tổng catalog API lên **57 món** với khoảng calo `~min – max kcal`.
+  - `backend/ai_models/model_b_manifest.json`, `backend/tests/test_ai_api.py`, `ai_research/evaluation_reports/model_b_v5_dataset_report.json`, `ai_research/evaluation_reports/model_b_v1_3_38classes/`: Tích hợp trọng số `best.onnx` (`44,807,625 B`, `sha256: 0a0e3a9a2e16ced96ed463768f0a7323ff13c6f8d3ed1b75b01a2a92adf7f386`, output shape `[1, 44, 8400]`) & `best.pt` (backup bản `v1.2` tại `food_yolo_v1_2_30cls_backup.onnx`); lưu đầy đủ báo cáo Colab + ONNX CPU.
+  - `docs/taskboard.md`, `session_log.md`: Đóng **`[x]` `T-M4-09`** (`M4: 6 / 14 Done (42.9%)`, `Tổng: 37 / 63 Done (58.7%)`), cập nhật thông số `v1.3` cho `T-M4-10` (`[~]`).
+- **Kiểm tra / Kết quả chạy thử:**
+  - `evaluate_model.py` (`food_yolo_v1.onnx` trên CPU, `518` ảnh `test` của `model_b_v5`, `conf=0.30`): **`mAP@0.5 = 0.6904`** (tăng `+9.26%` so với `v1.2`), **`Precision = 0.7979`**, **`Recall = 0.7443`**, **`F1 = 0.7702`** (ở `conf=0.35` đạt `F1 = 0.7711`, `P = 0.8189`), **`CPU inference mean = 90.36 ms`** (`p50 = 88.0 ms`, `p95 = 120.0 ms < 150 ms`), `e2e mean = 95.86 ms`. Nổi bật: `BOILED_EGG 99.5%`, `BOTTLED_DRINK 96.8%`, `COM_TAM_SUON 96.7%`, `RAU_MUONG_XAO 96.2%`, `BUN_CHA 94.1%`, `SALMON_FILLET 92.8%`, `COM_XANH 89.5%`, `FRENCH_FRIES 86.3%`, `TOFU 83.8%`, `BEEF_PHO 78.3%`, `BUN_DAU 77.8%`, `COFFEE_MILK_TEA 77.1%`, `COM_CHIEN 74.7%`, `XOI_MAN 73.6%`, `BUN_BO_HUE 70.2%`.
+  - `python -m pytest backend/tests/test_ai_api.py -v`: **34 / 34 PASS** với trọng số `v1.3` thật.
+  - **Live Railway (`26853a72-4c9f-4f0a-87c4-a32932cac3cc` `[SUCCESS]`):** `GET /api/v1/ai/food-model/info` trả `model_version: "yolov8s-gymfood-v1.3"`, `40` classes, `catalog_size: 57`, `stub_fallback_enabled: false`; `POST /api/v1/ai/food-analyze` nhận diện chính xác `BUN_DAU` (`94.6%`), `RAU_MUONG_XAO` (`94.8%`), `COM_CHIEN` (`59.6%`), `XOI_MAN` (`48.0%`), `BOTTLED_DRINK` kèm `~min – max kcal`.
+- **Việc cần làm ở phiên kế tiếp:**
+  - Chụp/gom thêm dữ liệu thật cho 2 lớp `0` ảnh (`BROWN_RICE`, `SWEET_POTATO`), 3 lớp ít ảnh (`GOI_CUON_NEM`, `BANH_CUON`, `BANH_GIO`) và chai nước/snack thương hiệu VN để đẩy `mAP@0.5 >= 0.80` chốt `T-M4-10`.
+  - Triển khai **AI Model C** (`T-M4-05`, `T-M4-07`, `T-M4-08`).
 
 ---
 
