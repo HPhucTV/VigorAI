@@ -17,7 +17,7 @@
 
 ---
 
-## Phiên 38 — 2026-11-26 13:22 | Thành viên: M4 + M1 (UI F19) | Task: `T-M4-09` (`[~]`), `T-M4-10` (`[~]`), `T-M1-10` (`[~]`)
+## Phiên 42 — 2026-11-26 13:22 | Thành viên: M4 + M1 (UI F19) | Task: `T-M4-09` (`[~]`), `T-M4-10` (`[~]`), `T-M1-10` (`[~]`)
 - **Mục tiêu phiên:** Khắc phục lỗi chụp chai nước cầm tay bị nhận nhầm thành `BANANA`, mở rộng AI Model B từ `16` lên **`30` lớp (`yolov8s-gymfood-v1.2`)** bổ sung nhóm **Nước uống & Bánh snack / Đồ ăn nhanh**, đổi hiển thị sang **khoảng calo ước chừng (`~min – max kcal`)** theo yêu cầu kiểm thử thực tế, deploy nóng lên Railway Production, build lại `VigorAI-test-ai.apk` và kiểm toán chi tiết phần dữ liệu món ăn còn thiếu.
 - **Những file đã tạo / chỉnh sửa (`0` file `[LOCKED STUB]` và `0` file `M3` bị chạm):**
   - `ai_research/model_b_food_yolo/food_classes.py`, `fetch_open_datasets.py`, `prepare_dataset.py`, `evaluate_model.py`, `test_camera_local.py`, `ai_research/SOURCES.md`: Mở rộng `CORE_CLASSES_V1` lên **30 lớp** (thêm 12 lớp `18..29`: `BOTTLED_DRINK`, `COFFEE_MILK_TEA`, `FRUIT_JUICE_SMOOTHIE`, `COOKIE_BISCUIT`, `CAKE_MUFFIN_PASTRY`, `DONUT_WAFFLE_PANCAKE`, `CROISSANT_SWEET_BREAD`, `CHIPS_POPCORN_SNACK`, `CHOCOLATE_CANDY`, `ICE_CREAM_DESSERT`, `FRENCH_FRIES`, `BURGER_PIZZA_FASTFOOD`), tải thêm `Francesco/soda-bottles`, `detection-datasets/coco` val (giữ ảnh người cầm chai làm nền âm cứng) và `Matthijs/snacks-detection`; dựng **`model_b_v4` (`5.218` ảnh: `4.013 train / 805 val / 400 test`, `28/30` lớp hoạt động)**.
@@ -36,7 +36,7 @@
 
 ---
 
-## Phiên 34 — 2026-11-25 20:35 | Thành viên: M4 (Pure AI Engineer) | Task: `T-M4-06` (`[x]`)
+## Phiên 41 — 2026-11-25 20:35 | Thành viên: M4 (Pure AI Engineer) | Task: `T-M4-06` (`[x]`)
 - **Mục tiêu phiên:** Tích hợp trọng số **Model B v1.1 (`yolov8s-gymfood-v1.1`, 16/18 lớp)** train từ Google Colab T4 vào FastAPI backend, benchmark thực tế bằng ONNX Runtime CPU trên toàn bộ 245 ảnh test, kiểm tra bounding box trực quan trên món ăn Việt Nam và đóng `[x]` `T-M4-06`.
 - **Những file đã tạo / chỉnh sửa (`0` file `[LOCKED STUB]` bị chạm):**
   - `backend/ai_models/weights/food_yolo_v1.onnx` (`44.77 MB`, `sha256: 5407422aa1f62a266e9398fd983e13f77558e1188890d1a723f73d9c8bc46637`) & `food_yolo_v1.pt` *(không commit Git; bản 6 lớp cũ backup tại `food_yolo_v1_6cls_backup.onnx`; đã upload lên Railway Storage Bucket `gym3d-assets` tại key `ai_models/food_yolo_v1.onnx`)*.
@@ -63,7 +63,7 @@
 
 ---
 
-## Phiên 33 (M4-Model B v1.0 & Dataset v3) — 2026-11-25 17:55 | Thành viên: M4 (Pure AI Engineer) | Task: `T-M4-01` (`[x]`), `T-M4-03` (`[x]`), `T-M4-06` (`[~]`)
+## Phiên 40 (M4-Model B v1.0 & Dataset v3) — 2026-11-25 17:55 | Thành viên: M4 (Pure AI Engineer) | Task: `T-M4-01` (`[x]`), `T-M4-03` (`[x]`), `T-M4-06` (`[~]`)
 - **Mục tiêu phiên:** Hoàn thiện trọn vẹn luồng Camera Quét Đồ ăn AI (`F19` / Model B): nâng cấp backend suy luận ONNX Runtime thuần không phụ thuộc PyTorch, đánh giá thực nghiệm `food_yolo_v1.onnx`, mở rộng tập dữ liệu sạch đạt 16/18 món cốt lõi (`model_b_v3`) và chuẩn bị sẵn notebook Colab train nâng cấp lên 16 lớp.
 - **Những file đã tạo / chỉnh sửa (`0` file `[LOCKED STUB]` bị chạm):**
   - `backend/app/services/ai_food_yolo.py`: Cài đặt suy luận **ONNX Runtime thuần** (`onnxruntime + numpy + pillow`) với letterbox đúng chuẩn YOLOv8, class-aware NMS, khử trùng lặp chéo lớp (`suppress_cross_class_duplicates`, `IoU >= 0.75`), xử lý xoay ảnh EXIF điện thoại, giới hạn decompression bomb (`40 MP`), đọc `model_b_manifest.json` và tự động tải trọng số kèm xác minh SHA-256 từ `VIGOR_FOOD_MODEL_URL`.
@@ -85,6 +85,39 @@
   - Live FastAPI `uvicorn` HTTP (`VIGOR_FOOD_ALLOW_STUB=0`): `GET /openapi.json` (`200 OK`), `GET /api/v1/ai/food-model/info` (`200 OK`, `backend=onnxruntime`, `catalog=36`), `POST /api/v1/ai/food-analyze` (`200 OK`, trả về `Xà lách trộn 250.0g 50.0kcal` trong `83ms`), `GET /api/v1/ai/readiness-and-overload` (`200 OK`).
 - **Việc cần làm ở phiên kế tiếp:**
   - Upload `ai_research/datasets/model_b_v3.zip` lên Google Drive và chạy `ai_research/model_b_food_yolo/train_model_b_colab.ipynb` (Colab T4) để nâng trọng số `food_yolo_v1.onnx` từ 6 lớp lên đủ **16/18 lớp** rồi đóng `[x]` `T-M4-06`; đồng thời triển khai `T-M4-05` & `T-M4-07` cho **Model C**.
+
+---
+
+## Phiên 39 — 2026-11-25 11:46 | Thành viên: M1 + M2 + M4 | Task: Nộp Duyệt Thành công Closed Testing Play Console (`T-M1-07` Done, `T-M2-06` Review) & Merge PR #19 (`T-M4-01`)
+- **Mục tiêu phiên:**
+  1. Hoàn tất 100% các biểu mẫu kiểm duyệt và nộp thành công bản phát hành **Thử nghiệm kín (`Closed testing`)** trên Google Play Console cho ứng dụng `VigorAI: Tập Gym 3D & Calo` (`com.vigorai.app`).
+  2. Xử lý xung đột `session_log.md` và merge PR #19 của M4 (`vu` $\rightarrow$ `main`) nâng cấp pipeline dữ liệu Model B.
+  3. Rà soát và đồng bộ lại tiến độ toàn đội trong `docs/taskboard.md` (`32 / 63 Done` — `50.8%`).
+- **Những file đã tạo / chỉnh sửa (`0` file `[LOCKED STUB]` bị chạm):**
+  - Merge PR #19 (`9a6b008`): `ai_research/SOURCES.md`, `ai_research/model_b_food_yolo/{README.md,food_classes.py,prepare_dataset.py}`, `session_log.md`.
+  - Cập nhật tiến độ & đối soát: `docs/taskboard.md` (đóng `[x]` cho `T-M1-07`, cập nhật trạng thái đang xem xét cho `T-M2-06` & trạng thái sau PR #19 của `T-M4-01`), `docs/chplay_submission_checklist.md`, `session_log.md`.
+- **Trạng thái CH Play hiện tại:**
+  - Đã hoàn tất toàn bộ Store Listing (Icon **Iron Volt V**, ảnh đầu trang `1024×500`, ảnh chụp Phone/Tablet, danh mục *Sức khỏe và Thể hình*, email liên hệ) và toàn bộ tờ khai App Content (*Privacy Policy*, *App Access* `reviewer@vigorai.app`, *Ads = Không*, *Advertising ID = Không*, *Financial features = Không*, *Content rating*, *Target audience 18+*, *Data safety*, *Health apps* kèm giải trình `ACTIVITY_RECOGNITION`, *DSA Trader status*).
+  - Kênh **Thử nghiệm kín (`Virgo`)** đang ở trạng thái **`Đang xem xét`** (danh sách `Virgo` 16 testers đã chọn; khuyến nghị tích thêm `tester-A1` 15 testers để đảm bảo dư `>= 12` người opt-in liên tục 14 ngày).
+- **Kiểm tra / Kết quả chạy thử:**
+  - `python ai_research/model_b_food_yolo/prepare_dataset.py --help` trên Windows: Exit `0`.
+  - PR #19: `MERGED` sạch lên `main`, nhánh `HPhucTV` & `main` đã đồng bộ tại `9a6b008`/`92cbf37`.
+- **Việc cần làm ở phiên kế tiếp:**
+  - Theo dõi Play Console 24–72 giờ tới khi **Thử nghiệm kín** chuyển sang **`Có sẵn cho người thử nghiệm`**, copy link `Tham gia trên web` (`https://play.google.com/apps/testing/com.vigorai.app`) gửi cho 20–25 Gmail cài giữ liên tục **14 ngày** (`T-M1-12` / `T-M2-06`).
+  - Trong 14 ngày chờ: `M4` hoàn thành Model B YOLOv8 (`T-M4-06`) & Model C (`T-M4-07..08`) đẩy lên Railway (trước khi `M1`/`M2` bấm Apply Production `v1.1.0`), còn `M1`/`M2`/`M3` triển khai song song các hạng mục **Sprint 3** (`T-M1-13..14`, `T-M2-13..14`, `T-M3-12..13`).
+
+---
+
+## Phiên 38 — 2026-11-25 10:17 | Thành viên: M1 | Task: Nâng `targetSdk = 36` theo yêu cầu Google Play & Đóng gói `.aab` `v1.0.0+2` (`T-M1-07`)
+- **Mục tiêu phiên:** Xử lý thông báo bắt buộc API cấp 36 từ Google Play Console và đóng gói lại `.aab` mới (`versionCode = 2`) phục vụ phát hành Closed Testing.
+- **Những file đã tạo / chỉnh sửa (`[OWNER: M1]`, `0` file `[LOCKED STUB]` bị chạm):**
+  - `mobile/android/app/build.gradle.kts`: Nâng `targetSdk` từ `35` lên `36` (Android 16), giữ `minSdk = 26`, 64-bit và 16KB page size alignment.
+  - `docs/chplay_submission_checklist.md`: Cập nhật chuẩn `targetSdk = 36`.
+  - Cập nhật ngoài Git trong `mobile/build/play_store_kit/`: thay thế bản `.aab` cũ bằng `VigorAI-v1.0.0+2-release.aab` (`versionCode = 2`) và bổ sung hướng dẫn mục **Tính năng tài chính (Financial features)** trong `HUONG_DAN_NOP_CH_PLAY_A_Z.md`.
+- **Kiểm tra / Kết quả chạy thử:**
+  - `flutter build appbundle --release --build-name=1.0.0 --build-number=2 --dart-define=USE_MOCK_API=false --dart-define=API_BASE_URL=https://vigorai-production.up.railway.app --dart-define=MVP_CLOSED_TESTING=false --dart-define=ENABLE_HEALTH_CONNECT=false`: Exit `0`, ký bằng Upload Keystore `CN=VigorAI`, Merged `AndroidManifest.xml` xác nhận `targetSdkVersion="36"` với `0` quyền cấm và `0` quyền Health Connect / Foreground Service Health.
+- **Việc cần làm ở phiên kế tiếp:**
+  - Người dùng upload `VigorAI-v1.0.0+2-release.aab` lên Closed Testing, hoàn tất 5 đầu mục trên Play Console và bấm Gửi xem xét để bắt đầu 14 ngày thử nghiệm.
 
 ---
 
