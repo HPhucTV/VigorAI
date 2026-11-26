@@ -17,6 +17,23 @@
 
 ---
 
+## Phiên 43 — 2026-11-26 17:05 | Thành viên: M4 (Pure AI Engineer) | Task: `T-M4-09` (`[x]`), `T-M4-10` (`[~]`)
+- **Mục tiêu phiên:** Hoàn tất mở rộng Dataset Đợt 2 (`model_b_v5` — **40 lớp / 38 lớp hoạt động, 7.656 ảnh**) bằng cách bật toàn bộ nhóm món Việt có sẵn (`Bún bò Huế`, `Cơm chiên`, `Xôi`, `Gỏi cuốn / Chả giò`, `Bún đậu`, `Cháo lòng / Cháo thịt`, `Bánh cuốn`, `Bánh giò`, `Cốm`, `Rau muống xào`), đóng `[x]` `T-M4-09`, fine-tune **`yolov8s-gymfood-v1.3`** trên Colab T4, đánh giá ONNX CPU và deploy nóng lên Railway Production (tự động tương thích bản APK `v1.2` đang chạy trên điện thoại).
+- **Những file đã tạo / chỉnh sửa (`0` file `[LOCKED STUB]` và `0` file `M3` bị chạm):**
+  - `ai_research/model_b_food_yolo/food_classes.py`, `ai_research/SOURCES.md`: Mở rộng `CORE_CLASSES_V1` từ `30` lên **40 lớp** (`30..39`: `RAU_MUONG_XAO`, `BUN_BO_HUE`, `COM_CHIEN`, `XOI_MAN`, `GOI_CUON_NEM`, `BUN_DAU`, `CHAO_THIT`, `BANH_CUON`, `BANH_GIO`, `COM_XANH`) + gộp thêm alias cho `FRIED_EGG` (`telur-dadar`) và `BUN_CHA` (`Grilled Pork Vermicelli`); dựng `model_b_v5` (**7.656 ảnh**: `6.104 train / 1.034 val / 518 test`, `38/40` lớp hoạt động, `0` lỗi bbox, `0` rò rỉ augment).
+  - `backend/app/services/ai_food_yolo.py`: Bổ sung `9` mục món Việt mới vào `EXTENDED_BEVERAGE_SNACK_CATALOG` (`RAU_MUONG_XAO` dùng sẵn trong `FOOD_CATALOG_SEED`), nâng tổng catalog API lên **57 món** với khoảng calo `~min – max kcal`.
+  - `backend/ai_models/model_b_manifest.json`, `backend/tests/test_ai_api.py`, `ai_research/evaluation_reports/model_b_v5_dataset_report.json`, `ai_research/evaluation_reports/model_b_v1_3_38classes/`: Tích hợp trọng số `best.onnx` (`44,807,625 B`, `sha256: 0a0e3a9a2e16ced96ed463768f0a7323ff13c6f8d3ed1b75b01a2a92adf7f386`, output shape `[1, 44, 8400]`) & `best.pt` (backup bản `v1.2` tại `food_yolo_v1_2_30cls_backup.onnx`); lưu đầy đủ báo cáo Colab + ONNX CPU.
+  - `docs/taskboard.md`, `session_log.md`: Đóng **`[x]` `T-M4-09`** (`M4: 6 / 14 Done (42.9%)`, `Tổng: 37 / 63 Done (58.7%)`), cập nhật thông số `v1.3` cho `T-M4-10` (`[~]`).
+- **Kiểm tra / Kết quả chạy thử:**
+  - `evaluate_model.py` (`food_yolo_v1.onnx` trên CPU, `518` ảnh `test` của `model_b_v5`, `conf=0.30`): **`mAP@0.5 = 0.6904`** (tăng `+9.26%` so với `v1.2`), **`Precision = 0.7979`**, **`Recall = 0.7443`**, **`F1 = 0.7702`** (ở `conf=0.35` đạt `F1 = 0.7711`, `P = 0.8189`), **`CPU inference mean = 90.36 ms`** (`p50 = 88.0 ms`, `p95 = 120.0 ms < 150 ms`), `e2e mean = 95.86 ms`. Nổi bật: `BOILED_EGG 99.5%`, `BOTTLED_DRINK 96.8%`, `COM_TAM_SUON 96.7%`, `RAU_MUONG_XAO 96.2%`, `BUN_CHA 94.1%`, `SALMON_FILLET 92.8%`, `COM_XANH 89.5%`, `FRENCH_FRIES 86.3%`, `TOFU 83.8%`, `BEEF_PHO 78.3%`, `BUN_DAU 77.8%`, `COFFEE_MILK_TEA 77.1%`, `COM_CHIEN 74.7%`, `XOI_MAN 73.6%`, `BUN_BO_HUE 70.2%`.
+  - `python -m pytest backend/tests/test_ai_api.py -v`: **34 / 34 PASS** với trọng số `v1.3` thật.
+  - **Live Railway (`26853a72-4c9f-4f0a-87c4-a32932cac3cc` `[SUCCESS]`):** `GET /api/v1/ai/food-model/info` trả `model_version: "yolov8s-gymfood-v1.3"`, `40` classes, `catalog_size: 57`, `stub_fallback_enabled: false`; `POST /api/v1/ai/food-analyze` nhận diện chính xác `BUN_DAU` (`94.6%`), `RAU_MUONG_XAO` (`94.8%`), `COM_CHIEN` (`59.6%`), `XOI_MAN` (`48.0%`), `BOTTLED_DRINK` kèm `~min – max kcal`.
+- **Việc cần làm ở phiên kế tiếp:**
+  - Chụp/gom thêm dữ liệu thật cho 2 lớp `0` ảnh (`BROWN_RICE`, `SWEET_POTATO`), 3 lớp ít ảnh (`GOI_CUON_NEM`, `BANH_CUON`, `BANH_GIO`) và chai nước/snack thương hiệu VN để đẩy `mAP@0.5 >= 0.80` chốt `T-M4-10`.
+  - Triển khai **AI Model C** (`T-M4-05`, `T-M4-07`, `T-M4-08`).
+
+---
+
 ## Phiên 42 — 2026-11-26 13:22 | Thành viên: M4 + M1 (UI F19) | Task: `T-M4-09` (`[~]`), `T-M4-10` (`[~]`), `T-M1-10` (`[~]`)
 - **Mục tiêu phiên:** Khắc phục lỗi chụp chai nước cầm tay bị nhận nhầm thành `BANANA`, mở rộng AI Model B từ `16` lên **`30` lớp (`yolov8s-gymfood-v1.2`)** bổ sung nhóm **Nước uống & Bánh snack / Đồ ăn nhanh**, đổi hiển thị sang **khoảng calo ước chừng (`~min – max kcal`)** theo yêu cầu kiểm thử thực tế, deploy nóng lên Railway Production, build lại `VigorAI-test-ai.apk` và kiểm toán chi tiết phần dữ liệu món ăn còn thiếu.
 - **Những file đã tạo / chỉnh sửa (`0` file `[LOCKED STUB]` và `0` file `M3` bị chạm):**
