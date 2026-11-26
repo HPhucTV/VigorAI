@@ -52,7 +52,7 @@ async def delete_current_user(
     await auth_service.delete_user_cascade(db, current_user)
     return MessageResponse(
         status="deleted",
-        message="Tai khoan va toan bo du lieu da duoc xoa vinh vien.",
+        message="Tài khoản và toàn bộ dữ liệu đã được xóa vĩnh viễn.",
     )
 
 

@@ -266,8 +266,8 @@ class _FoodScanScreenState extends ConsumerState<FoodScanScreen> {
                     const SizedBox(height: 6),
                     Text(
                       'Đạm: ${res.totalProteinG.toStringAsFixed(1)}g · '
-                      'Carb: ${res.totalCarbsG.toStringAsFixed(1)}g · '
-                      'Fat: ${res.totalFatG.toStringAsFixed(1)}g',
+                      'Tinh bột: ${res.totalCarbsG.toStringAsFixed(1)}g · '
+                      'Chất béo: ${res.totalFatG.toStringAsFixed(1)}g',
                       style: const TextStyle(fontWeight: FontWeight.w600),
                     ),
                   ],

@@ -13,6 +13,27 @@ import '../../../core/network/dio_client.dart';
 import '../presentation/widgets/muscle_3d_viewer_widget.dart';
 
 class ExerciseRepository {
+  static String equipmentLabelVi(String rawType) {
+    switch (rawType.trim().toUpperCase()) {
+      case 'BARBELL':
+        return 'Tạ đòn';
+      case 'DUMBBELL':
+        return 'Tạ đơn';
+      case 'CABLE':
+        return 'Dây cáp';
+      case 'MACHINE':
+        return 'Máy tập';
+      case 'BODYWEIGHT':
+        return 'Trọng lượng cơ thể';
+      case 'KETTLEBELL':
+        return 'Tạ ấm';
+      case 'BAND':
+        return 'Dây kháng lực';
+      default:
+        return rawType;
+    }
+  }
+
   static const Map<String, String> _localBundledGlbs = {
     'BARBELL_BENCH_PRESS': 'assets/3d_bundled/barbell_bench_press.glb',
     'BARBELL_SQUAT': 'assets/3d_bundled/barbell_squat.glb',
@@ -25,8 +46,7 @@ class ExerciseRepository {
       return true;
     }
     if (url.startsWith('assets/3d_bundled/') &&
-        !_localBundledGlbs.containsKey(code.toUpperCase()) &&
-        url != 'assets/3d_bundled/base_mannequin.glb') {
+        !_localBundledGlbs.containsKey(code.toUpperCase())) {
       return true;
     }
     return false;
@@ -377,9 +397,7 @@ class ExerciseRepository {
           (jsonDecode(row.badFormWarningsJson) as List).cast<String>(),
       setupGuide: jsonDecode(row.setupGuideJson) as Map<String, dynamic>,
       isBundled: bundled,
-      clips: bundled
-          ? const ['Anim_GoodForm', 'Anim_BadForm']
-          : const ['Anim_GoodForm'],
+      clips: const ['Anim_GoodForm', 'Anim_BadForm'],
     );
   }
 }

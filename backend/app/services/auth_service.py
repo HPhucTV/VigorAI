@@ -64,7 +64,7 @@ class AuthService:
         if not payload.medical_disclaimer_accepted:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Ban phai chap nhan Mien tru Trach nhiem Y te de dang ky.",
+                detail="Bạn phải chấp nhận Miễn trừ Trách nhiệm Y tế để đăng ký.",
             )
 
         normalized_email = payload.email.strip().lower()
@@ -74,7 +74,7 @@ class AuthService:
         if existing.scalar_one_or_none() is not None:
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
-                detail="Email nay da duoc dang ky.",
+                detail="Email này đã được đăng ký.",
             )
 
         now_utc = datetime.now(timezone.utc)
@@ -105,7 +105,7 @@ class AuthService:
         if user is None or not verify_password(payload.password, user.password_hash):
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Email hoac mat khau khong chinh xac.",
+                detail="Email hoặc mật khẩu không chính xác.",
                 headers={"WWW-Authenticate": "Bearer"},
             )
         return _issue_token_pair(user)
@@ -119,7 +119,7 @@ class AuthService:
         except (ValueError, KeyError):
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Refresh token khong hop le hoac da het han.",
+                detail="Refresh token không hợp lệ hoặc đã hết hạn.",
                 headers={"WWW-Authenticate": "Bearer"},
             )
 
@@ -128,7 +128,7 @@ class AuthService:
         if user is None:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Tai khoan khong ton tai hoac da bi xoa.",
+                detail="Tài khoản không tồn tại hoặc đã bị xóa.",
                 headers={"WWW-Authenticate": "Bearer"},
             )
         return _issue_token_pair(user)

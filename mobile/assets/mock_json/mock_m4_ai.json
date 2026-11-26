@@ -5,7 +5,7 @@
     "detected_items": [
       {
         "class_code": "GRILLED_CHICKEN_BREAST",
-        "name_vi": "Uc ga ap chao",
+        "name_vi": "Ức gà áp chảo",
         "confidence": 0.93,
         "bbox_norm": [0.18, 0.25, 0.52, 0.61],
         "estimated_grams": 180.0,
@@ -16,7 +16,7 @@
       },
       {
         "class_code": "WHITE_RICE",
-        "name_vi": "Com trang",
+        "name_vi": "Cơm trắng",
         "confidence": 0.91,
         "bbox_norm": [0.54, 0.30, 0.88, 0.72],
         "estimated_grams": 150.0,
@@ -32,7 +32,7 @@
       "carbs_g": 42.3,
       "fat_g": 6.9
     },
-    "disclaimer": "Gia tri dinh duong duoc AI uoc tinh dua tren hinh anh, vui long kiem tra lai khau phan gram truoc khi luu."
+    "disclaimer": "Giá trị dinh dưỡng được AI ước tính dựa trên hình ảnh, vui lòng kiểm tra lại khẩu phần gram trước khi lưu."
   },
   "readiness_mock": {
     "target_date": "2026-11-18",
@@ -40,8 +40,8 @@
     "readiness_score": 78.5,
     "readiness_level": "READY",
     "insights": [
-      "Ngu du 7.5 gio va luong dam 3 ngay qua dat 96% muc tieu.",
-      "Nhom co Dui truoc va Mong con du am moi nhe (42%) tu buoi Squat 36 gio truoc."
+      "Ngủ đủ 7.5 giờ và lượng đạm 3 ngày qua đạt 96% mục tiêu.",
+      "Nhóm cơ Đùi trước và Mông còn dư âm mỏi nhẹ (42%) từ buổi Squat 36 giờ trước."
     ],
     "muscle_fatigue_map": {
       "Mat_Muscle_Chest": 0.12,
@@ -62,9 +62,9 @@
         "action": "INCREASE",
         "recommended_weight_kg": 72.5,
         "recommended_reps": "8-10",
-        "reason": "Nhom co Nguc da hoi phuc 88% va buoi truoc dat RPE 7.5."
+        "reason": "Nhóm cơ Ngực đã hồi phục 88% và buổi trước đạt RPE 7.5."
       }
     ],
-    "disclaimer": "Goi y tai trong do AI phan tich phuc vu muc dich tap luyen the hinh, hay dung tap ngay neu thay dau khop bat thuong."
+    "disclaimer": "Gợi ý tải trọng do AI phân tích phục vụ mục đích tập luyện thể hình, hãy dừng tập ngay nếu thấy đau khớp bất thường."
   }
 }

@@ -131,6 +131,34 @@ class _Exercise3DDetailScreenState
         return 'Vị trí ròng rọc';
       case 'grip':
         return 'Cách nắm tay';
+      case 'seat_height':
+        return 'Chiều cao ghế';
+      case 'stance':
+        return 'Độ rộng chân đứng';
+      case 'range_of_motion':
+        return 'Biên độ chuyển động';
+      case 'torso_angle_deg':
+        return 'Góc gập thân (°)';
+      case 'thigh_pad':
+        return 'Đệm khóa đùi';
+      case 'foot_plate':
+        return 'Bàn đạp chân';
+      case 'bar_position':
+        return 'Vị trí thanh đòn';
+      case 'arm_angle':
+        return 'Góc khuỷu tay';
+      case 'elbow_position':
+        return 'Vị trí khuỷu tay';
+      case 'knee_bend':
+        return 'Độ chùng gối';
+      case 'foot_placement':
+        return 'Vị trí đặt chân';
+      case 'pad_position':
+        return 'Vị trí đệm lăn';
+      case 'step_length':
+        return 'Độ dài bước chân';
+      case 'bench_position':
+        return 'Vị trí tựa ghế';
       default:
         return key;
     }
@@ -244,7 +272,7 @@ class _Exercise3DDetailScreenState
                   if (snapshot.hasError) {
                     return Container(
                       height: 370,
-                      padding: const EdgeInsets.all(16),
+                      padding: const EdgeInsets.all(20),
                       decoration: BoxDecoration(
                         color: AppColors.tintedSurface(
                           context,
@@ -253,9 +281,38 @@ class _Exercise3DDetailScreenState
                         borderRadius: BorderRadius.circular(28),
                       ),
                       child: Center(
-                        child: Text(
-                          'Không tải được mô hình 3D: ${snapshot.error}',
-                          textAlign: TextAlign.center,
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(
+                              Icons.cloud_off_rounded,
+                              size: 40,
+                              color: AppColors.warningRed,
+                            ),
+                            const SizedBox(height: 10),
+                            const Text(
+                              'Chưa tải được mô hình 3D từ máy chủ. Vui lòng kiểm tra kết nối mạng và thử lại.',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(height: 1.4),
+                            ),
+                            const SizedBox(height: 12),
+                            FilledButton.icon(
+                              onPressed: () {
+                                setState(() {
+                                  _isViewerLoaded = false;
+                                  _resolvedGlbFuture = ref
+                                      .read(assetCacheManagerProvider)
+                                      .getOrDownloadGlb(
+                                        exerciseCode: exercise.code,
+                                        remoteUrl: exercise.model3dGlbUrl,
+                                        expectedSha256: exercise.assetChecksum,
+                                      );
+                                });
+                              },
+                              icon: const Icon(Icons.refresh),
+                              label: const Text('Thử lại'),
+                            ),
+                          ],
                         ),
                       ),
                     );

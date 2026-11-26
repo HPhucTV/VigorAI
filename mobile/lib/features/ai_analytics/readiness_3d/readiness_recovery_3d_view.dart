@@ -240,6 +240,29 @@ class _ReadinessRecovery3DViewState
             'Bản đồ Phục hồi Cơ bắp 3D (Chạm vào từng bó cơ)',
             style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
           ),
+          const SizedBox(height: 8),
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: BodyAvatarPreset.values.map((preset) {
+                return Padding(
+                  padding: const EdgeInsets.only(right: 6),
+                  child: ChoiceChip(
+                    label: Text(
+                      preset.shortLabelVi,
+                      style: const TextStyle(fontSize: 12),
+                    ),
+                    selected: avatarPreset == preset,
+                    visualDensity: VisualDensity.compact,
+                    onSelected: (_) {
+                      ref.read(bodyAvatarPresetProvider.notifier).state =
+                          preset;
+                    },
+                  ),
+                );
+              }).toList(),
+            ),
+          ),
           const SizedBox(height: 10),
           ClipRRect(
             borderRadius: BorderRadius.circular(26),

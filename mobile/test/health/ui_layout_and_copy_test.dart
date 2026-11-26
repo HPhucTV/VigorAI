@@ -517,7 +517,7 @@ void main() {
       expect(find.textContaining('Mô hình 3D: Nam'), findsOneWidget);
       await tester.tap(find.text('Nữ'));
       await tester.pumpAndSettle();
-      expect(find.text('Mô hình 3D: Nữ - Fitness'), findsOneWidget);
+      expect(find.textContaining('Mô hình 3D: Nữ'), findsOneWidget);
       await tester.tap(find.text('Đăng nhập'));
       await tester.pumpAndSettle();
 

@@ -451,11 +451,11 @@ class _ProfileSettingsScreenState extends ConsumerState<ProfileSettingsScreen> {
                             if (v == null) return;
                             setState(() {
                               _gender = v;
-                              if (v == 'FEMALE') {
-                                _avatarPreset = BodyAvatarPreset.femaleFit;
-                              } else if (_avatarPreset ==
-                                  BodyAvatarPreset.femaleFit) {
-                                _avatarPreset = BodyAvatarPreset.maleFit;
+                              final wantFemale = v == 'FEMALE';
+                              if (_avatarPreset.isFemale != wantFemale) {
+                                _avatarPreset = wantFemale
+                                    ? BodyAvatarPreset.femaleFit
+                                    : BodyAvatarPreset.maleFit;
                               }
                             });
                           },

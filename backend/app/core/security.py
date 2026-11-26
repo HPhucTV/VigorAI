@@ -60,12 +60,12 @@ def decode_token(token: str, expected_type: str | None = None) -> dict[str, Any]
             algorithms=[settings.JWT_ALGORITHM],
         )
     except JWTError as exc:
-        raise ValueError("Token khong hop le hoac da het han.") from exc
+        raise ValueError("Token không hợp lệ hoặc đã hết hạn.") from exc
 
     if expected_type is not None and payload.get("type") != expected_type:
-        raise ValueError("Loai token khong hop le.")
+        raise ValueError("Loại token không hợp lệ.")
 
     if not payload.get("sub"):
-        raise ValueError("Token thieu dinh danh nguoi dung.")
+        raise ValueError("Token thiếu định danh người dùng.")
 
     return payload

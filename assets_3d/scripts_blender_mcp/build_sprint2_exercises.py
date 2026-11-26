@@ -71,6 +71,7 @@ if _SCRIPT_DIR not in sys.path:
     sys.path.insert(0, _SCRIPT_DIR)
 
 import build_base_mannequin as base_mod
+import build_remaining_8_exercises as rem8
 
 STEEL_COLOR = (0.58, 0.62, 0.68, 1.0)
 DARK_STEEL_COLOR = (0.14, 0.16, 0.19, 1.0)
@@ -5758,6 +5759,95 @@ EXERCISE_SPECS: dict[str, dict] = {
             "concentric": [55, 100],
         },
     },
+    # 8 bai bo sung de dat 39/39 bai co chuyen dong 3D rieng
+    "MACHINE_CHEST_PRESS": {
+        "file_name": "machine_chest_press.glb",
+        "blend_name": "chest_machine_chest_press.blend",
+        "builder": rem8.build_machine_chest_press,
+        "bundled": False,
+        "phase_keyframes": {
+            "eccentric": [0, 45],
+            "isometric": [45, 55],
+            "concentric": [55, 100],
+        },
+    },
+    "ONE_ARM_DUMBBELL_ROW": {
+        "file_name": "one_arm_dumbbell_row.glb",
+        "blend_name": "lats_one_arm_dumbbell_row.blend",
+        "builder": rem8.build_one_arm_dumbbell_row,
+        "bundled": False,
+        "phase_keyframes": {
+            "eccentric": [0, 45],
+            "isometric": [45, 55],
+            "concentric": [55, 100],
+        },
+    },
+    "BARBELL_OVERHEAD_PRESS": {
+        "file_name": "barbell_overhead_press.glb",
+        "blend_name": "shoulders_barbell_overhead_press.blend",
+        "builder": rem8.build_barbell_overhead_press,
+        "bundled": False,
+        "phase_keyframes": {
+            "eccentric": [0, 45],
+            "isometric": [45, 55],
+            "concentric": [55, 100],
+        },
+    },
+    "CABLE_BICEP_CURL": {
+        "file_name": "cable_bicep_curl.glb",
+        "blend_name": "biceps_cable_bicep_curl.blend",
+        "builder": rem8.build_cable_bicep_curl,
+        "bundled": False,
+        "phase_keyframes": {
+            "eccentric": [0, 45],
+            "isometric": [45, 55],
+            "concentric": [55, 100],
+        },
+    },
+    "CLOSE_GRIP_BENCH_PRESS": {
+        "file_name": "close_grip_bench_press.glb",
+        "blend_name": "triceps_close_grip_bench_press.blend",
+        "builder": rem8.build_close_grip_bench_press,
+        "bundled": False,
+        "phase_keyframes": {
+            "eccentric": [0, 45],
+            "isometric": [45, 55],
+            "concentric": [55, 100],
+        },
+    },
+    "GOBLET_SQUAT": {
+        "file_name": "goblet_squat.glb",
+        "blend_name": "quads_goblet_squat.blend",
+        "builder": rem8.build_goblet_squat,
+        "bundled": False,
+        "phase_keyframes": {
+            "eccentric": [0, 45],
+            "isometric": [45, 55],
+            "concentric": [55, 100],
+        },
+    },
+    "STANDING_CALF_RAISE": {
+        "file_name": "standing_calf_raise.glb",
+        "blend_name": "calves_standing_calf_raise.blend",
+        "builder": rem8.build_standing_calf_raise,
+        "bundled": False,
+        "phase_keyframes": {
+            "eccentric": [0, 45],
+            "isometric": [45, 55],
+            "concentric": [55, 100],
+        },
+    },
+    "KETTLEBELL_SWING": {
+        "file_name": "kettlebell_swing.glb",
+        "blend_name": "glutes_kettlebell_swing.blend",
+        "builder": rem8.build_kettlebell_swing,
+        "bundled": False,
+        "phase_keyframes": {
+            "eccentric": [0, 45],
+            "isometric": [45, 55],
+            "concentric": [55, 100],
+        },
+    },
 }
 
 
@@ -5974,6 +6064,54 @@ def sync_manifest_and_mock_json(repo_root: Path) -> dict:
         (
             "PLANK",
             "plank.glb",
+            False,
+            {"eccentric": [0, 45], "isometric": [45, 55], "concentric": [55, 100]},
+        ),
+        (
+            "MACHINE_CHEST_PRESS",
+            "machine_chest_press.glb",
+            False,
+            {"eccentric": [0, 45], "isometric": [45, 55], "concentric": [55, 100]},
+        ),
+        (
+            "ONE_ARM_DUMBBELL_ROW",
+            "one_arm_dumbbell_row.glb",
+            False,
+            {"eccentric": [0, 45], "isometric": [45, 55], "concentric": [55, 100]},
+        ),
+        (
+            "BARBELL_OVERHEAD_PRESS",
+            "barbell_overhead_press.glb",
+            False,
+            {"eccentric": [0, 45], "isometric": [45, 55], "concentric": [55, 100]},
+        ),
+        (
+            "CABLE_BICEP_CURL",
+            "cable_bicep_curl.glb",
+            False,
+            {"eccentric": [0, 45], "isometric": [45, 55], "concentric": [55, 100]},
+        ),
+        (
+            "CLOSE_GRIP_BENCH_PRESS",
+            "close_grip_bench_press.glb",
+            False,
+            {"eccentric": [0, 45], "isometric": [45, 55], "concentric": [55, 100]},
+        ),
+        (
+            "GOBLET_SQUAT",
+            "goblet_squat.glb",
+            False,
+            {"eccentric": [0, 45], "isometric": [45, 55], "concentric": [55, 100]},
+        ),
+        (
+            "STANDING_CALF_RAISE",
+            "standing_calf_raise.glb",
+            False,
+            {"eccentric": [0, 45], "isometric": [45, 55], "concentric": [55, 100]},
+        ),
+        (
+            "KETTLEBELL_SWING",
+            "kettlebell_swing.glb",
             False,
             {"eccentric": [0, 45], "isometric": [45, 55], "concentric": [55, 100]},
         ),

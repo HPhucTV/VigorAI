@@ -57,35 +57,133 @@ class MuscleMaterialIds {
 
 enum CameraPreset3D { front, side, back, top }
 
+/// Trong so bien doi hinh the 3D (Morph Targets) dieu khien truc tiep o 60 FPS.
+class BodyMorphWeights {
+  final double slim;
+  final double bodyFat;
+  final double muscleMass;
+
+  const BodyMorphWeights({
+    this.slim = 0.0,
+    this.bodyFat = 0.0,
+    this.muscleMass = 0.0,
+  });
+
+  static const zero = BodyMorphWeights();
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    return other is BodyMorphWeights &&
+        (slim * 1000).round() == (other.slim * 1000).round() &&
+        (bodyFat * 1000).round() == (other.bodyFat * 1000).round() &&
+        (muscleMass * 1000).round() == (other.muscleMass * 1000).round();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+        (slim * 1000).round(),
+        (bodyFat * 1000).round(),
+        (muscleMass * 1000).round(),
+      );
+}
+
 enum BodyAvatarPreset {
+  maleSlim(
+    code: 'MALE_SLIM',
+    labelVi: 'Nam - Thon gầy',
+    shortLabelVi: 'Nam Gầy',
+    isFemale: false,
+    mannequinAssetPath: 'assets/3d_bundled/base_mannequin_male_slim.glb',
+    defaultMorph: BodyMorphWeights(slim: 0.85),
+    scaleX: 0.94,
+    scaleY: 1.0,
+    scaleZ: 0.94,
+  ),
   maleFit(
     code: 'MALE_FIT',
-    labelVi: 'Nam - Thể hình chuẩn',
+    labelVi: 'Nam - Thể thao chuẩn',
     shortLabelVi: 'Nam Chuẩn',
+    isFemale: false,
+    mannequinAssetPath: 'assets/3d_bundled/base_mannequin.glb',
+    defaultMorph: BodyMorphWeights.zero,
     scaleX: 1.0,
     scaleY: 1.0,
     scaleZ: 1.0,
   ),
-  femaleFit(
-    code: 'FEMALE_FIT',
-    labelVi: 'Nữ - Fitness',
-    shortLabelVi: 'Nữ Fitness',
-    scaleX: 0.92,
-    scaleY: 0.96,
-    scaleZ: 0.94,
-  ),
   maleBulk(
     code: 'MALE_BULK',
-    labelVi: 'Nam - Cơ bắp cao',
+    labelVi: 'Nam - Cơ bắp V-Taper',
     shortLabelVi: 'Nam Cơ bắp',
-    scaleX: 1.10,
-    scaleY: 1.02,
-    scaleZ: 1.06,
+    isFemale: false,
+    mannequinAssetPath: 'assets/3d_bundled/base_mannequin_male_muscular.glb',
+    defaultMorph: BodyMorphWeights(bodyFat: 0.05, muscleMass: 0.92),
+    scaleX: 1.06,
+    scaleY: 1.01,
+    scaleZ: 1.05,
+  ),
+  maleHeavy(
+    code: 'MALE_HEAVY',
+    labelVi: 'Nam - Đầy đặn',
+    shortLabelVi: 'Nam Đầy đặn',
+    isFemale: false,
+    mannequinAssetPath: 'assets/3d_bundled/base_mannequin_male_heavy.glb',
+    defaultMorph: BodyMorphWeights(bodyFat: 0.88, muscleMass: 0.22),
+    scaleX: 1.09,
+    scaleY: 1.0,
+    scaleZ: 1.10,
+  ),
+  femaleSlim(
+    code: 'FEMALE_SLIM',
+    labelVi: 'Nữ - Thon mảnh',
+    shortLabelVi: 'Nữ Mảnh',
+    isFemale: true,
+    mannequinAssetPath: 'assets/3d_bundled/base_mannequin_female_slim.glb',
+    defaultMorph: BodyMorphWeights(slim: 0.82),
+    scaleX: 0.88,
+    scaleY: 0.94,
+    scaleZ: 0.88,
+  ),
+  femaleFit(
+    code: 'FEMALE_FIT',
+    labelVi: 'Nữ - Fitness chuẩn',
+    shortLabelVi: 'Nữ Fitness',
+    isFemale: true,
+    mannequinAssetPath: 'assets/3d_bundled/base_mannequin_female.glb',
+    defaultMorph: BodyMorphWeights.zero,
+    scaleX: 0.92,
+    scaleY: 0.94,
+    scaleZ: 0.92,
+  ),
+  femaleToned(
+    code: 'FEMALE_TONED',
+    labelVi: 'Nữ - Mông & Đùi săn',
+    shortLabelVi: 'Nữ Săn chắc',
+    isFemale: true,
+    mannequinAssetPath: 'assets/3d_bundled/base_mannequin_female_toned.glb',
+    defaultMorph: BodyMorphWeights(slim: 0.15, muscleMass: 0.90),
+    scaleX: 0.93,
+    scaleY: 0.94,
+    scaleZ: 0.95,
+  ),
+  femaleCurvy(
+    code: 'FEMALE_CURVY',
+    labelVi: 'Nữ - Đầy đặn',
+    shortLabelVi: 'Nữ Đầy đặn',
+    isFemale: true,
+    mannequinAssetPath: 'assets/3d_bundled/base_mannequin_female_curvy.glb',
+    defaultMorph: BodyMorphWeights(bodyFat: 0.85, muscleMass: 0.15),
+    scaleX: 0.98,
+    scaleY: 0.94,
+    scaleZ: 1.00,
   );
 
   final String code;
   final String labelVi;
   final String shortLabelVi;
+  final bool isFemale;
+  final String mannequinAssetPath;
+  final BodyMorphWeights defaultMorph;
   final double scaleX;
   final double scaleY;
   final double scaleZ;
@@ -94,14 +192,32 @@ enum BodyAvatarPreset {
     required this.code,
     required this.labelVi,
     required this.shortLabelVi,
+    required this.isFemale,
+    required this.mannequinAssetPath,
+    required this.defaultMorph,
     required this.scaleX,
     required this.scaleY,
     required this.scaleZ,
   });
 
-  String get baseMannequinAssetPath => this == BodyAvatarPreset.femaleFit
+  String get baseMannequinAssetPath => mannequinAssetPath;
+
+  String get masterMannequinAssetPath => isFemale
       ? 'assets/3d_bundled/base_mannequin_female.glb'
       : 'assets/3d_bundled/base_mannequin.glb';
+
+  static BodyAvatarPreset fromCode(String? raw) {
+    final upper = raw?.toUpperCase();
+    for (final p in values) {
+      if (p.code == upper) return p;
+    }
+    return BodyAvatarPreset.maleFit;
+  }
+
+  static List<BodyAvatarPreset> forGender(String gender) {
+    final wantFemale = gender.toUpperCase() == 'FEMALE';
+    return values.where((p) => p.isFemale == wantFemale).toList();
+  }
 }
 
 /// Giao dien cong khai da duoc khoa de dung chung cho F07-F13 (M2) va F23 (M2/M4 contract).
@@ -117,6 +233,7 @@ class Muscle3DViewerWidget extends StatefulWidget {
   final double height;
   final double? normalizedProgress;
   final BodyAvatarPreset avatarPreset;
+  final BodyMorphWeights? bodyMorph;
 
   const Muscle3DViewerWidget({
     super.key,
@@ -131,15 +248,15 @@ class Muscle3DViewerWidget extends StatefulWidget {
     this.height = 340,
     this.normalizedProgress,
     this.avatarPreset = BodyAvatarPreset.maleFit,
+    this.bodyMorph,
   });
 
-  /// Tranh nhan doi ty le thu nho khi dang tai san mesh nu 1.66m (`base_mannequin_female.glb`).
+  /// Tranh nhan doi ty le thu nho / phong to khi dang tai san cac mannequin 3D chuyen biet.
   static ({double x, double y, double z}) effectiveScaleFor(
     BodyAvatarPreset preset,
     String glbAssetOrUrl,
   ) {
-    if (preset == BodyAvatarPreset.femaleFit &&
-        glbAssetOrUrl.contains('base_mannequin_female')) {
+    if (glbAssetOrUrl.contains('base_mannequin')) {
       return (x: 1.0, y: 1.0, z: 1.0);
     }
     return (x: preset.scaleX, y: preset.scaleY, z: preset.scaleZ);
@@ -232,10 +349,12 @@ class _Muscle3DViewerWidgetState extends State<Muscle3DViewerWidget> {
       widget.avatarPreset,
       widget.glbAssetOrUrl,
     );
+    final morph = widget.bodyMorph ?? BodyMorphWeights.zero;
 
     return '''
 (function() {
   const getMv = () => document.getElementById('vigor-mv');
+  let pendingMorph = [${morph.slim}, ${morph.bodyFat}, ${morph.muscleMass}];
 
   window.vigorApplyColors = function(colorMap) {
     try {
@@ -293,7 +412,33 @@ class _Muscle3DViewerWidgetState extends State<Muscle3DViewerWidget> {
       const mv = getMv();
       if (!mv) return;
       mv.scale = sx + ' ' + sy + ' ' + sz;
-      if (typeof mv.updateFraming === 'function') mv.updateFraming();
+    } catch (e) {}
+  };
+
+  window.vigorSetBodyMorph = function(slim, fat, muscle) {
+    pendingMorph = [slim, fat, muscle];
+    try {
+      const mv = getMv();
+      if (!mv || !mv.loaded) return;
+      const syms = Object.getOwnPropertySymbols(mv);
+      const symScene = syms.find(s => s.description === 'scene');
+      const symNeedsRender = syms.find(s => s.description === 'needsRender');
+      const scene = symScene ? mv[symScene] : null;
+      if (!scene || typeof scene.traverse !== 'function') return;
+      scene.traverse(function(node) {
+        if (!node || !node.isMesh || !Array.isArray(node.morphTargetInfluences)) return;
+        const inf = node.morphTargetInfluences;
+        if (inf.length === 0) return;
+        const dict = node.morphTargetDictionary || {};
+        const idxSlim = dict['Morph_Slim'] !== undefined ? dict['Morph_Slim'] : 0;
+        const idxFat = dict['Morph_BodyFat'] !== undefined ? dict['Morph_BodyFat'] : 1;
+        const idxMus = dict['Morph_MuscleMass'] !== undefined ? dict['Morph_MuscleMass'] : 2;
+        if (idxSlim < inf.length) inf[idxSlim] = slim;
+        if (idxFat < inf.length) inf[idxFat] = fat;
+        if (idxMus < inf.length) inf[idxMus] = muscle;
+      });
+      if (typeof scene.queueRender === 'function') scene.queueRender();
+      if (symNeedsRender) mv[symNeedsRender] = true;
     } catch (e) {}
   };
 
@@ -309,6 +454,7 @@ class _Muscle3DViewerWidgetState extends State<Muscle3DViewerWidget> {
       }
       window.vigorApplyColors($initialColors);
       window.vigorSetAvatarPreset(${scale.x}, ${scale.y}, ${scale.z});
+      window.vigorSetBodyMorph(pendingMorph[0], pendingMorph[1], pendingMorph[2]);
       window.vigorSetAnim($initialAnim, $initialSpeed, $initialPlaying);
       ${initialProgress != null ? 'window.vigorSeekNormalized($initialProgress);' : ''}
     };
@@ -401,6 +547,13 @@ class _Muscle3DViewerWidgetState extends State<Muscle3DViewerWidget> {
       );
       _runJs(
         'window.vigorSetAvatarPreset && window.vigorSetAvatarPreset(${scale.x}, ${scale.y}, ${scale.z});',
+      );
+    }
+
+    if (oldWidget.bodyMorph != widget.bodyMorph) {
+      final morph = widget.bodyMorph ?? BodyMorphWeights.zero;
+      _runJs(
+        'window.vigorSetBodyMorph && window.vigorSetBodyMorph(${morph.slim}, ${morph.bodyFat}, ${morph.muscleMass});',
       );
     }
   }

@@ -222,8 +222,8 @@
       "name_vi": "Đẩy ngực máy ngồi",
       "name_en": "Machine Chest Press",
       "equipment_type": "MACHINE",
-      "model_3d_glb_url": "assets/3d_bundled/base_mannequin.glb",
-      "asset_checksum": "70ba0dbd3549311b54db5f8dcc468dc3a178f263dc801a3416e89705d44e1f18",
+      "model_3d_glb_url": "https://vigorai-production.up.railway.app/api/v1/exercises/MACHINE_CHEST_PRESS/glb",
+      "asset_checksum": "1f045e9db43e4eb523ffdb8b26d119b0774e189b41858450cc588ca74e476055",
       "primary_muscles": [
         "Mat_Muscle_Chest"
       ],
@@ -257,7 +257,10 @@
       },
       "id": "ex-machine_chest_press",
       "bundled": false,
-      "clips": []
+      "clips": [
+        "Anim_GoodForm",
+        "Anim_BadForm"
+      ]
     },
     {
       "code": "BARBELL_DEADLIFT",
@@ -461,8 +464,8 @@
       "name_vi": "Kéo lưng một tay tạ đơn",
       "name_en": "One-Arm Dumbbell Row",
       "equipment_type": "DUMBBELL",
-      "model_3d_glb_url": "assets/3d_bundled/base_mannequin.glb",
-      "asset_checksum": "70ba0dbd3549311b54db5f8dcc468dc3a178f263dc801a3416e89705d44e1f18",
+      "model_3d_glb_url": "https://vigorai-production.up.railway.app/api/v1/exercises/ONE_ARM_DUMBBELL_ROW/glb",
+      "asset_checksum": "1319b87721b1f3de3d45e583dc6ec619f931a063753454f0b7748035152af731",
       "primary_muscles": [
         "Mat_Muscle_Back_Lats"
       ],
@@ -498,15 +501,18 @@
       },
       "id": "ex-one_arm_dumbbell_row",
       "bundled": false,
-      "clips": []
+      "clips": [
+        "Anim_GoodForm",
+        "Anim_BadForm"
+      ]
     },
     {
       "code": "BARBELL_OVERHEAD_PRESS",
       "name_vi": "Đẩy vai đứng đòn tạ",
       "name_en": "Barbell Overhead Press",
       "equipment_type": "BARBELL",
-      "model_3d_glb_url": "assets/3d_bundled/base_mannequin.glb",
-      "asset_checksum": "70ba0dbd3549311b54db5f8dcc468dc3a178f263dc801a3416e89705d44e1f18",
+      "model_3d_glb_url": "https://vigorai-production.up.railway.app/api/v1/exercises/BARBELL_OVERHEAD_PRESS/glb",
+      "asset_checksum": "19bb39deb1cffa1e06e60ed0bdcd92ab8e906a32781fd2f285e358f8b0b43d2b",
       "primary_muscles": [
         "Mat_Muscle_Shoulders"
       ],
@@ -543,7 +549,10 @@
       },
       "id": "ex-barbell_overhead_press",
       "bundled": false,
-      "clips": []
+      "clips": [
+        "Anim_GoodForm",
+        "Anim_BadForm"
+      ]
     },
     {
       "code": "DUMBBELL_LATERAL_RAISE",
@@ -779,8 +788,8 @@
       "name_vi": "Cuốn tay trước dây cáp",
       "name_en": "Cable Bicep Curl",
       "equipment_type": "CABLE",
-      "model_3d_glb_url": "assets/3d_bundled/base_mannequin.glb",
-      "asset_checksum": "70ba0dbd3549311b54db5f8dcc468dc3a178f263dc801a3416e89705d44e1f18",
+      "model_3d_glb_url": "https://vigorai-production.up.railway.app/api/v1/exercises/CABLE_BICEP_CURL/glb",
+      "asset_checksum": "8bc2f713b48c97bda92c721cc20fd1129cbeaaea5e1f30ed7d5c47fbbe6c6608",
       "primary_muscles": [
         "Mat_Muscle_Biceps"
       ],
@@ -813,7 +822,10 @@
       },
       "id": "ex-cable_bicep_curl",
       "bundled": false,
-      "clips": []
+      "clips": [
+        "Anim_GoodForm",
+        "Anim_BadForm"
+      ]
     },
     {
       "code": "CABLE_TRICEP_PUSHDOWN",
@@ -908,8 +920,8 @@
       "name_vi": "Đẩy tạ hẹp tay",
       "name_en": "Close-Grip Bench Press",
       "equipment_type": "BARBELL",
-      "model_3d_glb_url": "assets/3d_bundled/base_mannequin.glb",
-      "asset_checksum": "70ba0dbd3549311b54db5f8dcc468dc3a178f263dc801a3416e89705d44e1f18",
+      "model_3d_glb_url": "https://vigorai-production.up.railway.app/api/v1/exercises/CLOSE_GRIP_BENCH_PRESS/glb",
+      "asset_checksum": "b1a5a0c341ad85802c93f429dd83d136789211880c0cf54750e58a5cfb864be5",
       "primary_muscles": [
         "Mat_Muscle_Triceps",
         "Mat_Muscle_Chest"
@@ -945,7 +957,10 @@
       },
       "id": "ex-close_grip_bench_press",
       "bundled": false,
-      "clips": []
+      "clips": [
+        "Anim_GoodForm",
+        "Anim_BadForm"
+      ]
     },
     {
       "code": "BARBELL_SQUAT",
@@ -1013,8 +1028,8 @@
       "name_vi": "Squat ôm tạ đơn",
       "name_en": "Goblet Squat",
       "equipment_type": "DUMBBELL",
-      "model_3d_glb_url": "assets/3d_bundled/base_mannequin.glb",
-      "asset_checksum": "70ba0dbd3549311b54db5f8dcc468dc3a178f263dc801a3416e89705d44e1f18",
+      "model_3d_glb_url": "https://vigorai-production.up.railway.app/api/v1/exercises/GOBLET_SQUAT/glb",
+      "asset_checksum": "451f4c89d5b5c37d8b5d6d2ca8303e1e79bde5d9a8ff8be1e52a9cfecc6ecae8",
       "primary_muscles": [
         "Mat_Muscle_Quads",
         "Mat_Muscle_Glutes"
@@ -1050,7 +1065,10 @@
       },
       "id": "ex-goblet_squat",
       "bundled": false,
-      "clips": []
+      "clips": [
+        "Anim_GoodForm",
+        "Anim_BadForm"
+      ]
     },
     {
       "code": "ROMANIAN_DEADLIFT",
@@ -1243,8 +1261,8 @@
       "name_vi": "Nhón bắp chân đứng",
       "name_en": "Standing Calf Raise",
       "equipment_type": "MACHINE",
-      "model_3d_glb_url": "assets/3d_bundled/base_mannequin.glb",
-      "asset_checksum": "70ba0dbd3549311b54db5f8dcc468dc3a178f263dc801a3416e89705d44e1f18",
+      "model_3d_glb_url": "https://vigorai-production.up.railway.app/api/v1/exercises/STANDING_CALF_RAISE/glb",
+      "asset_checksum": "fa523aa7f8982f3f130484eac06bb151eb4b32985d8096176d9025daa2b45f2f",
       "primary_muscles": [
         "Mat_Muscle_Calves"
       ],
@@ -1277,7 +1295,10 @@
       },
       "id": "ex-standing_calf_raise",
       "bundled": false,
-      "clips": []
+      "clips": [
+        "Anim_GoodForm",
+        "Anim_BadForm"
+      ]
     },
     {
       "code": "PLANK",
@@ -1375,8 +1396,8 @@
       "name_vi": "Vung tạ ấm Kettlebell",
       "name_en": "Kettlebell Swing",
       "equipment_type": "KETTLEBELL",
-      "model_3d_glb_url": "assets/3d_bundled/base_mannequin.glb",
-      "asset_checksum": "70ba0dbd3549311b54db5f8dcc468dc3a178f263dc801a3416e89705d44e1f18",
+      "model_3d_glb_url": "https://vigorai-production.up.railway.app/api/v1/exercises/KETTLEBELL_SWING/glb",
+      "asset_checksum": "463af34a2cb1261899eca2fd53cce10f9c75438d08635f6e9787ef93445ebf95",
       "primary_muscles": [
         "Mat_Muscle_Glutes",
         "Mat_Muscle_Hamstrings"
@@ -1413,7 +1434,10 @@
       },
       "id": "ex-kettlebell_swing",
       "bundled": false,
-      "clips": []
+      "clips": [
+        "Anim_GoodForm",
+        "Anim_BadForm"
+      ]
     },
     {
       "code": "WIDE_GRIP_PULLUP",

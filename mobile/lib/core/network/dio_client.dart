@@ -225,7 +225,7 @@ class MockApiInterceptor extends Interceptor {
                 requestOptions: options,
                 statusCode: 400,
                 data: <String, dynamic>{
-                  'detail': 'Ban phai chap nhan Mien tru Trach nhiem Y te de dang ky.',
+                  'detail': 'Bạn phải chấp nhận Miễn trừ Trách nhiệm Y tế để đăng ký.',
                 },
               ),
             ),
@@ -272,7 +272,7 @@ class MockApiInterceptor extends Interceptor {
                 response: Response<Map<String, dynamic>>(
                   requestOptions: options,
                   statusCode: 401,
-                  data: <String, dynamic>{'detail': 'Refresh token khong hop le.'},
+                  data: <String, dynamic>{'detail': 'Refresh token không hợp lệ.'},
                 ),
               ),
             );
@@ -444,7 +444,7 @@ class MockApiInterceptor extends Interceptor {
             statusCode: 200,
             data: <String, dynamic>{
               'status': 'deleted',
-              'message': 'Tai khoan va toan bo du lieu da duoc xoa vinh vien.',
+              'message': 'Tài khoản và toàn bộ dữ liệu đã được xóa vĩnh viễn.',
             },
           ),
         );
