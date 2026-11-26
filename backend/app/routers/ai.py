@@ -19,6 +19,7 @@ from app.schemas.ai_schema import (
     WeightRecommendation,
 )
 from app.services.ai_food_yolo import (
+    EXTENDED_BEVERAGE_SNACK_CATALOG,
     FoodModelUnavailable,
     InvalidImageError,
     get_food_service,
@@ -32,8 +33,10 @@ VALID_MEAL_TYPES = {"BREAKFAST", "LUNCH", "DINNER", "SNACK"}
 
 
 async def load_catalog_map(db: AsyncSession | None) -> dict[str, dict]:
-    """Bang tra dinh duong theo class_code: lay ban seed lam nen, DB (M3 co the sua) ghi de len."""
+    """Bang tra dinh duong theo class_code: gop seed M3 + nhom nuoc uong/snack M4 + DB override."""
     catalog = {entry["class_code"]: dict(entry) for entry in FOOD_CATALOG_SEED}
+    for entry in EXTENDED_BEVERAGE_SNACK_CATALOG:
+        catalog.setdefault(entry["class_code"], dict(entry))
     if db is None:
         return catalog
     try:
@@ -67,6 +70,9 @@ def _stub_food_response() -> FoodAnalyzeResponse:
                 bbox_norm=[0.18, 0.25, 0.52, 0.61],
                 estimated_grams=180.0,
                 calories=297.0,
+                calories_min=240,
+                calories_max=360,
+                calories_range_label="~240 \u2013 360 kcal",
                 protein_g=55.8,
                 carbs_g=0.0,
                 fat_g=6.5,
@@ -78,6 +84,9 @@ def _stub_food_response() -> FoodAnalyzeResponse:
                 bbox_norm=[0.54, 0.30, 0.88, 0.72],
                 estimated_grams=150.0,
                 calories=195.0,
+                calories_min=150,
+                calories_max=240,
+                calories_range_label="~150 \u2013 240 kcal",
                 protein_g=4.0,
                 carbs_g=42.3,
                 fat_g=0.4,
@@ -85,6 +94,9 @@ def _stub_food_response() -> FoodAnalyzeResponse:
         ],
         total_nutrition=TotalNutritionSummary(
             calories=492.0,
+            calories_min=390,
+            calories_max=600,
+            calories_range_label="~390 \u2013 600 kcal",
             protein_g=59.8,
             carbs_g=42.3,
             fat_g=6.9,

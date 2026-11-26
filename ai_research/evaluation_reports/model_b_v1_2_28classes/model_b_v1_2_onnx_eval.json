@@ -1,0 +1,772 @@
+{
+  "model_file": "food_yolo_v1.onnx",
+  "model_sha256": "b918c2b07ba1d3a13d565bd6f16e345fbd664c55221d48b5cf69109b9de73dad",
+  "backend": "onnxruntime",
+  "dataset": "C:\\Users\\ASUS\\Downloads\\VigorAI\\ai_research\\datasets\\model_b_v4\\data.yaml",
+  "split": "test",
+  "num_images": 400,
+  "metrics_at_operating_conf": {
+    "operating_conf": 0.3,
+    "active_classes": 28,
+    "precision": 0.7343,
+    "recall": 0.5905,
+    "f1_score": 0.6546,
+    "map50": 0.5978,
+    "per_class_ap50": {
+      "APPLE": 0.3129,
+      "BANANA": 0.5594,
+      "BANH_MI_THIT": 0.9229,
+      "BEEF_PHO": 0.995,
+      "BEEF_STEAK": 0.2921,
+      "BOILED_EGG": 0.9889,
+      "BOTTLED_DRINK": 0.9153,
+      "BROCCOLI": 0.8275,
+      "BUN_CHA": 0.812,
+      "BURGER_PIZZA_FASTFOOD": 0.5583,
+      "CAKE_MUFFIN_PASTRY": 0.4099,
+      "CHIPS_POPCORN_SNACK": 0.5618,
+      "CHOCOLATE_CANDY": 0.3694,
+      "COFFEE_MILK_TEA": 0.4764,
+      "COM_TAM_SUON": 0.9225,
+      "COOKIE_BISCUIT": 0.631,
+      "CROISSANT_SWEET_BREAD": 0.5161,
+      "DONUT_WAFFLE_PANCAKE": 0.5016,
+      "FRENCH_FRIES": 0.8754,
+      "FRIED_EGG": 0.7112,
+      "FRUIT_JUICE_SMOOTHIE": 0.4424,
+      "GREEN_SALAD": 0.5266,
+      "GRILLED_CHICKEN_BREAST": 0.3125,
+      "ICE_CREAM_DESSERT": 0.5976,
+      "SALMON_FILLET": 0.5072,
+      "STEAMED_SHRIMP": 0.1913,
+      "TOFU": 0.3463,
+      "WHITE_RICE": 0.6563
+    },
+    "per_class_details": {
+      "APPLE": {
+        "gt_boxes": 36,
+        "tp": 14,
+        "fp": 20,
+        "fn": 22,
+        "precision": 0.4118,
+        "recall": 0.3889,
+        "f1": 0.4,
+        "ap50": 0.3129
+      },
+      "BANANA": {
+        "gt_boxes": 49,
+        "tp": 23,
+        "fp": 10,
+        "fn": 26,
+        "precision": 0.697,
+        "recall": 0.4694,
+        "f1": 0.561,
+        "ap50": 0.5594
+      },
+      "BANH_MI_THIT": {
+        "gt_boxes": 12,
+        "tp": 11,
+        "fp": 4,
+        "fn": 1,
+        "precision": 0.7333,
+        "recall": 0.9167,
+        "f1": 0.8148,
+        "ap50": 0.9229
+      },
+      "BEEF_PHO": {
+        "gt_boxes": 16,
+        "tp": 16,
+        "fp": 0,
+        "fn": 0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "ap50": 0.995
+      },
+      "BEEF_STEAK": {
+        "gt_boxes": 23,
+        "tp": 5,
+        "fp": 13,
+        "fn": 18,
+        "precision": 0.2778,
+        "recall": 0.2174,
+        "f1": 0.2439,
+        "ap50": 0.2921
+      },
+      "BOILED_EGG": {
+        "gt_boxes": 17,
+        "tp": 15,
+        "fp": 0,
+        "fn": 2,
+        "precision": 1.0,
+        "recall": 0.8824,
+        "f1": 0.9375,
+        "ap50": 0.9889
+      },
+      "BOTTLED_DRINK": {
+        "gt_boxes": 280,
+        "tp": 252,
+        "fp": 20,
+        "fn": 28,
+        "precision": 0.9265,
+        "recall": 0.9,
+        "f1": 0.913,
+        "ap50": 0.9153
+      },
+      "BROCCOLI": {
+        "gt_boxes": 42,
+        "tp": 31,
+        "fp": 8,
+        "fn": 11,
+        "precision": 0.7949,
+        "recall": 0.7381,
+        "f1": 0.7654,
+        "ap50": 0.8275
+      },
+      "BUN_CHA": {
+        "gt_boxes": 6,
+        "tp": 4,
+        "fp": 1,
+        "fn": 2,
+        "precision": 0.8,
+        "recall": 0.6667,
+        "f1": 0.7273,
+        "ap50": 0.812
+      },
+      "BURGER_PIZZA_FASTFOOD": {
+        "gt_boxes": 41,
+        "tp": 18,
+        "fp": 11,
+        "fn": 23,
+        "precision": 0.6207,
+        "recall": 0.439,
+        "f1": 0.5143,
+        "ap50": 0.5583
+      },
+      "CAKE_MUFFIN_PASTRY": {
+        "gt_boxes": 36,
+        "tp": 11,
+        "fp": 13,
+        "fn": 25,
+        "precision": 0.4583,
+        "recall": 0.3056,
+        "f1": 0.3667,
+        "ap50": 0.4099
+      },
+      "CHIPS_POPCORN_SNACK": {
+        "gt_boxes": 63,
+        "tp": 24,
+        "fp": 10,
+        "fn": 39,
+        "precision": 0.7059,
+        "recall": 0.381,
+        "f1": 0.4948,
+        "ap50": 0.5618
+      },
+      "CHOCOLATE_CANDY": {
+        "gt_boxes": 37,
+        "tp": 9,
+        "fp": 7,
+        "fn": 28,
+        "precision": 0.5625,
+        "recall": 0.2432,
+        "f1": 0.3396,
+        "ap50": 0.3694
+      },
+      "COFFEE_MILK_TEA": {
+        "gt_boxes": 35,
+        "tp": 17,
+        "fp": 14,
+        "fn": 18,
+        "precision": 0.5484,
+        "recall": 0.4857,
+        "f1": 0.5152,
+        "ap50": 0.4764
+      },
+      "COM_TAM_SUON": {
+        "gt_boxes": 10,
+        "tp": 9,
+        "fp": 1,
+        "fn": 1,
+        "precision": 0.9,
+        "recall": 0.9,
+        "f1": 0.9,
+        "ap50": 0.9225
+      },
+      "COOKIE_BISCUIT": {
+        "gt_boxes": 45,
+        "tp": 23,
+        "fp": 12,
+        "fn": 22,
+        "precision": 0.6571,
+        "recall": 0.5111,
+        "f1": 0.575,
+        "ap50": 0.631
+      },
+      "CROISSANT_SWEET_BREAD": {
+        "gt_boxes": 47,
+        "tp": 26,
+        "fp": 14,
+        "fn": 21,
+        "precision": 0.65,
+        "recall": 0.5532,
+        "f1": 0.5977,
+        "ap50": 0.5161
+      },
+      "DONUT_WAFFLE_PANCAKE": {
+        "gt_boxes": 31,
+        "tp": 12,
+        "fp": 12,
+        "fn": 19,
+        "precision": 0.5,
+        "recall": 0.3871,
+        "f1": 0.4364,
+        "ap50": 0.5016
+      },
+      "FRENCH_FRIES": {
+        "gt_boxes": 25,
+        "tp": 19,
+        "fp": 5,
+        "fn": 6,
+        "precision": 0.7917,
+        "recall": 0.76,
+        "f1": 0.7755,
+        "ap50": 0.8754
+      },
+      "FRIED_EGG": {
+        "gt_boxes": 6,
+        "tp": 4,
+        "fp": 1,
+        "fn": 2,
+        "precision": 0.8,
+        "recall": 0.6667,
+        "f1": 0.7273,
+        "ap50": 0.7112
+      },
+      "FRUIT_JUICE_SMOOTHIE": {
+        "gt_boxes": 34,
+        "tp": 16,
+        "fp": 13,
+        "fn": 18,
+        "precision": 0.5517,
+        "recall": 0.4706,
+        "f1": 0.5079,
+        "ap50": 0.4424
+      },
+      "GREEN_SALAD": {
+        "gt_boxes": 45,
+        "tp": 20,
+        "fp": 4,
+        "fn": 25,
+        "precision": 0.8333,
+        "recall": 0.4444,
+        "f1": 0.5797,
+        "ap50": 0.5266
+      },
+      "GRILLED_CHICKEN_BREAST": {
+        "gt_boxes": 34,
+        "tp": 12,
+        "fp": 15,
+        "fn": 22,
+        "precision": 0.4444,
+        "recall": 0.3529,
+        "f1": 0.3934,
+        "ap50": 0.3125
+      },
+      "ICE_CREAM_DESSERT": {
+        "gt_boxes": 26,
+        "tp": 10,
+        "fp": 1,
+        "fn": 16,
+        "precision": 0.9091,
+        "recall": 0.3846,
+        "f1": 0.5405,
+        "ap50": 0.5976
+      },
+      "SALMON_FILLET": {
+        "gt_boxes": 9,
+        "tp": 4,
+        "fp": 1,
+        "fn": 5,
+        "precision": 0.8,
+        "recall": 0.4444,
+        "f1": 0.5714,
+        "ap50": 0.5072
+      },
+      "STEAMED_SHRIMP": {
+        "gt_boxes": 21,
+        "tp": 3,
+        "fp": 4,
+        "fn": 18,
+        "precision": 0.4286,
+        "recall": 0.1429,
+        "f1": 0.2143,
+        "ap50": 0.1913
+      },
+      "TOFU": {
+        "gt_boxes": 9,
+        "tp": 1,
+        "fp": 1,
+        "fn": 8,
+        "precision": 0.5,
+        "recall": 0.1111,
+        "f1": 0.1818,
+        "ap50": 0.3463
+      },
+      "WHITE_RICE": {
+        "gt_boxes": 37,
+        "tp": 24,
+        "fp": 14,
+        "fn": 13,
+        "precision": 0.6316,
+        "recall": 0.6486,
+        "f1": 0.64,
+        "ap50": 0.6563
+      }
+    }
+  },
+  "recommended_conf_by_f1": {
+    "conf": 0.4,
+    "precision": 0.7691,
+    "recall": 0.5718,
+    "f1_score": 0.656
+  },
+  "conf_threshold_sweep": [
+    {
+      "conf": 0.2,
+      "precision": 0.6913,
+      "recall": 0.6185,
+      "f1_score": 0.6529
+    },
+    {
+      "conf": 0.25,
+      "precision": 0.713,
+      "recall": 0.6026,
+      "f1_score": 0.6532
+    },
+    {
+      "conf": 0.3,
+      "precision": 0.7343,
+      "recall": 0.5905,
+      "f1_score": 0.6546
+    },
+    {
+      "conf": 0.35,
+      "precision": 0.7527,
+      "recall": 0.5793,
+      "f1_score": 0.6547
+    },
+    {
+      "conf": 0.4,
+      "precision": 0.7691,
+      "recall": 0.5718,
+      "f1_score": 0.656
+    },
+    {
+      "conf": 0.45,
+      "precision": 0.7812,
+      "recall": 0.5597,
+      "f1_score": 0.6522
+    },
+    {
+      "conf": 0.5,
+      "precision": 0.7948,
+      "recall": 0.5457,
+      "f1_score": 0.6471
+    }
+  ],
+  "cpu_latency": {
+    "samples": 400,
+    "inference_mean_ms": 87.41,
+    "inference_median_ms": 86.0,
+    "inference_p95_ms": 115.0,
+    "e2e_mean_ms": 94.83,
+    "e2e_p95_ms": 152.69
+  },
+  "kpi_target": {
+    "map50": 0.8,
+    "precision": 0.82,
+    "recall": 0.78,
+    "f1": 0.8,
+    "inference_ms": 150.0
+  },
+  "kpi_pass": {
+    "map50>=0.80": false,
+    "precision>=0.82": false,
+    "recall>=0.78": false,
+    "f1>=0.80": false,
+    "cpu_inference_mean<150ms": true,
+    "e2e<3000ms": true
+  },
+  "sample_api_outputs": [
+    {
+      "image": "coco-val__284142d610fc__dc258c5388.jpg",
+      "inference_time_ms": 73,
+      "model_version": "food_yolo_v1",
+      "detected_items": [],
+      "total_nutrition": {
+        "calories": 0,
+        "protein_g": 0,
+        "carbs_g": 0,
+        "fat_g": 0,
+        "calories_min": 0,
+        "calories_max": 0,
+        "calories_range_label": "0 kcal"
+      },
+      "disclaimer": "Chưa nhận diện được món ăn hay đồ uống nào trong ảnh. Hãy chụp rõ hơn, đủ sáng, hoặc thêm món thủ công."
+    },
+    {
+      "image": "coco-val__29ac874912bd__1c017613a5.jpg",
+      "inference_time_ms": 82,
+      "model_version": "food_yolo_v1",
+      "detected_items": [
+        {
+          "class_code": "WHITE_RICE",
+          "name_vi": "Cơm trắng",
+          "confidence": 0.773,
+          "bbox_norm": [
+            0.4525,
+            0.1724,
+            0.8131,
+            0.5812
+          ],
+          "estimated_grams": 88.5,
+          "calories": 115.0,
+          "protein_g": 2.4,
+          "carbs_g": 25.0,
+          "fat_g": 0.3,
+          "calories_min": 90,
+          "calories_max": 140,
+          "calories_range_label": "~90 – 140 kcal"
+        },
+        {
+          "class_code": "BROCCOLI",
+          "name_vi": "Bông cải xanh luộc",
+          "confidence": 0.513,
+          "bbox_norm": [
+            0.2418,
+            0.5473,
+            0.3628,
+            0.7257
+          ],
+          "estimated_grams": 48.0,
+          "calories": 16.8,
+          "protein_g": 1.2,
+          "carbs_g": 3.5,
+          "fat_g": 0.2,
+          "calories_min": 10,
+          "calories_max": 25,
+          "calories_range_label": "~10 – 25 kcal"
+        },
+        {
+          "class_code": "BROCCOLI",
+          "name_vi": "Bông cải xanh luộc",
+          "confidence": 0.482,
+          "bbox_norm": [
+            0.2282,
+            0.432,
+            0.547,
+            0.7385
+          ],
+          "estimated_grams": 48.0,
+          "calories": 16.8,
+          "protein_g": 1.2,
+          "carbs_g": 3.5,
+          "fat_g": 0.2,
+          "calories_min": 10,
+          "calories_max": 25,
+          "calories_range_label": "~10 – 25 kcal"
+        }
+      ],
+      "total_nutrition": {
+        "calories": 148.6,
+        "protein_g": 4.8,
+        "carbs_g": 32.0,
+        "fat_g": 0.7,
+        "calories_min": 110,
+        "calories_max": 190,
+        "calories_range_label": "~110 – 190 kcal"
+      },
+      "disclaimer": "Lượng calo được AI ước chừng trong khoảng tham khảo từ hình ảnh (nước lọc đóng chai không đường ~0 kcal); bạn có thể kéo thanh trượt để chỉnh khẩu phần."
+    },
+    {
+      "image": "coco-val__2a2f3e6a71d6__e2bc1ac571.jpg",
+      "inference_time_ms": 74,
+      "model_version": "food_yolo_v1",
+      "detected_items": [
+        {
+          "class_code": "COFFEE_MILK_TEA",
+          "name_vi": "Cà phê sữa / Latte / Trà sữa",
+          "confidence": 0.791,
+          "bbox_norm": [
+            0.64,
+            0.1405,
+            0.7151,
+            0.289
+          ],
+          "estimated_grams": 140.0,
+          "calories": 75.6,
+          "protein_g": 2.5,
+          "carbs_g": 12.9,
+          "fat_g": 2.2,
+          "calories_min": 50,
+          "calories_max": 100,
+          "calories_range_label": "~50 – 100 kcal"
+        },
+        {
+          "class_code": "BURGER_PIZZA_FASTFOOD",
+          "name_vi": "Hamburger / Pizza / Đồ ăn nhanh",
+          "confidence": 0.756,
+          "bbox_norm": [
+            0.1756,
+            0.284,
+            0.8806,
+            0.7799
+          ],
+          "estimated_grams": 251.8,
+          "calories": 669.8,
+          "protein_g": 31.5,
+          "carbs_g": 75.5,
+          "fat_g": 26.4,
+          "calories_min": 520,
+          "calories_max": 820,
+          "calories_range_label": "~520 – 820 kcal"
+        },
+        {
+          "class_code": "COFFEE_MILK_TEA",
+          "name_vi": "Cà phê sữa / Latte / Trà sữa",
+          "confidence": 0.647,
+          "bbox_norm": [
+            0.0001,
+            0.5657,
+            0.0352,
+            0.8865
+          ],
+          "estimated_grams": 140.0,
+          "calories": 75.6,
+          "protein_g": 2.5,
+          "carbs_g": 12.9,
+          "fat_g": 2.2,
+          "calories_min": 50,
+          "calories_max": 100,
+          "calories_range_label": "~50 – 100 kcal"
+        },
+        {
+          "class_code": "COFFEE_MILK_TEA",
+          "name_vi": "Cà phê sữa / Latte / Trà sữa",
+          "confidence": 0.551,
+          "bbox_norm": [
+            0.2498,
+            0.8216,
+            0.4262,
+            0.9997
+          ],
+          "estimated_grams": 140.0,
+          "calories": 75.6,
+          "protein_g": 2.5,
+          "carbs_g": 12.9,
+          "fat_g": 2.2,
+          "calories_min": 50,
+          "calories_max": 100,
+          "calories_range_label": "~50 – 100 kcal"
+        },
+        {
+          "class_code": "BOTTLED_DRINK",
+          "name_vi": "Nước đóng chai / Nước giải khát",
+          "confidence": 0.395,
+          "bbox_norm": [
+            0.1963,
+            0.0,
+            0.5008,
+            0.4334
+          ],
+          "estimated_grams": 237.6,
+          "calories": 66.5,
+          "protein_g": 0.0,
+          "carbs_g": 16.6,
+          "fat_g": 0.0,
+          "calories_min": 35,
+          "calories_max": 95,
+          "calories_range_label": "~35 – 95 kcal"
+        }
+      ],
+      "total_nutrition": {
+        "calories": 963.1,
+        "protein_g": 39.0,
+        "carbs_g": 130.8,
+        "fat_g": 33.0,
+        "calories_min": 705,
+        "calories_max": 1215,
+        "calories_range_label": "~705 – 1215 kcal"
+      },
+      "disclaimer": "Lượng calo được AI ước chừng trong khoảng tham khảo từ hình ảnh (nước lọc đóng chai không đường ~0 kcal); bạn có thể kéo thanh trượt để chỉnh khẩu phần."
+    },
+    {
+      "image": "coco-val__4641d01a7725__ee76fbbe9c.jpg",
+      "inference_time_ms": 78,
+      "model_version": "food_yolo_v1",
+      "detected_items": [
+        {
+          "class_code": "BURGER_PIZZA_FASTFOOD",
+          "name_vi": "Hamburger / Pizza / Đồ ăn nhanh",
+          "confidence": 0.784,
+          "bbox_norm": [
+            0.5324,
+            0.2986,
+            0.6698,
+            0.369
+          ],
+          "estimated_grams": 72.0,
+          "calories": 191.5,
+          "protein_g": 9.0,
+          "carbs_g": 21.6,
+          "fat_g": 7.6,
+          "calories_min": 140,
+          "calories_max": 240,
+          "calories_range_label": "~140 – 240 kcal"
+        },
+        {
+          "class_code": "BOTTLED_DRINK",
+          "name_vi": "Nước đóng chai / Nước giải khát",
+          "confidence": 0.652,
+          "bbox_norm": [
+            0.4321,
+            0.5938,
+            0.5303,
+            0.702
+          ],
+          "estimated_grams": 180.0,
+          "calories": 50.4,
+          "protein_g": 0.0,
+          "carbs_g": 12.6,
+          "fat_g": 0.0,
+          "calories_min": 30,
+          "calories_max": 75,
+          "calories_range_label": "~30 – 75 kcal"
+        },
+        {
+          "class_code": "BURGER_PIZZA_FASTFOOD",
+          "name_vi": "Hamburger / Pizza / Đồ ăn nhanh",
+          "confidence": 0.648,
+          "bbox_norm": [
+            0.4844,
+            0.4558,
+            0.7054,
+            0.5576
+          ],
+          "estimated_grams": 72.0,
+          "calories": 191.5,
+          "protein_g": 9.0,
+          "carbs_g": 21.6,
+          "fat_g": 7.6,
+          "calories_min": 140,
+          "calories_max": 240,
+          "calories_range_label": "~140 – 240 kcal"
+        },
+        {
+          "class_code": "BURGER_PIZZA_FASTFOOD",
+          "name_vi": "Hamburger / Pizza / Đồ ăn nhanh",
+          "confidence": 0.64,
+          "bbox_norm": [
+            0.2556,
+            0.4439,
+            0.4964,
+            0.5447
+          ],
+          "estimated_grams": 72.0,
+          "calories": 191.5,
+          "protein_g": 9.0,
+          "carbs_g": 21.6,
+          "fat_g": 7.6,
+          "calories_min": 140,
+          "calories_max": 240,
+          "calories_range_label": "~140 – 240 kcal"
+        },
+        {
+          "class_code": "BOTTLED_DRINK",
+          "name_vi": "Nước đóng chai / Nước giải khát",
+          "confidence": 0.617,
+          "bbox_norm": [
+            0.4107,
+            0.3041,
+            0.4889,
+            0.4521
+          ],
+          "estimated_grams": 180.0,
+          "calories": 50.4,
+          "protein_g": 0.0,
+          "carbs_g": 12.6,
+          "fat_g": 0.0,
+          "calories_min": 30,
+          "calories_max": 75,
+          "calories_range_label": "~30 – 75 kcal"
+        }
+      ],
+      "total_nutrition": {
+        "calories": 675.3,
+        "protein_g": 27.0,
+        "carbs_g": 90.0,
+        "fat_g": 22.8,
+        "calories_min": 480,
+        "calories_max": 870,
+        "calories_range_label": "~480 – 870 kcal"
+      },
+      "disclaimer": "Lượng calo được AI ước chừng trong khoảng tham khảo từ hình ảnh (nước lọc đóng chai không đường ~0 kcal); bạn có thể kéo thanh trượt để chỉnh khẩu phần."
+    },
+    {
+      "image": "coco-val__560f29e9c5c7__2a099527df.jpg",
+      "inference_time_ms": 75,
+      "model_version": "food_yolo_v1",
+      "detected_items": [
+        {
+          "class_code": "COFFEE_MILK_TEA",
+          "name_vi": "Cà phê sữa / Latte / Trà sữa",
+          "confidence": 0.362,
+          "bbox_norm": [
+            0.1447,
+            0.7551,
+            0.3404,
+            0.9976
+          ],
+          "estimated_grams": 140.0,
+          "calories": 75.6,
+          "protein_g": 2.5,
+          "carbs_g": 12.9,
+          "fat_g": 2.2,
+          "calories_min": 50,
+          "calories_max": 100,
+          "calories_range_label": "~50 – 100 kcal"
+        },
+        {
+          "class_code": "BURGER_PIZZA_FASTFOOD",
+          "name_vi": "Hamburger / Pizza / Đồ ăn nhanh",
+          "confidence": 0.32,
+          "bbox_norm": [
+            0.6275,
+            0.6668,
+            0.7777,
+            0.7595
+          ],
+          "estimated_grams": 72.0,
+          "calories": 191.5,
+          "protein_g": 9.0,
+          "carbs_g": 21.6,
+          "fat_g": 7.6,
+          "calories_min": 140,
+          "calories_max": 240,
+          "calories_range_label": "~140 – 240 kcal"
+        }
+      ],
+      "total_nutrition": {
+        "calories": 267.1,
+        "protein_g": 11.5,
+        "carbs_g": 34.5,
+        "fat_g": 9.8,
+        "calories_min": 190,
+        "calories_max": 340,
+        "calories_range_label": "~190 – 340 kcal"
+      },
+      "disclaimer": "Lượng calo được AI ước chừng trong khoảng tham khảo từ hình ảnh (nước lọc đóng chai không đường ~0 kcal); bạn có thể kéo thanh trượt để chỉnh khẩu phần."
+    }
+  ]
+}

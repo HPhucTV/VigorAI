@@ -24,7 +24,11 @@ if str(BACKEND_DIR) not in sys.path:
     sys.path.insert(0, str(BACKEND_DIR))
 
 from app.db.seed_catalog_and_exercises import FOOD_CATALOG_SEED
-from app.services.ai_food_yolo import FoodYoloService, decode_image
+from app.services.ai_food_yolo import (
+    EXTENDED_BEVERAGE_SNACK_CATALOG,
+    FoodYoloService,
+    decode_image,
+)
 
 PALETTE = [
     (229, 57, 53),   # Do
@@ -87,6 +91,8 @@ def main(argv: list[str] | None = None) -> int:
     else:
         svc = FoodYoloService(model_path=args.model)
         catalog = {entry["class_code"]: dict(entry) for entry in FOOD_CATALOG_SEED}
+        for entry in EXTENDED_BEVERAGE_SNACK_CATALOG:
+            catalog.setdefault(entry["class_code"], dict(entry))
         payload = svc.analyze(raw, catalog)
 
     print(json.dumps(payload, indent=2, ensure_ascii=False))

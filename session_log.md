@@ -17,6 +17,25 @@
 
 ---
 
+## Phiên 38 — 2026-11-26 13:22 | Thành viên: M4 + M1 (UI F19) | Task: `T-M4-09` (`[~]`), `T-M4-10` (`[~]`), `T-M1-10` (`[~]`)
+- **Mục tiêu phiên:** Khắc phục lỗi chụp chai nước cầm tay bị nhận nhầm thành `BANANA`, mở rộng AI Model B từ `16` lên **`30` lớp (`yolov8s-gymfood-v1.2`)** bổ sung nhóm **Nước uống & Bánh snack / Đồ ăn nhanh**, đổi hiển thị sang **khoảng calo ước chừng (`~min – max kcal`)** theo yêu cầu kiểm thử thực tế, deploy nóng lên Railway Production, build lại `VigorAI-test-ai.apk` và kiểm toán chi tiết phần dữ liệu món ăn còn thiếu.
+- **Những file đã tạo / chỉnh sửa (`0` file `[LOCKED STUB]` và `0` file `M3` bị chạm):**
+  - `ai_research/model_b_food_yolo/food_classes.py`, `fetch_open_datasets.py`, `prepare_dataset.py`, `evaluate_model.py`, `test_camera_local.py`, `ai_research/SOURCES.md`: Mở rộng `CORE_CLASSES_V1` lên **30 lớp** (thêm 12 lớp `18..29`: `BOTTLED_DRINK`, `COFFEE_MILK_TEA`, `FRUIT_JUICE_SMOOTHIE`, `COOKIE_BISCUIT`, `CAKE_MUFFIN_PASTRY`, `DONUT_WAFFLE_PANCAKE`, `CROISSANT_SWEET_BREAD`, `CHIPS_POPCORN_SNACK`, `CHOCOLATE_CANDY`, `ICE_CREAM_DESSERT`, `FRENCH_FRIES`, `BURGER_PIZZA_FASTFOOD`), tải thêm `Francesco/soda-bottles`, `detection-datasets/coco` val (giữ ảnh người cầm chai làm nền âm cứng) và `Matthijs/snacks-detection`; dựng **`model_b_v4` (`5.218` ảnh: `4.013 train / 805 val / 400 test`, `28/30` lớp hoạt động)**.
+  - `ai_research/evaluation_reports/model_b_v4_dataset_report.json` & `ai_research/evaluation_reports/model_b_v1_2_28classes/`: Lưu báo cáo dataset `model_b_v4`, kết quả train Colab T4 (`60 epochs`, `best.onnx` `44,791,964 B`, `sha256: b918c2b07ba1d3a13d565bd6f16e345fbd664c55221d48b5cf69109b9de73dad`) và benchmark ONNX CPU (`400` ảnh `test`).
+  - `backend/app/services/ai_food_yolo.py`, `backend/app/schemas/ai_schema.py`, `backend/app/routers/ai.py`, `backend/ai_models/model_b_manifest.json`, `backend/tests/test_ai_api.py`: Bổ sung `EXTENDED_BEVERAGE_SNACK_CATALOG` (`48` món trong `/food-model/info`), hàm `compute_calorie_range()`, các trường `calories_min`, `calories_max`, `calories_range_label` (`~min – max kcal`) giữ nguyên midpoint `calories` tương thích ngược DB.
+  - `mobile/lib/features/health/food_scan/data/food_scan_repository.dart`, `mobile/lib/features/health/food_scan/presentation/food_scan_screen.dart`: Hiển thị `Ước tính: ~min – max kcal` trên tổng bữa ăn & từng thẻ món, tự co giãn khoảng theo thanh kéo và chuyển đơn vị sang `ml` (tối đa `1000 ml`) cho 3 nhóm đồ uống.
+  - `docs/taskboard.md`, `session_log.md`: Cập nhật trạng thái `[~]` cho `T-M4-09`, `T-M4-10`.
+- **Kiểm tra / Kết quả chạy thử:**
+  - `evaluate_model.py` trên `400` ảnh `test` của `model_b_v4` (`conf=0.30`): **`BOTTLED_DRINK AP@0.5 = 0.9153`**, `CPU mean = 87.41 ms` (`p95 = 115.0 ms < 150 ms`), `e2e mean = 94.83 ms`, `mAP@0.5 = 0.5978`, `Precision = 0.7343`, `Recall = 0.5905`, `F1 = 0.6546`.
+  - `pytest backend/tests/test_ai_api.py -v`: **34 / 34 PASS**.
+  - **Live Railway (`51ed2f29-8ec3-4ef1-98eb-6bff3f84750d` `[SUCCESS]`):** `GET /api/v1/ai/food-model/info` trả `model_version: "yolov8s-gymfood-v1.2"`, `catalog_size: 48`; `POST /api/v1/ai/food-analyze` trên ảnh chai Kirin Latte trả `BOTTLED_DRINK` (`50.2%`, `590.0g`, `~90 – 240 kcal`), hết lỗi nhận nhầm `BANANA`.
+  - **Mobile APK (`Docker flutter analyze + test + build apk`):** `46/46` test trong `test/health/` + `test/workout/` PASS; xuất `VigorAI-test-ai.apk` (`67 MB` / `69.9 MB`, `sha256: adccc32289e0320a7c4c27cc0f8b74a338434a8c556d34a2222ec3db30d69f26`).
+- **Việc cần làm ở phiên kế tiếp:**
+  - Bổ sung 2 lớp đang có `0` ảnh (`BROWN_RICE`, `SWEET_POTATO`), ảnh bao bì chai nước/snack Việt Nam, cải thiện các lớp AP thấp (`STEAMED_SHRIMP`, `BEEF_STEAK`, `GRILLED_CHICKEN_BREAST`, `TOFU`) và bật thêm các món Việt đã có sẵn nhãn trong `raw/vn-streetfood` (`Bún bò Huế`, `Xôi`, `Cơm chiên`, `Gỏi cuốn`, `Bún đậu`) cho bản `v1.3` (`T-M4-09`, `T-M4-10`).
+  - Hoàn thiện **Model C** (`T-M4-05`, `T-M4-07`, `T-M4-08`).
+
+---
+
 ## Phiên 34 — 2026-11-25 20:35 | Thành viên: M4 (Pure AI Engineer) | Task: `T-M4-06` (`[x]`)
 - **Mục tiêu phiên:** Tích hợp trọng số **Model B v1.1 (`yolov8s-gymfood-v1.1`, 16/18 lớp)** train từ Google Colab T4 vào FastAPI backend, benchmark thực tế bằng ONNX Runtime CPU trên toàn bộ 245 ảnh test, kiểm tra bounding box trực quan trên món ăn Việt Nam và đóng `[x]` `T-M4-06`.
 - **Những file đã tạo / chỉnh sửa (`0` file `[LOCKED STUB]` bị chạm):**

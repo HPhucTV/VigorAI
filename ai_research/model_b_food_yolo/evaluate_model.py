@@ -32,6 +32,7 @@ if str(BACKEND_DIR) not in sys.path:
 
 from app.db.seed_catalog_and_exercises import FOOD_CATALOG_SEED
 from app.services.ai_food_yolo import (
+    EXTENDED_BEVERAGE_SNACK_CATALOG,
     FoodYoloService,
     bbox_iou,
     compute_file_sha256,
@@ -233,6 +234,8 @@ def main(argv: list[str] | None = None) -> int:
     service = FoodYoloService(model_path=args.model)
     service.iou = args.iou
     catalog = {entry["class_code"]: dict(entry) for entry in FOOD_CATALOG_SEED}
+    for entry in EXTENDED_BEVERAGE_SNACK_CATALOG:
+        catalog.setdefault(entry["class_code"], dict(entry))
 
     # Lam nong ONNX session
     sample_bytes = images[0].read_bytes()

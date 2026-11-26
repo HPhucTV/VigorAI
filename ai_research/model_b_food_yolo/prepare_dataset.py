@@ -48,7 +48,7 @@ SPLIT_NAMES = ("train", "val", "test")
 MIN_BOX_SIDE = 0.005  # canh bbox chuan hoa nho hon nguong nay coi la lech chuan
 CLIP_TOLERANCE = 0.005  # cho phep tran bien toi da 0.5% roi cat ve [0, 1]
 EDGE_TOL = 2e-6  # sai so lam tron khi ghi 6 chu so thap phan (khung cham sat mep anh bi lech ~5e-7)
-MIN_CLASSES, MAX_CLASSES = 15, 20
+MIN_CLASSES, MAX_CLASSES = 15, 50
 SEP = "__"  # ngan cach <nguon>__<hash12>__<ten-goc> trong ten file dau ra
 
 

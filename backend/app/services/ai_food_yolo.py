@@ -52,13 +52,137 @@ MAX_IMAGE_PIXELS = 40_000_000  # chan decompression bomb (~40 MP)
 LETTERBOX_PAD_VALUE = 114
 
 DISCLAIMER = (
-    "Giá trị dinh dưỡng được AI ước tính dựa trên hình ảnh, "
-    "vui lòng kiểm tra lại khẩu phần gram trước khi lưu."
+    "Lượng calo được AI ước chừng trong khoảng tham khảo từ hình ảnh "
+    "(nước lọc đóng chai không đường ~0 kcal); bạn có thể kéo thanh trượt để chỉnh khẩu phần."
 )
 EMPTY_DISCLAIMER = (
-    "Chưa nhận diện được món ăn nào trong ảnh. Hãy chụp gần hơn, đủ sáng, "
+    "Chưa nhận diện được món ăn hay đồ uống nào trong ảnh. Hãy chụp rõ hơn, đủ sáng, "
     "hoặc thêm món thủ công."
 )
+
+# Catalog bo sung cho nhom Nuoc uong & Banh snack / Do an nhanh (khop food_classes.py v1.2)
+EXTENDED_BEVERAGE_SNACK_CATALOG: list[dict[str, Any]] = [
+    {
+        "class_code": "BOTTLED_DRINK",
+        "name_vi": "Nước đóng chai / Nước giải khát",
+        "kcal_per_100g": 28.0,
+        "protein_per_100g": 0.0,
+        "carbs_per_100g": 7.0,
+        "fat_per_100g": 0.0,
+        "default_serving_g": 450.0,
+        "kcal_spread_ratio": 0.40,
+    },
+    {
+        "class_code": "COFFEE_MILK_TEA",
+        "name_vi": "Cà phê sữa / Latte / Trà sữa",
+        "kcal_per_100g": 54.0,
+        "protein_per_100g": 1.8,
+        "carbs_per_100g": 9.2,
+        "fat_per_100g": 1.6,
+        "default_serving_g": 350.0,
+        "kcal_spread_ratio": 0.30,
+    },
+    {
+        "class_code": "FRUIT_JUICE_SMOOTHIE",
+        "name_vi": "Nước ép / Sinh tố trái cây",
+        "kcal_per_100g": 46.0,
+        "protein_per_100g": 0.6,
+        "carbs_per_100g": 10.8,
+        "fat_per_100g": 0.2,
+        "default_serving_g": 300.0,
+        "kcal_spread_ratio": 0.28,
+    },
+    {
+        "class_code": "COOKIE_BISCUIT",
+        "name_vi": "Bánh quy / Biscuit",
+        "kcal_per_100g": 480.0,
+        "protein_per_100g": 5.5,
+        "carbs_per_100g": 64.0,
+        "fat_per_100g": 22.0,
+        "default_serving_g": 45.0,
+        "kcal_spread_ratio": 0.22,
+    },
+    {
+        "class_code": "CAKE_MUFFIN_PASTRY",
+        "name_vi": "Bánh ngọt / Bánh kem / Muffin",
+        "kcal_per_100g": 345.0,
+        "protein_per_100g": 5.0,
+        "carbs_per_100g": 48.0,
+        "fat_per_100g": 15.0,
+        "default_serving_g": 90.0,
+        "kcal_spread_ratio": 0.22,
+    },
+    {
+        "class_code": "DONUT_WAFFLE_PANCAKE",
+        "name_vi": "Bánh Donut / Pancake / Waffle",
+        "kcal_per_100g": 360.0,
+        "protein_per_100g": 5.8,
+        "carbs_per_100g": 47.0,
+        "fat_per_100g": 16.5,
+        "default_serving_g": 85.0,
+        "kcal_spread_ratio": 0.22,
+    },
+    {
+        "class_code": "CROISSANT_SWEET_BREAD",
+        "name_vi": "Bánh sừng bò / Bánh mì ngọt",
+        "kcal_per_100g": 385.0,
+        "protein_per_100g": 7.8,
+        "carbs_per_100g": 46.0,
+        "fat_per_100g": 18.5,
+        "default_serving_g": 75.0,
+        "kcal_spread_ratio": 0.22,
+    },
+    {
+        "class_code": "CHIPS_POPCORN_SNACK",
+        "name_vi": "Bánh snack / Bỏng ngô / Hạt ăn vặt",
+        "kcal_per_100g": 510.0,
+        "protein_per_100g": 6.5,
+        "carbs_per_100g": 53.0,
+        "fat_per_100g": 30.0,
+        "default_serving_g": 45.0,
+        "kcal_spread_ratio": 0.25,
+    },
+    {
+        "class_code": "CHOCOLATE_CANDY",
+        "name_vi": "Sô-cô-la / Kẹo ngọt",
+        "kcal_per_100g": 525.0,
+        "protein_per_100g": 5.2,
+        "carbs_per_100g": 59.0,
+        "fat_per_100g": 29.0,
+        "default_serving_g": 40.0,
+        "kcal_spread_ratio": 0.25,
+    },
+    {
+        "class_code": "ICE_CREAM_DESSERT",
+        "name_vi": "Kem / Pudding tráng miệng",
+        "kcal_per_100g": 207.0,
+        "protein_per_100g": 3.5,
+        "carbs_per_100g": 24.0,
+        "fat_per_100g": 11.0,
+        "default_serving_g": 100.0,
+        "kcal_spread_ratio": 0.22,
+    },
+    {
+        "class_code": "FRENCH_FRIES",
+        "name_vi": "Khoai tây chiên",
+        "kcal_per_100g": 312.0,
+        "protein_per_100g": 3.4,
+        "carbs_per_100g": 41.0,
+        "fat_per_100g": 15.0,
+        "default_serving_g": 110.0,
+        "kcal_spread_ratio": 0.22,
+    },
+    {
+        "class_code": "BURGER_PIZZA_FASTFOOD",
+        "name_vi": "Hamburger / Pizza / Đồ ăn nhanh",
+        "kcal_per_100g": 266.0,
+        "protein_per_100g": 12.5,
+        "carbs_per_100g": 30.0,
+        "fat_per_100g": 10.5,
+        "default_serving_g": 180.0,
+        "kcal_spread_ratio": 0.22,
+    },
+]
 
 AI_MODELS_DIR = Path(__file__).resolve().parents[2] / "ai_models"
 DEFAULT_MANIFEST_PATH = AI_MODELS_DIR / "model_b_manifest.json"
@@ -156,6 +280,22 @@ def compute_item_nutrition(entry: dict[str, Any], grams: float) -> dict[str, flo
     }
 
 
+def compute_calorie_range(calories: float, spread_ratio: float = 0.20) -> tuple[int, int, str]:
+    """Quy doi muc calo diem sang khoang uoc chung (`~min - max kcal`) lam tron de doc."""
+    if calories <= 0.0:
+        return 0, 0, "0 kcal"
+    step = 5 if calories < 120.0 else 10
+    raw_min = max(0.0, calories * (1.0 - spread_ratio))
+    raw_max = max(raw_min + step, calories * (1.0 + spread_ratio))
+    c_min = int((raw_min // step) * step)
+    c_max = int(((raw_max + step - 1e-6) // step) * step)
+    if c_min == 0 and calories >= 10.0:
+        c_min = step
+    if c_max <= c_min:
+        c_max = c_min + step
+    return c_min, c_max, f"~{c_min} \u2013 {c_max} kcal"
+
+
 def build_items(
     detections: list[Detection],
     catalog: dict[str, dict[str, Any]],
@@ -171,6 +311,9 @@ def build_items(
         if entry is None or box is None:
             continue
         grams = estimate_portion_grams(float(entry["default_serving_g"]), bbox_area_ratio(box))
+        macros = compute_item_nutrition(entry, grams)
+        spread = float(entry.get("kcal_spread_ratio", 0.20))
+        c_min, c_max, range_label = compute_calorie_range(macros["calories"], spread_ratio=spread)
         items.append(
             {
                 "class_code": code,
@@ -178,7 +321,10 @@ def build_items(
                 "confidence": round(float(det.confidence), 3),
                 "bbox_norm": [round(v, 4) for v in box],
                 "estimated_grams": grams,
-                **compute_item_nutrition(entry, grams),
+                **macros,
+                "calories_min": c_min,
+                "calories_max": c_max,
+                "calories_range_label": range_label,
             }
         )
         if len(items) >= MAX_ITEMS:
@@ -186,12 +332,23 @@ def build_items(
     return items
 
 
-def summarize(items: list[dict[str, Any]]) -> dict[str, float]:
-    """Tong = tong cac gia tri da lam tron cua tung mon, de man hinh cong lai khop tung dong."""
-    return {
+def summarize(items: list[dict[str, Any]]) -> dict[str, Any]:
+    """Tong = tong cac gia tri da lam tron cua tung mon + khoang Calo uoc chung."""
+    totals: dict[str, Any] = {
         key: round(sum(item[key] for item in items), 1)
         for key in ("calories", "protein_g", "carbs_g", "fat_g")
     }
+    if not items or totals["calories"] <= 0.0:
+        totals["calories_min"] = 0
+        totals["calories_max"] = 0
+        totals["calories_range_label"] = "0 kcal"
+    else:
+        c_min = sum(int(item.get("calories_min", round(item["calories"] * 0.8))) for item in items)
+        c_max = sum(int(item.get("calories_max", round(item["calories"] * 1.2))) for item in items)
+        totals["calories_min"] = c_min
+        totals["calories_max"] = c_max
+        totals["calories_range_label"] = f"~{c_min} \u2013 {c_max} kcal"
+    return totals
 
 
 def build_response_payload(

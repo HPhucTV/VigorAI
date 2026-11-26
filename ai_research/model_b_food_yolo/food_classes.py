@@ -1,11 +1,9 @@
-# [OWNER: M4] 18 lop mon an cot loi cho AI Model B v1.0 (T-M4-01)
-"""Danh sach lop v1.0 + bang alias de gop nhan tu Roboflow / Kaggle ve `class_code`.
+# [OWNER: M4] 30 lop mon an, nuoc uong & snack cho AI Model B v1.2 (T-M4-01, T-M4-09)
+"""Danh sach 30 lop v1.2 + bang alias de gop nhan tu Roboflow / HuggingFace / COCO ve `class_code`.
 
-`class_code` KHOP 100% voi bang `food_nutrition_catalog` (seed boi M3), de
-`ai_food_yolo.py` tra Calo/Macro truc tiep khong can anh xa them.
-
-Alias chi la goi y. Sau khi chay `prepare_dataset.py`, xem muc `unmapped_source_classes`
-trong `dataset_report.json` de bo sung alias con thieu.
+18 lop dau (0..17) giu nguyen thu tu v1.0/v1.1 khop `food_nutrition_catalog` (seed boi M3).
+12 lop mo rong (18..29) bo sung nhom Nuoc uong & Banh snack / Do an nhanh (khop catalog mo rong
+trong `ai_food_yolo.py` de tra khoang Calo uoc tinh ngay ma khong can sua code M3).
 """
 from __future__ import annotations
 
@@ -60,6 +58,116 @@ CORE_CLASSES_V1: list[tuple[str, tuple[str, ...]]] = [
         ),
     ),
     ("BUN_CHA", ("bun cha", "bún chả", "grilled pork with vermicelli")),
+    # Nuoc uong & Giai khat (18..20)
+    (
+        "BOTTLED_DRINK",
+        (
+            "bottle",
+            "bottled drink",
+            "soda-bottles",
+            "coca-cola",
+            "fanta",
+            "sprite",
+            "soda",
+            "soft drink",
+            "water bottle",
+            "sports drink",
+            "nuoc dong chai",
+            "nuoc ngot",
+            "nước đóng chai",
+            "nước ngọt",
+        ),
+    ),
+    (
+        "COFFEE_MILK_TEA",
+        (
+            "coffee",
+            "kopi-hitam",
+            "milkshake",
+            "milk",
+            "tea",
+            "cup",
+            "latte",
+            "milk tea",
+            "boba",
+            "ca phe",
+            "tra sua",
+            "cà phê",
+            "trà sữa",
+        ),
+    ),
+    (
+        "FRUIT_JUICE_SMOOTHIE",
+        ("juice", "fruit juice", "smoothie", "nuoc ep", "sinh to", "nước ép", "sinh tố"),
+    ),
+    # Banh snack, banh ngot & do an nhanh (21..29)
+    (
+        "COOKIE_BISCUIT",
+        ("cookie", "biscuit", "chocolate-chip-cookie", "banh quy", "bánh quy"),
+    ),
+    (
+        "CAKE_MUFFIN_PASTRY",
+        (
+            "cake",
+            "muffin",
+            "blueberry-muffin",
+            "red-velvet",
+            "egg tart",
+            "pie",
+            "banh kem",
+            "banh ngot",
+            "bánh kem",
+            "bánh ngọt",
+        ),
+    ),
+    (
+        "DONUT_WAFFLE_PANCAKE",
+        ("donut", "doughnut", "waffle", "pancake", "banh donut", "banh kep", "bánh donut"),
+    ),
+    (
+        "CROISSANT_SWEET_BREAD",
+        (
+            "croissant",
+            "roti-slice",
+            "bread",
+            "pretzel",
+            "banh sung bo",
+            "banh mi ngot",
+            "bánh sừng bò",
+            "bánh mì ngọt",
+        ),
+    ),
+    (
+        "CHIPS_POPCORN_SNACK",
+        (
+            "popcorn",
+            "chips",
+            "potato chips",
+            "kacang-mete",
+            "almond",
+            "cashew",
+            "peanut",
+            "snack",
+            "bong ngo",
+            "bỏng ngô",
+        ),
+    ),
+    (
+        "CHOCOLATE_CANDY",
+        ("chocolate", "candy", "keo", "so co la", "kẹo", "sô cô la"),
+    ),
+    (
+        "ICE_CREAM_DESSERT",
+        ("ice cream", "pudding", "kem"),
+    ),
+    (
+        "FRENCH_FRIES",
+        ("french fries", "french-fries", "khoai tay chien", "khoai tây chiên"),
+    ),
+    (
+        "BURGER_PIZZA_FASTFOOD",
+        ("burger", "hamburg", "pizza", "hot dog", "fastfood", "hamburger"),
+    ),
 ]
 
 CLASS_CODES: list[str] = [code for code, _ in CORE_CLASSES_V1]

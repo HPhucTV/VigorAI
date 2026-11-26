@@ -9,6 +9,9 @@ class DetectedFoodItem(BaseModel):
     bbox_norm: list[float]
     estimated_grams: float
     calories: float
+    calories_min: int = 0
+    calories_max: int = 0
+    calories_range_label: str = "0 kcal"
     protein_g: float
     carbs_g: float
     fat_g: float
@@ -16,6 +19,9 @@ class DetectedFoodItem(BaseModel):
 
 class TotalNutritionSummary(BaseModel):
     calories: float
+    calories_min: int = 0
+    calories_max: int = 0
+    calories_range_label: str = "0 kcal"
     protein_g: float
     carbs_g: float
     fat_g: float

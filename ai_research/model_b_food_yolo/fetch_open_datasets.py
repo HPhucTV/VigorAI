@@ -46,19 +46,83 @@ FOODSEG103_FILES = (
     ("val", "data/validation-00000-of-00001.parquet"),
 )
 
-# Chi giu cac lop nguyen lieu khop ro rang voi 18 lop cot loi trong food_classes.py
+# Giu cac lop nguyen lieu + do uong + banh snack khop 30 lop v1.2 trong food_classes.py
 # (khong gan lop mo ho nhu `egg` vi khong tach luoc/op la, hay `fish` vi lan nhieu loai ca).
 FOODSEG103_KEEP: dict[int, str] = {
+    1: "candy",
+    2: "egg_tart",
+    3: "french_fries",
+    4: "chocolate",
+    5: "biscuit",
+    6: "popcorn",
+    7: "pudding",
+    8: "ice_cream",
+    10: "cake",
+    12: "milkshake",
+    13: "coffee",
+    14: "juice",
+    15: "milk",
+    16: "tea",
+    17: "almond",
+    19: "cashew",
+    23: "peanut",
     25: "apple",
     29: "banana",
     46: "steak",
     48: "chicken_duck",
     56: "shrimp",
+    58: "bread",
+    60: "hamburg",
+    61: "pizza",
     66: "rice",
+    67: "pie",
     68: "tofu",
     80: "lettuce",
     87: "broccoli",
     102: "salad",
+}
+
+SODA_BOTTLES_BASE = "https://huggingface.co/datasets/Francesco/soda-bottles/resolve/main"
+SODA_BOTTLES_FILES = (
+    ("train", "data/train-00000-of-00001-7d2a772fa77ad220.parquet"),
+    ("val", "data/validation-00000-of-00001-add46243826e216d.parquet"),
+    ("test", "data/test-00000-of-00001-ed4dd2462a9652c9.parquet"),
+)
+
+COCO_VAL_BASE = "https://huggingface.co/datasets/detection-datasets/coco/resolve/main"
+COCO_VAL_FILES = (
+    ("val0", "data/val-00000-of-00002-c4f2e391ee4aba11.parquet"),
+    ("val1", "data/val-00001-of-00002-7af5414a3b178949.parquet"),
+)
+COCO_KEEP: dict[int, str] = {
+    39: "bottle",
+    41: "cup",
+    46: "banana",
+    47: "apple",
+    50: "broccoli",
+    52: "hot dog",
+    53: "pizza",
+    54: "donut",
+    55: "cake",
+}
+
+SNACKS_IMG_URL = "https://huggingface.co/datasets/Matthijs/snacks/resolve/main/images.zip"
+SNACKS_CSV_BASE = "https://huggingface.co/datasets/Matthijs/snacks-detection/resolve/main"
+SNACKS_CSVS = ("data/train.csv", "data/val.csv", "data/test.csv")
+SNACKS_KEEP: set[str] = {
+    "apple",
+    "banana",
+    "cake",
+    "candy",
+    "cookie",
+    "doughnut",
+    "hot dog",
+    "ice cream",
+    "juice",
+    "muffin",
+    "popcorn",
+    "pretzel",
+    "waffle",
 }
 
 MIN_MASK_PIXELS = 120
@@ -277,19 +341,276 @@ def fetch_foodseg103(
     return out_dir
 
 
+def _write_yolo_dataset_yaml(out_dir: Path, names: list[str]) -> None:
+    names_yaml = "\n".join(f"  {i}: {name}" for i, name in enumerate(names))
+    (out_dir / "data.yaml").write_text(
+        f"train: images\nval: images\nnc: {len(names)}\nnames:\n{names_yaml}\n",
+        encoding="utf-8",
+    )
+
+
+def fetch_soda_bottles(
+    raw_dir: Path,
+    cache_dir: Path,
+    max_images: int = 400,
+    force: bool = False,
+) -> Path:
+    import pyarrow.parquet as pq
+
+    out_dir = raw_dir / "soda-bottles"
+    if (out_dir / "data.yaml").is_file() and not force:
+        print(f"[SKIP] Da tao san: {out_dir}")
+        return out_dir
+    if out_dir.exists():
+        shutil.rmtree(out_dir)
+
+    img_out = out_dir / "images"
+    lbl_out = out_dir / "labels"
+    img_out.mkdir(parents=True, exist_ok=True)
+    lbl_out.mkdir(parents=True, exist_ok=True)
+
+    saved = 0
+    for split_tag, rel_path in SODA_BOTTLES_FILES:
+        if max_images > 0 and saved >= max_images:
+            break
+        pq_path = download_file(
+            f"{SODA_BOTTLES_BASE}/{rel_path}",
+            cache_dir / "soda_bottles" / Path(rel_path).name,
+        )
+        pf = pq.ParquetFile(pq_path)
+        for batch in pf.iter_batches(batch_size=128):
+            for row in batch.to_pylist():
+                if max_images > 0 and saved >= max_images:
+                    break
+                try:
+                    rgb = _open_hf_image(row["image"]).convert("RGB")
+                    img_w, img_h = rgb.size
+                    w = float(row.get("width") or img_w)
+                    h = float(row.get("height") or img_h)
+                    objs = row.get("objects") or {}
+                    bboxes = objs.get("bbox") or []
+                except Exception:
+                    continue
+                if w <= 0 or h <= 0 or not bboxes:
+                    continue
+                yolo_lines: list[str] = []
+                for box in bboxes:
+                    if len(box) < 4:
+                        continue
+                    # COCO format [x_min_px, y_min_px, bw_px, bh_px]
+                    bx, by, bw_px, bh_px = (float(v) for v in box[:4])
+                    x1 = max(0.0, min(1.0, bx / w))
+                    y1 = max(0.0, min(1.0, by / h))
+                    x2 = max(0.0, min(1.0, (bx + bw_px) / w))
+                    y2 = max(0.0, min(1.0, (by + bh_px) / h))
+                    bw = x2 - x1
+                    bh = y2 - y1
+                    if bw < MIN_BOX_SIDE or bh < MIN_BOX_SIDE or (bw * bh) < MIN_BOX_AREA_RATIO:
+                        continue
+                    yolo_lines.append(f"0 {(x1 + x2) / 2.0:.6f} {(y1 + y2) / 2.0:.6f} {bw:.6f} {bh:.6f}")
+                if not yolo_lines:
+                    continue
+                stem = f"sb_{split_tag}_{row.get('image_id', saved)}_{saved}"
+                rgb.save(img_out / f"{stem}.jpg", format="JPEG", quality=92)
+                (lbl_out / f"{stem}.txt").write_text("\n".join(yolo_lines) + "\n", encoding="utf-8")
+                saved += 1
+
+    _write_yolo_dataset_yaml(out_dir, ["soda-bottles"])
+    print(f"[OK] soda-bottles extract: {saved} anh")
+    return out_dir
+
+
+def fetch_coco_val_drinks_snacks(
+    raw_dir: Path,
+    cache_dir: Path,
+    max_per_class: int = 280,
+    force: bool = False,
+) -> Path:
+    import pyarrow.parquet as pq
+
+    out_dir = raw_dir / "coco-val"
+    if (out_dir / "data.yaml").is_file() and not force:
+        print(f"[SKIP] Da tao san: {out_dir}")
+        return out_dir
+    if out_dir.exists():
+        shutil.rmtree(out_dir)
+
+    kept_ids = sorted(COCO_KEEP)
+    id_to_yolo = {orig_id: idx for idx, orig_id in enumerate(kept_ids)}
+    names = [COCO_KEEP[orig_id] for orig_id in kept_ids]
+
+    img_out = out_dir / "images"
+    lbl_out = out_dir / "labels"
+    img_out.mkdir(parents=True, exist_ok=True)
+    lbl_out.mkdir(parents=True, exist_ok=True)
+
+    per_class_imgs: Counter = Counter()
+    saved = 0
+    for split_tag, rel_path in COCO_VAL_FILES:
+        pq_path = download_file(
+            f"{COCO_VAL_BASE}/{rel_path}",
+            cache_dir / "coco_val" / Path(rel_path).name,
+        )
+        pf = pq.ParquetFile(pq_path)
+        for batch in pf.iter_batches(batch_size=128):
+            for row in batch.to_pylist():
+                objs = row.get("objects") or {}
+                cats = objs.get("category") or []
+                bboxes = objs.get("bbox") or []
+                present = {int(c) for c in cats if int(c) in id_to_yolo}
+                if not present:
+                    continue
+                if max_per_class > 0 and all(per_class_imgs[cid] >= max_per_class for cid in present):
+                    continue
+                try:
+                    rgb = _open_hf_image(row["image"]).convert("RGB")
+                    img_w, img_h = rgb.size
+                    w = float(row.get("width") or img_w)
+                    h = float(row.get("height") or img_h)
+                except Exception:
+                    continue
+                if w <= 0 or h <= 0:
+                    continue
+                yolo_lines: list[str] = []
+                matched_cids: set[int] = set()
+                for cid_raw, box in zip(cats, bboxes):
+                    cid = int(cid_raw)
+                    if cid not in id_to_yolo or len(box) < 4:
+                        continue
+                    # COCO parquet on HF uses Pascal VOC [x1_px, y1_px, x2_px, y2_px]
+                    x1_px, y1_px, x2_px, y2_px = (float(v) for v in box[:4])
+                    x1 = max(0.0, min(1.0, min(x1_px, x2_px) / w))
+                    y1 = max(0.0, min(1.0, min(y1_px, y2_px) / h))
+                    x2 = max(0.0, min(1.0, max(x1_px, x2_px) / w))
+                    y2 = max(0.0, min(1.0, max(y1_px, y2_px) / h))
+                    bw = x2 - x1
+                    bh = y2 - y1
+                    if bw < MIN_BOX_SIDE or bh < MIN_BOX_SIDE or (bw * bh) < MIN_BOX_AREA_RATIO:
+                        continue
+                    matched_cids.add(cid)
+                    yolo_lines.append(
+                        f"{id_to_yolo[cid]} {(x1 + x2) / 2.0:.6f} {(y1 + y2) / 2.0:.6f} {bw:.6f} {bh:.6f}"
+                    )
+                if not yolo_lines:
+                    continue
+                stem = f"coco_{split_tag}_{row.get('image_id', saved)}"
+                rgb.save(img_out / f"{stem}.jpg", format="JPEG", quality=92)
+                (lbl_out / f"{stem}.txt").write_text("\n".join(yolo_lines) + "\n", encoding="utf-8")
+                saved += 1
+                for cid in matched_cids:
+                    per_class_imgs[cid] += 1
+
+    _write_yolo_dataset_yaml(out_dir, names)
+    print(
+        "[OK] coco-val extract:",
+        json.dumps({COCO_KEEP[k]: per_class_imgs[k] for k in kept_ids}, ensure_ascii=False),
+    )
+    return out_dir
+
+
+def fetch_matthijs_snacks(
+    raw_dir: Path,
+    cache_dir: Path,
+    max_per_class: int = 220,
+    force: bool = False,
+) -> Path:
+    import csv
+    from collections import defaultdict
+
+    out_dir = raw_dir / "matthijs-snacks"
+    if (out_dir / "data.yaml").is_file() and not force:
+        print(f"[SKIP] Da tao san: {out_dir}")
+        return out_dir
+    if out_dir.exists():
+        shutil.rmtree(out_dir)
+
+    names = sorted(SNACKS_KEEP)
+    name_to_idx = {n: i for i, n in enumerate(names)}
+    img_out = out_dir / "images"
+    lbl_out = out_dir / "labels"
+    img_out.mkdir(parents=True, exist_ok=True)
+    lbl_out.mkdir(parents=True, exist_ok=True)
+
+    zip_path = download_file(SNACKS_IMG_URL, cache_dir / "matthijs_snacks" / "images.zip")
+    boxes_by_id: dict[str, list[tuple[str, float, float, float, float]]] = defaultdict(list)
+    for rel_csv in SNACKS_CSVS:
+        csv_path = download_file(
+            f"{SNACKS_CSV_BASE}/{rel_csv}",
+            cache_dir / "matthijs_snacks" / Path(rel_csv).name,
+        )
+        with csv_path.open("r", encoding="utf-8", errors="replace", newline="") as fh:
+            for row in csv.DictReader(fh):
+                cname = (row.get("class_name") or "").strip().lower()
+                if cname not in name_to_idx:
+                    continue
+                img_id = (row.get("image_id") or "").strip()
+                if not img_id:
+                    continue
+                try:
+                    x1 = max(0.0, min(1.0, float(row["x_min"])))
+                    x2 = max(0.0, min(1.0, float(row["x_max"])))
+                    y1 = max(0.0, min(1.0, float(row["y_min"])))
+                    y2 = max(0.0, min(1.0, float(row["y_max"])))
+                except (KeyError, ValueError):
+                    continue
+                bw, bh = x2 - x1, y2 - y1
+                if bw < MIN_BOX_SIDE or bh < MIN_BOX_SIDE or (bw * bh) < MIN_BOX_AREA_RATIO:
+                    continue
+                boxes_by_id[img_id].append((cname, (x1 + x2) / 2.0, (y1 + y2) / 2.0, bw, bh))
+
+    per_class_imgs: Counter = Counter()
+    saved = 0
+    with zipfile.ZipFile(zip_path, "r") as zf:
+        for member in zf.namelist():
+            if not member.lower().endswith((".jpg", ".jpeg", ".png")):
+                continue
+            img_id = Path(member).stem
+            items = boxes_by_id.get(img_id)
+            if not items:
+                continue
+            present = {cname for cname, *_ in items}
+            if max_per_class > 0 and all(per_class_imgs[c] >= max_per_class for c in present):
+                continue
+            try:
+                raw_bytes = zf.read(member)
+                with Image.open(io.BytesIO(raw_bytes)) as im:
+                    im.convert("RGB").save(img_out / f"snack_{img_id}.jpg", format="JPEG", quality=92)
+            except Exception:
+                continue
+            lines = [f"{name_to_idx[c]} {xc:.6f} {yc:.6f} {bw:.6f} {bh:.6f}" for c, xc, yc, bw, bh in items]
+            (lbl_out / f"snack_{img_id}.txt").write_text("\n".join(lines) + "\n", encoding="utf-8")
+            saved += 1
+            for c in present:
+                per_class_imgs[c] += 1
+
+    _write_yolo_dataset_yaml(out_dir, names)
+    print(f"[OK] matthijs-snacks extract: {saved} anh", dict(per_class_imgs))
+    return out_dir
+
+
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description="Tai dataset mo cho AI Model B (T-M4-01)")
+    parser = argparse.ArgumentParser(description="Tai dataset mo cho AI Model B (T-M4-01, T-M4-09)")
     parser.add_argument("--raw-dir", type=Path, default=RAW_DIR)
     parser.add_argument("--cache-dir", type=Path, default=CACHE_DIR)
-    parser.add_argument("--only", choices=("all", "vn-streetfood", "foodseg103"), default="all")
-    parser.add_argument("--max-per-class", type=int, default=400)
+    parser.add_argument(
+        "--only",
+        choices=("all", "vn-streetfood", "foodseg103", "drinks-snacks", "soda-bottles", "coco-val", "matthijs-snacks"),
+        default="all",
+    )
+    parser.add_argument("--max-per-class", type=int, default=260)
     parser.add_argument("--force", action="store_true")
     args = parser.parse_args(argv)
 
     if args.only in ("all", "vn-streetfood"):
         fetch_vn_streetfood(args.raw_dir, args.cache_dir, force=args.force)
-    if args.only in ("all", "foodseg103"):
+    if args.only in ("all", "foodseg103", "drinks-snacks"):
         fetch_foodseg103(args.raw_dir, args.cache_dir, max_per_class=args.max_per_class, force=args.force)
+    if args.only in ("all", "drinks-snacks", "soda-bottles"):
+        fetch_soda_bottles(args.raw_dir, args.cache_dir, max_images=max(400, args.max_per_class), force=args.force)
+    if args.only in ("all", "drinks-snacks", "coco-val"):
+        fetch_coco_val_drinks_snacks(args.raw_dir, args.cache_dir, max_per_class=args.max_per_class, force=args.force)
+    if args.only in ("all", "drinks-snacks", "matthijs-snacks"):
+        fetch_matthijs_snacks(args.raw_dir, args.cache_dir, max_per_class=args.max_per_class, force=args.force)
     return 0
 
 

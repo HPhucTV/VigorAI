@@ -164,7 +164,15 @@ def test_unknown_class_and_degenerate_box_are_skipped():
 def test_no_detections_returns_zero_totals_and_notice():
     payload = build_response_payload([], CATALOG, 15, "v-test")
     assert payload["detected_items"] == []
-    assert payload["total_nutrition"] == {"calories": 0.0, "protein_g": 0.0, "carbs_g": 0.0, "fat_g": 0.0}
+    assert payload["total_nutrition"] == {
+        "calories": 0.0,
+        "calories_min": 0,
+        "calories_max": 0,
+        "calories_range_label": "0 kcal",
+        "protein_g": 0.0,
+        "carbs_g": 0.0,
+        "fat_g": 0.0,
+    }
     assert payload["disclaimer"] == food.EMPTY_DISCLAIMER
     assert payload["inference_time_ms"] == 15 and payload["model_version"] == "v-test"
 
@@ -181,9 +189,16 @@ def test_payload_matches_response_schema_fields():
     assert set(payload) == {"inference_time_ms", "model_version", "detected_items", "total_nutrition", "disclaimer"}
     assert set(payload["detected_items"][0]) == {
         "class_code", "name_vi", "confidence", "bbox_norm", "estimated_grams",
-        "calories", "protein_g", "carbs_g", "fat_g",
+        "calories", "calories_min", "calories_max", "calories_range_label",
+        "protein_g", "carbs_g", "fat_g",
     }
-    assert set(payload["total_nutrition"]) == {"calories", "protein_g", "carbs_g", "fat_g"}
+    assert set(payload["total_nutrition"]) == {
+        "calories", "calories_min", "calories_max", "calories_range_label",
+        "protein_g", "carbs_g", "fat_g",
+    }
+    item = payload["detected_items"][0]
+    assert 0 < item["calories_min"] <= item["calories"] <= item["calories_max"]
+    assert item["calories_range_label"].startswith("~") and item["calories_range_label"].endswith("kcal")
 
 
 # --------------------------------------------------------------------------- #
@@ -266,8 +281,11 @@ def test_seed_catalog_covers_all_core_classes():
         "food_classes", REPO_ROOT / "ai_research" / "model_b_food_yolo" / "food_classes.py"
     )
     seeded = {e["class_code"]: e for e in FOOD_CATALOG_SEED}
+    for e in food.EXTENDED_BEVERAGE_SNACK_CATALOG:
+        seeded.setdefault(e["class_code"], e)
+    assert len(classes.CLASS_CODES) == 30
     for code in classes.CLASS_CODES:
-        assert code in seeded, f"{code} thieu trong food_nutrition_catalog"
+        assert code in seeded, f"{code} thieu trong catalog"
         for key in ("name_vi", "kcal_per_100g", "protein_per_100g", "carbs_per_100g", "fat_per_100g", "default_serving_g"):
             assert key in seeded[code]
 
@@ -278,7 +296,7 @@ def test_manifest_json_is_valid_and_matches_core_classes():
     data = json.loads(manifest_path.read_text(encoding="utf-8"))
     assert data["model_version"]
     assert data["active_file"].endswith(".onnx")
-    assert len(data["classes"]) == 18
+    assert len(data["classes"]) in (18, 30)
     assert data["imgsz"] == 640
 
 
