@@ -1,4 +1,16 @@
 # AI Model Weights Directory (`[OWNER: M4]`)
 
-- Khong commit truc tiep file trong so nang (`*.pt`, `*.onnx`, `*.joblib`) vao Git (da chan trong `.gitignore`).
-- Khi deploy hoac chay local, dat trong so vao `backend/ai_models/weights/` va mo ta phien ban trong `model_b_manifest.json` / `model_c_manifest.json`.
+- **Không commit file trọng số nặng** (`*.pt`, `*.onnx`, `*.joblib`) lên Git (đã chặn trong `.gitignore`).
+- **Chạy local:** đặt file trọng số vào `backend/ai_models/weights/`:
+  - `food_yolo_v1.onnx` *(khuyên dùng — chạy trực tiếp qua `onnxruntime` + `numpy` + `pillow`, không cần PyTorch/Ultralytics, nhẹ RAM và nhanh trên CPU `< 150 ms/ảnh`)*
+  - hoặc `food_yolo_v1.pt` *(chạy qua `ultralytics` nếu đã cài)*
+- **Triển khai Production (Railway / Docker):**
+  1. Upload `food_yolo_v1.onnx` lên Railway Storage Bucket (ví dụ key `ai_models/food_yolo_v1.onnx`) / S3 / GitHub Release.
+  2. Điền `download_url` + `sha256` trong `model_b_manifest.json` hoặc đặt biến môi trường:
+     - `VIGOR_FOOD_MODEL_URL=s3://gym3d-assets/ai_models/food_yolo_v1.onnx` *(Railway Storage Bucket private, dùng `S3_*` hoặc `AWS_*`)* hoặc `https://.../food_yolo_v1.onnx`
+     - `VIGOR_FOOD_MODEL_SHA256=<sha256>` *(tùy chọn, khuyến nghị)*
+     - `VIGOR_FOOD_ALLOW_STUB=0` *(tắt dữ liệu giả khi lên Production)*
+     - `VIGOR_FOOD_CONF=0.30` *(tùy chọn)*
+     - `VIGOR_FOOD_IOU=0.45` *(tùy chọn)*
+  3. Server cần tối thiểu `onnxruntime`, `numpy`, `pillow` (đã có trong `backend/requirements.txt`; với `backend/Dockerfile.railway` của `M3`, bật `INSTALL_AI_DEPS=true` hoặc cài 3 gói nhẹ này cho nhánh ONNX).
+  4. Kiểm tra trạng thái nạp model qua `GET /api/v1/ai/food-model/info`.

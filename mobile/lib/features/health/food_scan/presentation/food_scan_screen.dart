@@ -256,7 +256,7 @@ class _FoodScanScreenState extends ConsumerState<FoodScanScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Tổng: ${res.totalCalories.round()} kcal',
+                      'Ước tính: ${res.totalCaloriesRangeText}',
                       style: const TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
@@ -278,6 +278,7 @@ class _FoodScanScreenState extends ConsumerState<FoodScanScreen> {
 
             ...List.generate(res.detectedItems.length, (idx) {
               final item = res.detectedItems[idx];
+              final sliderMax = item.isBeverage ? 1000.0 : 600.0;
               return Card(
                 margin: const EdgeInsets.only(bottom: 8),
                 child: Padding(
@@ -288,12 +289,15 @@ class _FoodScanScreenState extends ConsumerState<FoodScanScreen> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Text(
-                            '${item.nameVi} (${(item.confidence * 100).round()}%)',
-                            style: const TextStyle(fontWeight: FontWeight.bold),
+                          Expanded(
+                            child: Text(
+                              '${item.nameVi} (${(item.confidence * 100).round()}%)',
+                              style: const TextStyle(fontWeight: FontWeight.bold),
+                            ),
                           ),
+                          const SizedBox(width: 8),
                           Text(
-                            '${item.calories.round()} kcal',
+                            item.caloriesRangeText,
                             style: const TextStyle(
                               fontWeight: FontWeight.bold,
                               color: AppColors.calorieOrange,
@@ -303,16 +307,16 @@ class _FoodScanScreenState extends ConsumerState<FoodScanScreen> {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        'Khẩu phần: ${item.adjustedGrams.round()} g · '
+                        'Ước lượng: ~${item.adjustedGrams.round()} ${item.unitLabel} · '
                         'P ${item.proteinG}g · C ${item.carbsG}g · F ${item.fatG}g',
                         style: const TextStyle(fontSize: 13),
                       ),
                       Slider(
-                        value: item.adjustedGrams.clamp(20.0, 600.0),
+                        value: item.adjustedGrams.clamp(20.0, sliderMax),
                         min: 20,
-                        max: 600,
-                        divisions: 58,
-                        label: '${item.adjustedGrams.round()} g',
+                        max: sliderMax,
+                        divisions: item.isBeverage ? 49 : 58,
+                        label: '${item.adjustedGrams.round()} ${item.unitLabel}',
                         onChanged: (grams) {
                           setState(() {
                             _result = res.copyWithItemGrams(idx, grams);
@@ -360,7 +364,7 @@ class _FoodScanScreenState extends ConsumerState<FoodScanScreen> {
               label: Text(
                 _isSaving
                     ? 'Đang lưu...'
-                    : 'Lưu vào Nhật ký Calo (${res.totalCalories.round()} kcal)',
+                    : 'Lưu vào Nhật ký (${res.totalCaloriesRangeText})',
               ),
             ),
           ],

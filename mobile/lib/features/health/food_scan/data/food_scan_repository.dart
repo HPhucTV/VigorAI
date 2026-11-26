@@ -16,6 +16,8 @@ class DetectedFoodItemModel {
   final List<double> bboxNorm; // [xMin, yMin, xMax, yMax] trong [0.0..1.0]
   final double baseEstimatedGrams;
   final double baseCalories;
+  final int baseCaloriesMin;
+  final int baseCaloriesMax;
   final double baseProteinG;
   final double baseCarbsG;
   final double baseFatG;
@@ -28,6 +30,8 @@ class DetectedFoodItemModel {
     required this.bboxNorm,
     required this.baseEstimatedGrams,
     required this.baseCalories,
+    required this.baseCaloriesMin,
+    required this.baseCaloriesMax,
     required this.baseProteinG,
     required this.baseCarbsG,
     required this.baseFatG,
@@ -37,10 +41,48 @@ class DetectedFoodItemModel {
   double get _ratio =>
       baseEstimatedGrams > 0 ? (adjustedGrams / baseEstimatedGrams) : 1.0;
 
+  bool get isBeverage => const {
+        'BOTTLED_DRINK',
+        'COFFEE_MILK_TEA',
+        'FRUIT_JUICE_SMOOTHIE',
+      }.contains(classCode);
+
+  String get unitLabel => isBeverage ? 'ml' : 'g';
+
   double get calories => ((baseCalories * _ratio) * 10).round() / 10.0;
   double get proteinG => ((baseProteinG * _ratio) * 10).round() / 10.0;
   double get carbsG => ((baseCarbsG * _ratio) * 10).round() / 10.0;
   double get fatG => ((baseFatG * _ratio) * 10).round() / 10.0;
+
+  int _roundStep(double raw, {required bool up, required int step}) {
+    if (raw <= 0) return 0;
+    return up
+        ? ((raw / step).ceil() * step)
+        : ((raw / step).floor() * step);
+  }
+
+  int get caloriesMin {
+    if (calories <= 0) return 0;
+    final step = calories < 120 ? 5 : 10;
+    final scaled = baseCaloriesMin > 0
+        ? (baseCaloriesMin * _ratio)
+        : (calories * 0.8);
+    final rounded = _roundStep(scaled, up: false, step: step);
+    return (rounded == 0 && calories >= 10) ? step : rounded;
+  }
+
+  int get caloriesMax {
+    if (calories <= 0) return 0;
+    final step = calories < 120 ? 5 : 10;
+    final scaled = baseCaloriesMax > 0
+        ? (baseCaloriesMax * _ratio)
+        : (calories * 1.2);
+    final rounded = _roundStep(scaled, up: true, step: step);
+    return rounded <= caloriesMin ? (caloriesMin + step) : rounded;
+  }
+
+  String get caloriesRangeText =>
+      calories <= 0 ? '0 kcal' : '~$caloriesMin – $caloriesMax kcal';
 
   DetectedFoodItemModel scaleToGrams(double grams) {
     return DetectedFoodItemModel(
@@ -50,6 +92,8 @@ class DetectedFoodItemModel {
       bboxNorm: bboxNorm,
       baseEstimatedGrams: baseEstimatedGrams,
       baseCalories: baseCalories,
+      baseCaloriesMin: baseCaloriesMin,
+      baseCaloriesMax: baseCaloriesMax,
       baseProteinG: baseProteinG,
       baseCarbsG: baseCarbsG,
       baseFatG: baseFatG,
@@ -59,6 +103,11 @@ class DetectedFoodItemModel {
 
   factory DetectedFoodItemModel.fromJson(Map<String, dynamic> json) {
     final estGrams = (json['estimated_grams'] as num?)?.toDouble() ?? 100.0;
+    final baseCal = (json['calories'] as num?)?.toDouble() ?? 0.0;
+    final calMin =
+        (json['calories_min'] as num?)?.toInt() ?? (baseCal * 0.8).floor();
+    final calMax =
+        (json['calories_max'] as num?)?.toInt() ?? (baseCal * 1.2).ceil();
     final rawBox = (json['bbox_norm'] as List?) ?? const [0.1, 0.1, 0.9, 0.9];
     return DetectedFoodItemModel(
       classCode: (json['class_code'] as String?) ?? 'FOOD_ITEM',
@@ -66,7 +115,9 @@ class DetectedFoodItemModel {
       confidence: (json['confidence'] as num?)?.toDouble() ?? 0.85,
       bboxNorm: rawBox.map((e) => (e as num).toDouble()).toList(),
       baseEstimatedGrams: estGrams,
-      baseCalories: (json['calories'] as num?)?.toDouble() ?? 0.0,
+      baseCalories: baseCal,
+      baseCaloriesMin: calMin,
+      baseCaloriesMax: calMax,
       baseProteinG: (json['protein_g'] as num?)?.toDouble() ?? 0.0,
       baseCarbsG: (json['carbs_g'] as num?)?.toDouble() ?? 0.0,
       baseFatG: (json['fat_g'] as num?)?.toDouble() ?? 0.0,
@@ -81,6 +132,9 @@ class DetectedFoodItemModel {
         'bbox_norm': bboxNorm,
         'estimated_grams': adjustedGrams,
         'calories': calories,
+        'calories_min': caloriesMin,
+        'calories_max': caloriesMax,
+        'calories_range_label': caloriesRangeText,
         'protein_g': proteinG,
         'carbs_g': carbsG,
         'fat_g': fatG,
@@ -102,6 +156,13 @@ class FoodAnalyzeResultModel {
 
   double get totalCalories =>
       detectedItems.fold<double>(0.0, (s, e) => s + e.calories);
+  int get totalCaloriesMin =>
+      detectedItems.fold<int>(0, (s, e) => s + e.caloriesMin);
+  int get totalCaloriesMax =>
+      detectedItems.fold<int>(0, (s, e) => s + e.caloriesMax);
+  String get totalCaloriesRangeText => totalCalories <= 0
+      ? '0 kcal'
+      : '~$totalCaloriesMin – $totalCaloriesMax kcal';
   double get totalProteinG =>
       detectedItems.fold<double>(0.0, (s, e) => s + e.proteinG);
   double get totalCarbsG =>

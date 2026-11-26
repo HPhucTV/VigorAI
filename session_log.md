@@ -17,6 +17,77 @@
 
 ---
 
+## Phiên 42 — 2026-11-26 13:22 | Thành viên: M4 + M1 (UI F19) | Task: `T-M4-09` (`[~]`), `T-M4-10` (`[~]`), `T-M1-10` (`[~]`)
+- **Mục tiêu phiên:** Khắc phục lỗi chụp chai nước cầm tay bị nhận nhầm thành `BANANA`, mở rộng AI Model B từ `16` lên **`30` lớp (`yolov8s-gymfood-v1.2`)** bổ sung nhóm **Nước uống & Bánh snack / Đồ ăn nhanh**, đổi hiển thị sang **khoảng calo ước chừng (`~min – max kcal`)** theo yêu cầu kiểm thử thực tế, deploy nóng lên Railway Production, build lại `VigorAI-test-ai.apk` và kiểm toán chi tiết phần dữ liệu món ăn còn thiếu.
+- **Những file đã tạo / chỉnh sửa (`0` file `[LOCKED STUB]` và `0` file `M3` bị chạm):**
+  - `ai_research/model_b_food_yolo/food_classes.py`, `fetch_open_datasets.py`, `prepare_dataset.py`, `evaluate_model.py`, `test_camera_local.py`, `ai_research/SOURCES.md`: Mở rộng `CORE_CLASSES_V1` lên **30 lớp** (thêm 12 lớp `18..29`: `BOTTLED_DRINK`, `COFFEE_MILK_TEA`, `FRUIT_JUICE_SMOOTHIE`, `COOKIE_BISCUIT`, `CAKE_MUFFIN_PASTRY`, `DONUT_WAFFLE_PANCAKE`, `CROISSANT_SWEET_BREAD`, `CHIPS_POPCORN_SNACK`, `CHOCOLATE_CANDY`, `ICE_CREAM_DESSERT`, `FRENCH_FRIES`, `BURGER_PIZZA_FASTFOOD`), tải thêm `Francesco/soda-bottles`, `detection-datasets/coco` val (giữ ảnh người cầm chai làm nền âm cứng) và `Matthijs/snacks-detection`; dựng **`model_b_v4` (`5.218` ảnh: `4.013 train / 805 val / 400 test`, `28/30` lớp hoạt động)**.
+  - `ai_research/evaluation_reports/model_b_v4_dataset_report.json` & `ai_research/evaluation_reports/model_b_v1_2_28classes/`: Lưu báo cáo dataset `model_b_v4`, kết quả train Colab T4 (`60 epochs`, `best.onnx` `44,791,964 B`, `sha256: b918c2b07ba1d3a13d565bd6f16e345fbd664c55221d48b5cf69109b9de73dad`) và benchmark ONNX CPU (`400` ảnh `test`).
+  - `backend/app/services/ai_food_yolo.py`, `backend/app/schemas/ai_schema.py`, `backend/app/routers/ai.py`, `backend/ai_models/model_b_manifest.json`, `backend/tests/test_ai_api.py`: Bổ sung `EXTENDED_BEVERAGE_SNACK_CATALOG` (`48` món trong `/food-model/info`), hàm `compute_calorie_range()`, các trường `calories_min`, `calories_max`, `calories_range_label` (`~min – max kcal`) giữ nguyên midpoint `calories` tương thích ngược DB.
+  - `mobile/lib/features/health/food_scan/data/food_scan_repository.dart`, `mobile/lib/features/health/food_scan/presentation/food_scan_screen.dart`: Hiển thị `Ước tính: ~min – max kcal` trên tổng bữa ăn & từng thẻ món, tự co giãn khoảng theo thanh kéo và chuyển đơn vị sang `ml` (tối đa `1000 ml`) cho 3 nhóm đồ uống.
+  - `docs/taskboard.md`, `session_log.md`: Cập nhật trạng thái `[~]` cho `T-M4-09`, `T-M4-10`.
+- **Kiểm tra / Kết quả chạy thử:**
+  - `evaluate_model.py` trên `400` ảnh `test` của `model_b_v4` (`conf=0.30`): **`BOTTLED_DRINK AP@0.5 = 0.9153`**, `CPU mean = 87.41 ms` (`p95 = 115.0 ms < 150 ms`), `e2e mean = 94.83 ms`, `mAP@0.5 = 0.5978`, `Precision = 0.7343`, `Recall = 0.5905`, `F1 = 0.6546`.
+  - `pytest backend/tests/test_ai_api.py -v`: **34 / 34 PASS**.
+  - **Live Railway (`51ed2f29-8ec3-4ef1-98eb-6bff3f84750d` `[SUCCESS]`):** `GET /api/v1/ai/food-model/info` trả `model_version: "yolov8s-gymfood-v1.2"`, `catalog_size: 48`; `POST /api/v1/ai/food-analyze` trên ảnh chai Kirin Latte trả `BOTTLED_DRINK` (`50.2%`, `590.0g`, `~90 – 240 kcal`), hết lỗi nhận nhầm `BANANA`.
+  - **Mobile APK (`Docker flutter analyze + test + build apk`):** `46/46` test trong `test/health/` + `test/workout/` PASS; xuất `VigorAI-test-ai.apk` (`67 MB` / `69.9 MB`, `sha256: adccc32289e0320a7c4c27cc0f8b74a338434a8c556d34a2222ec3db30d69f26`).
+- **Việc cần làm ở phiên kế tiếp:**
+  - Bổ sung 2 lớp đang có `0` ảnh (`BROWN_RICE`, `SWEET_POTATO`), ảnh bao bì chai nước/snack Việt Nam, cải thiện các lớp AP thấp (`STEAMED_SHRIMP`, `BEEF_STEAK`, `GRILLED_CHICKEN_BREAST`, `TOFU`) và bật thêm các món Việt đã có sẵn nhãn trong `raw/vn-streetfood` (`Bún bò Huế`, `Xôi`, `Cơm chiên`, `Gỏi cuốn`, `Bún đậu`) cho bản `v1.3` (`T-M4-09`, `T-M4-10`).
+  - Hoàn thiện **Model C** (`T-M4-05`, `T-M4-07`, `T-M4-08`).
+
+---
+
+## Phiên 41 — 2026-11-25 20:35 | Thành viên: M4 (Pure AI Engineer) | Task: `T-M4-06` (`[x]`)
+- **Mục tiêu phiên:** Tích hợp trọng số **Model B v1.1 (`yolov8s-gymfood-v1.1`, 16/18 lớp)** train từ Google Colab T4 vào FastAPI backend, benchmark thực tế bằng ONNX Runtime CPU trên toàn bộ 245 ảnh test, kiểm tra bounding box trực quan trên món ăn Việt Nam và đóng `[x]` `T-M4-06`.
+- **Những file đã tạo / chỉnh sửa (`0` file `[LOCKED STUB]` bị chạm):**
+  - `backend/ai_models/weights/food_yolo_v1.onnx` (`44.77 MB`, `sha256: 5407422aa1f62a266e9398fd983e13f77558e1188890d1a723f73d9c8bc46637`) & `food_yolo_v1.pt` *(không commit Git; bản 6 lớp cũ backup tại `food_yolo_v1_6cls_backup.onnx`; đã upload lên Railway Storage Bucket `gym3d-assets` tại key `ai_models/food_yolo_v1.onnx`)*.
+  - `backend/app/services/ai_food_yolo.py` & `backend/ai_models/README.md`: Bổ sung `_download_s3_uri` hỗ trợ tải trực tiếp từ Private S3 / Railway Storage Bucket (`VIGOR_FOOD_MODEL_URL=s3://...`) qua `boto3` kèm xác minh SHA-256.
+  - `ai_research/evaluation_reports/model_b_v1_1_16classes/`: Lưu trọn bộ báo cáo Colab (`model_b_v3_train_report.json`, `model_b_manifest_generated.json`, `results.png`, `confusion_matrix.png`, `confusion_matrix_normalized.png`) và báo cáo benchmark CPU (`model_b_v1_1_onnx_eval.json`).
+  - `backend/ai_models/model_b_manifest.json`: Nâng cấp lên `yolov8s-gymfood-v1.1`, cập nhật `sha256`, toàn bộ `16` lớp trong `trained_classes` và các chỉ số benchmark Colab T4 + ONNX CPU.
+  - `backend/tests/test_ai_api.py`: Cập nhật `test_real_onnx_inference_end_to_end` đọc động `model_version` từ `model_b_manifest.json` trên `8` ảnh `model_b_v3/images/test`, và bổ sung `test_service_s3_download_verifies_sha256` (`34/34 PASS`).
+  - `docs/taskboard.md`, `session_log.md`: Đóng `[x]` `T-M4-06` (`M4: 5 / 14 Done (35.7%)`, `Tổng: 35 / 63 Done (55.6%)`).
+- **Quyết định kỹ thuật / Lưu ý quan trọng:**
+  - Giữ ngưỡng `conf_threshold = 0.30` (thay vì `0.45`) vì chênh lệch F1 chỉ `+0.0021` (`0.7069` vs `0.7048`) nhưng `0.30` giữ Recall tốt hơn (`0.6448` vs `0.6131`) trên camera điện thoại.
+  - Hỗ trợ `s3://<bucket>/<key>` bằng `boto3` (`signature_version="s3v4"`, `addressing_style="virtual"`) để Railway container tải trực tiếp trọng số từ Bucket private mà không cần mở public bucket hay dùng presigned URL hết hạn.
+  - Shape ngõ ra ONNX xác nhận `[1, 22, 8400]` khớp 100% với 18 class slots của `FoodYoloService`; hai lớp ít dữ liệu (`BROWN_RICE`, `SWEET_POTATO`) và cải thiện các lớp yếu như `TOFU` sẽ xử lý trong đợt mở rộng dataset `T-M4-09`.
+- **Kiểm tra / Kết quả chạy thử:**
+  - `evaluate_model.py` (`food_yolo_v1.onnx` trên CPU, `245` ảnh `test` của `model_b_v3`, `conf=0.30`): **`mAP@0.5 = 0.7656`**, `Precision = 0.7771`, `Recall = 0.6448`, `F1 = 0.7048`; **`CPU inference mean = 82.84 ms`** (`p50 = 77.0 ms`, `p95 = 115.0 ms` `< 150 ms`), **`e2e mean = 91.13 ms`** (`p95 = 157.96 ms` `< 3.0 s`). Các món chủ lực: `BANH_MI_THIT 0.995`, `BEEF_PHO 0.995`, `BUN_CHA 0.995`, `BOILED_EGG 0.9879`, `BROCCOLI 0.9469`, `COM_TAM_SUON 0.9277`, `SALMON_FILLET 0.918`, `FRIED_EGG 0.8791`.
+  - `python -m pytest backend/tests/test_ai_api.py -v`: **34 / 34 PASS** (`2.58s`).
+  - `test_camera_local.py` trực quan hóa 3 ảnh món Việt (`BEEF_PHO` `87.2%` / `613.4 kcal` / `77ms`, `COM_TAM_SUON` `83.3%` / `1470.0 kcal` / `86ms`, `BANH_MI_THIT` `91.4%` / `1057.5 kcal` / `82ms`): bounding box ôm sát món ăn chính xác.
+  - **Live Railway Production (`https://vigorai-api-production.up.railway.app`, project `vigorai-production-ai`, Bucket `gym3d-assets`, `INSTALL_AI_DEPS=true`, `VIGOR_FOOD_ALLOW_STUB=0`):**
+    - `GET /healthz`: `200 OK` (`{"status":"ok","service":"VigorAI API"}`).
+    - `GET /api/v1/ai/food-model/info`: `200 OK` (`available: true`, `backend: "onnxruntime"`, `model_version: "yolov8s-gymfood-v1.1"`, `catalog_size: 36`, `stub_fallback_enabled: false` — container tự tải `food_yolo_v1.onnx` từ S3 Bucket private và xác minh SHA-256 thành công).
+    - `POST /api/v1/ai/food-analyze`: `BEEF_PHO` (`200 OK`, `Phở bò tái` `87.1%`, `646.3g`, `614.0 kcal`, `748 ms`), `COM_TAM_SUON` (`200 OK`, `Cơm tấm sườn nướng` `83.1%`, `875.0g`, `1470.0 kcal`, `867 ms`).
+- **Việc cần làm ở phiên kế tiếp:**
+  - Khi `M3` merge nhánh `vu` vào `main`, đồng bộ các biến `INSTALL_AI_DEPS=true`, `S3_ADDRESSING_STYLE=virtual`, `VIGOR_FOOD_MODEL_URL=s3://${{gym3d-assets.BUCKET}}/ai_models/food_yolo_v1.onnx`, `VIGOR_FOOD_MODEL_SHA256=5407422aa1f62a266e9398fd983e13f77558e1188890d1a723f73d9c8bc46637`, `VIGOR_FOOD_ALLOW_STUB=0` sang project chính `vigorai-production` (nếu dùng chung).
+  - Triển khai **AI Model C** (`T-M4-07`, `T-M4-08`) và mở rộng dataset `T-M4-09` lên 35–50 món cho `v1.2.0` (bổ sung `BROWN_RICE`, `SWEET_POTATO`, `TOFU`).
+
+---
+
+## Phiên 40 (M4-Model B v1.0 & Dataset v3) — 2026-11-25 17:55 | Thành viên: M4 (Pure AI Engineer) | Task: `T-M4-01` (`[x]`), `T-M4-03` (`[x]`), `T-M4-06` (`[~]`)
+- **Mục tiêu phiên:** Hoàn thiện trọn vẹn luồng Camera Quét Đồ ăn AI (`F19` / Model B): nâng cấp backend suy luận ONNX Runtime thuần không phụ thuộc PyTorch, đánh giá thực nghiệm `food_yolo_v1.onnx`, mở rộng tập dữ liệu sạch đạt 16/18 món cốt lõi (`model_b_v3`) và chuẩn bị sẵn notebook Colab train nâng cấp lên 16 lớp.
+- **Những file đã tạo / chỉnh sửa (`0` file `[LOCKED STUB]` bị chạm):**
+  - `backend/app/services/ai_food_yolo.py`: Cài đặt suy luận **ONNX Runtime thuần** (`onnxruntime + numpy + pillow`) với letterbox đúng chuẩn YOLOv8, class-aware NMS, khử trùng lặp chéo lớp (`suppress_cross_class_duplicates`, `IoU >= 0.75`), xử lý xoay ảnh EXIF điện thoại, giới hạn decompression bomb (`40 MP`), đọc `model_b_manifest.json` và tự động tải trọng số kèm xác minh SHA-256 từ `VIGOR_FOOD_MODEL_URL`.
+  - `backend/app/routers/ai.py` & `backend/app/schemas/ai_schema.py`: Bổ sung `GET /api/v1/ai/food-model/info` (`FoodModelInfoResponse`), chuẩn hóa `meal_type`, ghi log inference latency trên `POST /api/v1/ai/food-analyze`.
+  - `backend/ai_models/model_b_manifest.json` & `backend/ai_models/README.md`: Chốt manifest cho `food_yolo_v1.onnx` (`sha256: dad4c2e7...`) kèm hướng dẫn triển khai Railway/Docker.
+  - `backend/tests/test_ai_api.py`: Mở rộng lên **33 unit + ONNX + API tests** (letterbox, decode YOLOv8, cross-class suppression, EXIF rotation, remote SHA-256 verification, `/food-model/info`, end-to-end `food_yolo_v1.onnx`, `/readiness-and-overload` contract).
+  - `ai_research/model_b_food_yolo/fetch_open_datasets.py` *(mới)*, `food_classes.py`, `prepare_dataset.py` (`--max-images-per-class`), `ai_research/SOURCES.md`: Tự động tải & chuyển đổi `HoagMin/Vietnamese_StreetFood_Dataset` (CC BY 4.0) và `EduardoPacheco/FoodSeg103` (Apache 2.0) sang YOLO bbox; gộp cùng `pork-rice`, `food-detection`, `chicken` thành **`model_b_v3` (`3.048` ảnh: `2.315 train / 488 val / 245 test`, `16/18` lớp cốt lõi)** và đóng gói `ai_research/datasets/model_b_v3.zip` (`378.7 MB`).
+  - `ai_research/model_b_food_yolo/evaluate_model.py` *(mới)*, `test_camera_local.py` *(mới)*, `train_yolo.py`, `train_model_b_colab.ipynb` *(mới)*, `README.md`: Công cụ benchmark ONNX CPU, test trực quan ảnh thật, notebook Colab T4 1-click và lưu vết báo cáo tại `ai_research/evaluation_reports/model_b_v1/` & `model_b_v3_dataset_report.json`.
+  - `docs/taskboard.md`, `session_log.md`: Đóng `[x]` `T-M4-01` & `T-M4-03`, cập nhật `[~]` `T-M4-06` (`M4: 4/14 Done`, `Tổng: 34/63 Done`).
+- **Quyết định kỹ thuật / Lưu ý quan trọng:**
+  - Dùng **ONNX Runtime thuần** trên CPU cho FastAPI Production để tránh kéo PyTorch/Ultralytics nặng RAM khi deploy Railway (`Dockerfile.railway` chỉ cần `onnxruntime`, `numpy`, `pillow`), đồng thời vẫn giữ fallback `.pt` khi chạy local có `ultralytics`.
+  - Phát hiện khi `evaluate_model.py` tạo 2 `InferenceSession` song song bị tranh chấp threadpool CPU (`262 ms`), đổi về 1 session dùng chung giúp đo đúng tốc độ thực tế **`74.9 ms/ảnh`** (`p50 = 74.0 ms`, `p95 = 80.0 ms`, end-to-end **`80.13 ms`**).
+  - Không commit file trọng số `food_yolo_v1.onnx` (`44.77 MB`) và dataset lên Git (đã được `.gitignore` chặn); để chạy trên Railway Production, upload `food_yolo_v1.onnx` lên S3/Bucket rồi điền `VIGOR_FOOD_MODEL_URL` + `VIGOR_FOOD_ALLOW_STUB=0`.
+- **Kiểm tra / Kết quả chạy thử:**
+  - `python -m py_compile` toàn bộ 11 file Python M4: Exit `0`.
+  - `python -m pytest backend/tests/test_ai_api.py -v`: **33 / 33 PASS** (bao gồm `test_real_onnx_inference_end_to_end` trên ảnh thật).
+  - `evaluate_model.py` trên `food_yolo_v1.onnx` (42 ảnh `test` của `model_b_v2`): `mAP@0.5 = 0.8146`, `Precision = 0.8302`, `Recall = 0.8000`, `F1 = 0.8148`, `CPU mean = 74.9 ms`, `e2e mean = 80.13 ms` — **6/6 KPI PASS**.
+  - `prepare_dataset.py` trên `model_b_v3` (16/18 lớp): `[OK] data.yaml hop le, khong co bbox rong/lech chuan, khong ro ri giua cac tap`.
+  - Live FastAPI `uvicorn` HTTP (`VIGOR_FOOD_ALLOW_STUB=0`): `GET /openapi.json` (`200 OK`), `GET /api/v1/ai/food-model/info` (`200 OK`, `backend=onnxruntime`, `catalog=36`), `POST /api/v1/ai/food-analyze` (`200 OK`, trả về `Xà lách trộn 250.0g 50.0kcal` trong `83ms`), `GET /api/v1/ai/readiness-and-overload` (`200 OK`).
+- **Việc cần làm ở phiên kế tiếp:**
+  - Upload `ai_research/datasets/model_b_v3.zip` lên Google Drive và chạy `ai_research/model_b_food_yolo/train_model_b_colab.ipynb` (Colab T4) để nâng trọng số `food_yolo_v1.onnx` từ 6 lớp lên đủ **16/18 lớp** rồi đóng `[x]` `T-M4-06`; đồng thời triển khai `T-M4-05` & `T-M4-07` cho **Model C**.
+
+---
+
 ## Phiên 39 — 2026-11-25 11:46 | Thành viên: M1 + M2 + M4 | Task: Nộp Duyệt Thành công Closed Testing Play Console (`T-M1-07` Done, `T-M2-06` Review) & Merge PR #19 (`T-M4-01`)
 - **Mục tiêu phiên:**
   1. Hoàn tất 100% các biểu mẫu kiểm duyệt và nộp thành công bản phát hành **Thử nghiệm kín (`Closed testing`)** trên Google Play Console cho ứng dụng `VigorAI: Tập Gym 3D & Calo` (`com.vigorai.app`).

@@ -9,6 +9,9 @@ class DetectedFoodItem(BaseModel):
     bbox_norm: list[float]
     estimated_grams: float
     calories: float
+    calories_min: int = 0
+    calories_max: int = 0
+    calories_range_label: str = "0 kcal"
     protein_g: float
     carbs_g: float
     fat_g: float
@@ -16,6 +19,9 @@ class DetectedFoodItem(BaseModel):
 
 class TotalNutritionSummary(BaseModel):
     calories: float
+    calories_min: int = 0
+    calories_max: int = 0
+    calories_range_label: str = "0 kcal"
     protein_g: float
     carbs_g: float
     fat_g: float
@@ -27,6 +33,20 @@ class FoodAnalyzeResponse(BaseModel):
     detected_items: list[DetectedFoodItem]
     total_nutrition: TotalNutritionSummary
     disclaimer: str
+
+
+class FoodModelInfoResponse(BaseModel):
+    available: bool
+    backend: str  # onnxruntime | ultralytics | stub
+    model_version: str
+    model_file: str | None = None
+    imgsz: int
+    conf_threshold: float
+    iou_threshold: float
+    cross_class_iou_threshold: float
+    supported_classes: list[str]
+    catalog_size: int
+    stub_fallback_enabled: bool
 
 
 class WeightRecommendation(BaseModel):

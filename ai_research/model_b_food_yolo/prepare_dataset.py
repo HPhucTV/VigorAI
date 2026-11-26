@@ -48,7 +48,7 @@ SPLIT_NAMES = ("train", "val", "test")
 MIN_BOX_SIDE = 0.005  # canh bbox chuan hoa nho hon nguong nay coi la lech chuan
 CLIP_TOLERANCE = 0.005  # cho phep tran bien toi da 0.5% roi cat ve [0, 1]
 EDGE_TOL = 2e-6  # sai so lam tron khi ghi 6 chu so thap phan (khung cham sat mep anh bi lech ~5e-7)
-MIN_CLASSES, MAX_CLASSES = 15, 20
+MIN_CLASSES, MAX_CLASSES = 15, 50
 SEP = "__"  # ngan cach <nguon>__<hash12>__<ten-goc> trong ten file dau ra
 
 
@@ -280,6 +280,39 @@ def collect_items(
     return items, stats, unmapped, mapping_log
 
 
+def balance_items_per_class(items: list[dict], max_per_class: int, seed: int) -> tuple[list[dict], int]:
+    """Gioi han toi da `max_per_class` nhom anh cho moi lop de tranh mat can bang du lieu."""
+    if max_per_class <= 0:
+        return items, 0
+    groups: dict[str, list[dict]] = defaultdict(list)
+    for it in items:
+        it["classes"] = {int(ln.split()[0]) for ln in it["lines"]}
+        groups[it["group"]].append(it)
+
+    group_classes = {g: set().union(*(m["classes"] for m in ms)) for g, ms in groups.items()}
+    rng = random.Random(seed)
+    group_keys = sorted(groups)
+    rng.shuffle(group_keys)
+
+    # Uu tien giu cac nhom chua lop hiem hon truoc
+    freq: Counter = Counter()
+    for cs in group_classes.values():
+        freq.update(cs)
+    group_keys.sort(key=lambda g: min(freq[c] for c in group_classes[g]))
+
+    kept_counts: Counter = Counter()
+    kept_groups: set[str] = set()
+    for g in group_keys:
+        cs = group_classes[g]
+        if any(kept_counts[c] < max_per_class for c in cs):
+            kept_groups.add(g)
+            kept_counts.update(cs)
+
+    kept_items = [it for it in items if it["group"] in kept_groups]
+    dropped = len(items) - len(kept_items)
+    return kept_items, dropped
+
+
 def stratified_split(items: list[dict], seed: int) -> tuple[dict[str, list[dict]], int]:
     """Chia 70/20/10 theo NHOM anh goc, phan tang theo lop hiem nhat cua nhom.
 
@@ -505,6 +538,12 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--out", type=Path, required=True, help="thu muc dau ra (nen nam trong ai_research/datasets/)")
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--min-images-per-class", type=int, default=100)
+    parser.add_argument(
+        "--max-images-per-class",
+        type=int,
+        default=0,
+        help="gioi han nhom anh toi da moi lop (0 = khong gioi han)",
+    )
     parser.add_argument("--validate-only", action="store_true")
     args = parser.parse_args(argv)
 
@@ -522,6 +561,10 @@ def main(argv: list[str] | None = None) -> int:
         if not items:
             print("[LOI] khong con anh hop le nao sau khi loc.", file=sys.stderr)
             return 1
+        if args.max_images_per_class > 0:
+            items, capped = balance_items_per_class(items, args.max_images_per_class, args.seed)
+            if capped:
+                stats["images_dropped_class_cap"] = capped
         splits, eval_dropped = stratified_split(items, args.seed)
         args.out.mkdir(parents=True, exist_ok=True)
         write_dataset(splits, args.out)

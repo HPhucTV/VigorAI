@@ -1,0 +1,404 @@
+{
+  "model_file": "food_yolo_v1.onnx",
+  "model_sha256": "5407422aa1f62a266e9398fd983e13f77558e1188890d1a723f73d9c8bc46637",
+  "backend": "onnxruntime",
+  "dataset": "C:\\Users\\ASUS\\Downloads\\VigorAI\\ai_research\\datasets\\model_b_v3\\data.yaml",
+  "split": "test",
+  "num_images": 245,
+  "metrics_at_operating_conf": {
+    "operating_conf": 0.3,
+    "active_classes": 16,
+    "precision": 0.7771,
+    "recall": 0.6448,
+    "f1_score": 0.7048,
+    "map50": 0.7656,
+    "per_class_ap50": {
+      "APPLE": 0.6711,
+      "BANANA": 0.7869,
+      "BANH_MI_THIT": 0.995,
+      "BEEF_PHO": 0.995,
+      "BEEF_STEAK": 0.484,
+      "BOILED_EGG": 0.9879,
+      "BROCCOLI": 0.9469,
+      "BUN_CHA": 0.995,
+      "COM_TAM_SUON": 0.9277,
+      "FRIED_EGG": 0.8791,
+      "GREEN_SALAD": 0.5374,
+      "GRILLED_CHICKEN_BREAST": 0.5191,
+      "SALMON_FILLET": 0.918,
+      "STEAMED_SHRIMP": 0.6292,
+      "TOFU": 0.1897,
+      "WHITE_RICE": 0.7884
+    },
+    "per_class_details": {
+      "APPLE": {
+        "gt_boxes": 22,
+        "tp": 14,
+        "fp": 7,
+        "fn": 8,
+        "precision": 0.6667,
+        "recall": 0.6364,
+        "f1": 0.6512,
+        "ap50": 0.6711
+      },
+      "BANANA": {
+        "gt_boxes": 17,
+        "tp": 12,
+        "fp": 4,
+        "fn": 5,
+        "precision": 0.75,
+        "recall": 0.7059,
+        "f1": 0.7273,
+        "ap50": 0.7869
+      },
+      "BANH_MI_THIT": {
+        "gt_boxes": 17,
+        "tp": 17,
+        "fp": 1,
+        "fn": 0,
+        "precision": 0.9444,
+        "recall": 1.0,
+        "f1": 0.9714,
+        "ap50": 0.995
+      },
+      "BEEF_PHO": {
+        "gt_boxes": 22,
+        "tp": 22,
+        "fp": 1,
+        "fn": 0,
+        "precision": 0.9565,
+        "recall": 1.0,
+        "f1": 0.9778,
+        "ap50": 0.995
+      },
+      "BEEF_STEAK": {
+        "gt_boxes": 46,
+        "tp": 18,
+        "fp": 12,
+        "fn": 28,
+        "precision": 0.6,
+        "recall": 0.3913,
+        "f1": 0.4737,
+        "ap50": 0.484
+      },
+      "BOILED_EGG": {
+        "gt_boxes": 15,
+        "tp": 14,
+        "fp": 0,
+        "fn": 1,
+        "precision": 1.0,
+        "recall": 0.9333,
+        "f1": 0.9655,
+        "ap50": 0.9879
+      },
+      "BROCCOLI": {
+        "gt_boxes": 42,
+        "tp": 37,
+        "fp": 2,
+        "fn": 5,
+        "precision": 0.9487,
+        "recall": 0.881,
+        "f1": 0.9136,
+        "ap50": 0.9469
+      },
+      "BUN_CHA": {
+        "gt_boxes": 6,
+        "tp": 6,
+        "fp": 0,
+        "fn": 0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "ap50": 0.995
+      },
+      "COM_TAM_SUON": {
+        "gt_boxes": 21,
+        "tp": 20,
+        "fp": 5,
+        "fn": 1,
+        "precision": 0.8,
+        "recall": 0.9524,
+        "f1": 0.8696,
+        "ap50": 0.9277
+      },
+      "FRIED_EGG": {
+        "gt_boxes": 7,
+        "tp": 6,
+        "fp": 1,
+        "fn": 1,
+        "precision": 0.8571,
+        "recall": 0.8571,
+        "f1": 0.8571,
+        "ap50": 0.8791
+      },
+      "GREEN_SALAD": {
+        "gt_boxes": 67,
+        "tp": 30,
+        "fp": 12,
+        "fn": 37,
+        "precision": 0.7143,
+        "recall": 0.4478,
+        "f1": 0.5505,
+        "ap50": 0.5374
+      },
+      "GRILLED_CHICKEN_BREAST": {
+        "gt_boxes": 39,
+        "tp": 20,
+        "fp": 16,
+        "fn": 19,
+        "precision": 0.5556,
+        "recall": 0.5128,
+        "f1": 0.5333,
+        "ap50": 0.5191
+      },
+      "SALMON_FILLET": {
+        "gt_boxes": 7,
+        "tp": 6,
+        "fp": 0,
+        "fn": 1,
+        "precision": 1.0,
+        "recall": 0.8571,
+        "f1": 0.9231,
+        "ap50": 0.918
+      },
+      "STEAMED_SHRIMP": {
+        "gt_boxes": 17,
+        "tp": 8,
+        "fp": 5,
+        "fn": 9,
+        "precision": 0.6154,
+        "recall": 0.4706,
+        "f1": 0.5333,
+        "ap50": 0.6292
+      },
+      "TOFU": {
+        "gt_boxes": 14,
+        "tp": 2,
+        "fp": 6,
+        "fn": 12,
+        "precision": 0.25,
+        "recall": 0.1429,
+        "f1": 0.1818,
+        "ap50": 0.1897
+      },
+      "WHITE_RICE": {
+        "gt_boxes": 52,
+        "tp": 33,
+        "fp": 4,
+        "fn": 19,
+        "precision": 0.8919,
+        "recall": 0.6346,
+        "f1": 0.7416,
+        "ap50": 0.7884
+      }
+    }
+  },
+  "recommended_conf_by_f1": {
+    "conf": 0.45,
+    "precision": 0.8344,
+    "recall": 0.6131,
+    "f1_score": 0.7069
+  },
+  "conf_threshold_sweep": [
+    {
+      "conf": 0.2,
+      "precision": 0.7507,
+      "recall": 0.6521,
+      "f1_score": 0.6979
+    },
+    {
+      "conf": 0.25,
+      "precision": 0.7635,
+      "recall": 0.6521,
+      "f1_score": 0.7034
+    },
+    {
+      "conf": 0.3,
+      "precision": 0.7771,
+      "recall": 0.6448,
+      "f1_score": 0.7048
+    },
+    {
+      "conf": 0.35,
+      "precision": 0.7951,
+      "recall": 0.6326,
+      "f1_score": 0.7046
+    },
+    {
+      "conf": 0.4,
+      "precision": 0.8199,
+      "recall": 0.6204,
+      "f1_score": 0.7064
+    },
+    {
+      "conf": 0.45,
+      "precision": 0.8344,
+      "recall": 0.6131,
+      "f1_score": 0.7069
+    },
+    {
+      "conf": 0.5,
+      "precision": 0.8441,
+      "recall": 0.6058,
+      "f1_score": 0.7054
+    }
+  ],
+  "cpu_latency": {
+    "samples": 245,
+    "inference_mean_ms": 82.84,
+    "inference_median_ms": 77.0,
+    "inference_p95_ms": 115.0,
+    "e2e_mean_ms": 91.13,
+    "e2e_p95_ms": 157.96
+  },
+  "kpi_target": {
+    "map50": 0.8,
+    "precision": 0.82,
+    "recall": 0.78,
+    "f1": 0.8,
+    "inference_ms": 150.0
+  },
+  "kpi_pass": {
+    "map50>=0.80": false,
+    "precision>=0.82": false,
+    "recall>=0.78": false,
+    "f1>=0.80": false,
+    "cpu_inference_mean<150ms": true,
+    "e2e<3000ms": true
+  },
+  "sample_api_outputs": [
+    {
+      "image": "chicken__7d12a4579129__37bd8a5127.jpg",
+      "inference_time_ms": 91,
+      "model_version": "food_yolo_v1",
+      "detected_items": [
+        {
+          "class_code": "GRILLED_CHICKEN_BREAST",
+          "name_vi": "Ức gà áp chảo",
+          "confidence": 0.88,
+          "bbox_norm": [
+            0.0915,
+            0.0562,
+            0.8521,
+            0.9111
+          ],
+          "estimated_grams": 450.0,
+          "calories": 742.5,
+          "protein_g": 139.5,
+          "carbs_g": 0.0,
+          "fat_g": 16.2
+        }
+      ],
+      "total_nutrition": {
+        "calories": 742.5,
+        "protein_g": 139.5,
+        "carbs_g": 0.0,
+        "fat_g": 16.2
+      },
+      "disclaimer": "Giá trị dinh dưỡng được AI ước tính dựa trên hình ảnh, vui lòng kiểm tra lại khẩu phần gram trước khi lưu."
+    },
+    {
+      "image": "food-detection__09ee0f011317__94fa5435ad.jpg",
+      "inference_time_ms": 75,
+      "model_version": "food_yolo_v1",
+      "detected_items": [
+        {
+          "class_code": "FRIED_EGG",
+          "name_vi": "Trứng ốp la",
+          "confidence": 0.387,
+          "bbox_norm": [
+            0.3803,
+            0.4084,
+            0.9968,
+            0.9948
+          ],
+          "estimated_grams": 144.6,
+          "calories": 283.4,
+          "protein_g": 19.7,
+          "carbs_g": 1.2,
+          "fat_g": 21.7
+        }
+      ],
+      "total_nutrition": {
+        "calories": 283.4,
+        "protein_g": 19.7,
+        "carbs_g": 1.2,
+        "fat_g": 21.7
+      },
+      "disclaimer": "Giá trị dinh dưỡng được AI ước tính dựa trên hình ảnh, vui lòng kiểm tra lại khẩu phần gram trước khi lưu."
+    },
+    {
+      "image": "food-detection__0f44cc108e4f__3db850a0de.jpg",
+      "inference_time_ms": 72,
+      "model_version": "food_yolo_v1",
+      "detected_items": [
+        {
+          "class_code": "FRIED_EGG",
+          "name_vi": "Trứng ốp la",
+          "confidence": 0.796,
+          "bbox_norm": [
+            0.4612,
+            0.4101,
+            0.9187,
+            0.9231
+          ],
+          "estimated_grams": 93.9,
+          "calories": 184.0,
+          "protein_g": 12.8,
+          "carbs_g": 0.8,
+          "fat_g": 14.1
+        }
+      ],
+      "total_nutrition": {
+        "calories": 184.0,
+        "protein_g": 12.8,
+        "carbs_g": 0.8,
+        "fat_g": 14.1
+      },
+      "disclaimer": "Giá trị dinh dưỡng được AI ước tính dựa trên hình ảnh, vui lòng kiểm tra lại khẩu phần gram trước khi lưu."
+    },
+    {
+      "image": "food-detection__17e2b2181801__f052619d0b.jpg",
+      "inference_time_ms": 75,
+      "model_version": "food_yolo_v1",
+      "detected_items": [
+        {
+          "class_code": "WHITE_RICE",
+          "name_vi": "Cơm trắng",
+          "confidence": 0.923,
+          "bbox_norm": [
+            0.0902,
+            0.2141,
+            0.9423,
+            0.6806
+          ],
+          "estimated_grams": 238.5,
+          "calories": 310.0,
+          "protein_g": 6.4,
+          "carbs_g": 67.3,
+          "fat_g": 0.7
+        }
+      ],
+      "total_nutrition": {
+        "calories": 310.0,
+        "protein_g": 6.4,
+        "carbs_g": 67.3,
+        "fat_g": 0.7
+      },
+      "disclaimer": "Giá trị dinh dưỡng được AI ước tính dựa trên hình ảnh, vui lòng kiểm tra lại khẩu phần gram trước khi lưu."
+    },
+    {
+      "image": "food-detection__2a8678ecaccd__ebcd188500.jpg",
+      "inference_time_ms": 72,
+      "model_version": "food_yolo_v1",
+      "detected_items": [],
+      "total_nutrition": {
+        "calories": 0,
+        "protein_g": 0,
+        "carbs_g": 0,
+        "fat_g": 0
+      },
+      "disclaimer": "Chưa nhận diện được món ăn nào trong ảnh. Hãy chụp gần hơn, đủ sáng, hoặc thêm món thủ công."
+    }
+  ]
+}

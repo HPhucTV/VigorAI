@@ -1,0 +1,1167 @@
+{
+  "classes": [
+    "WHITE_RICE",
+    "BROWN_RICE",
+    "GRILLED_CHICKEN_BREAST",
+    "BOILED_EGG",
+    "FRIED_EGG",
+    "BEEF_STEAK",
+    "SALMON_FILLET",
+    "STEAMED_SHRIMP",
+    "TOFU",
+    "SWEET_POTATO",
+    "BROCCOLI",
+    "GREEN_SALAD",
+    "BANANA",
+    "APPLE",
+    "BEEF_PHO",
+    "COM_TAM_SUON",
+    "BANH_MI_THIT",
+    "BUN_CHA",
+    "BOTTLED_DRINK",
+    "COFFEE_MILK_TEA",
+    "FRUIT_JUICE_SMOOTHIE",
+    "COOKIE_BISCUIT",
+    "CAKE_MUFFIN_PASTRY",
+    "DONUT_WAFFLE_PANCAKE",
+    "CROISSANT_SWEET_BREAD",
+    "CHIPS_POPCORN_SNACK",
+    "CHOCOLATE_CANDY",
+    "ICE_CREAM_DESSERT",
+    "FRENCH_FRIES",
+    "BURGER_PIZZA_FASTFOOD"
+  ],
+  "images_per_split": {
+    "train": 4013,
+    "val": 805,
+    "test": 400
+  },
+  "stats": {
+    "images_scanned": 16139,
+    "boxes_dropped_unmapped": 6992,
+    "images_dropped_no_valid_box": 5391,
+    "boxes_invalid": 1,
+    "images_duplicate_dropped": 13,
+    "images_dropped_class_cap": 5078
+  },
+  "augment_copies_dropped_from_val_test": 439,
+  "per_class": {
+    "GRILLED_CHICKEN_BREAST": {
+      "train": {
+        "images": 199,
+        "boxes": 231
+      },
+      "val": {
+        "images": 62,
+        "boxes": 72
+      },
+      "test": {
+        "images": 29,
+        "boxes": 34
+      }
+    },
+    "BROCCOLI": {
+      "train": {
+        "images": 219,
+        "boxes": 342
+      },
+      "val": {
+        "images": 66,
+        "boxes": 109
+      },
+      "test": {
+        "images": 32,
+        "boxes": 42
+      }
+    },
+    "BURGER_PIZZA_FASTFOOD": {
+      "train": {
+        "images": 273,
+        "boxes": 380
+      },
+      "val": {
+        "images": 44,
+        "boxes": 69
+      },
+      "test": {
+        "images": 29,
+        "boxes": 41
+      }
+    },
+    "DONUT_WAFFLE_PANCAKE": {
+      "train": {
+        "images": 257,
+        "boxes": 383
+      },
+      "val": {
+        "images": 40,
+        "boxes": 61
+      },
+      "test": {
+        "images": 17,
+        "boxes": 31
+      }
+    },
+    "COFFEE_MILK_TEA": {
+      "train": {
+        "images": 227,
+        "boxes": 291
+      },
+      "val": {
+        "images": 45,
+        "boxes": 58
+      },
+      "test": {
+        "images": 28,
+        "boxes": 35
+      }
+    },
+    "APPLE": {
+      "train": {
+        "images": 204,
+        "boxes": 304
+      },
+      "val": {
+        "images": 59,
+        "boxes": 108
+      },
+      "test": {
+        "images": 28,
+        "boxes": 36
+      }
+    },
+    "BANANA": {
+      "train": {
+        "images": 203,
+        "boxes": 369
+      },
+      "val": {
+        "images": 51,
+        "boxes": 114
+      },
+      "test": {
+        "images": 31,
+        "boxes": 49
+      }
+    },
+    "BOTTLED_DRINK": {
+      "train": {
+        "images": 176,
+        "boxes": 2776
+      },
+      "val": {
+        "images": 50,
+        "boxes": 883
+      },
+      "test": {
+        "images": 25,
+        "boxes": 280
+      }
+    },
+    "CAKE_MUFFIN_PASTRY": {
+      "train": {
+        "images": 255,
+        "boxes": 291
+      },
+      "val": {
+        "images": 41,
+        "boxes": 46
+      },
+      "test": {
+        "images": 27,
+        "boxes": 36
+      }
+    },
+    "WHITE_RICE": {
+      "train": {
+        "images": 290,
+        "boxes": 333
+      },
+      "val": {
+        "images": 50,
+        "boxes": 57
+      },
+      "test": {
+        "images": 32,
+        "boxes": 37
+      }
+    },
+    "GREEN_SALAD": {
+      "train": {
+        "images": 265,
+        "boxes": 348
+      },
+      "val": {
+        "images": 67,
+        "boxes": 99
+      },
+      "test": {
+        "images": 32,
+        "boxes": 45
+      }
+    },
+    "FRIED_EGG": {
+      "train": {
+        "images": 103,
+        "boxes": 117
+      },
+      "val": {
+        "images": 8,
+        "boxes": 8
+      },
+      "test": {
+        "images": 6,
+        "boxes": 6
+      }
+    },
+    "SALMON_FILLET": {
+      "train": {
+        "images": 90,
+        "boxes": 92
+      },
+      "val": {
+        "images": 11,
+        "boxes": 12
+      },
+      "test": {
+        "images": 6,
+        "boxes": 9
+      }
+    },
+    "CHIPS_POPCORN_SNACK": {
+      "train": {
+        "images": 226,
+        "boxes": 411
+      },
+      "val": {
+        "images": 54,
+        "boxes": 115
+      },
+      "test": {
+        "images": 27,
+        "boxes": 63
+      }
+    },
+    "FRENCH_FRIES": {
+      "train": {
+        "images": 257,
+        "boxes": 268
+      },
+      "val": {
+        "images": 62,
+        "boxes": 64
+      },
+      "test": {
+        "images": 25,
+        "boxes": 25
+      }
+    },
+    "COOKIE_BISCUIT": {
+      "train": {
+        "images": 255,
+        "boxes": 322
+      },
+      "val": {
+        "images": 53,
+        "boxes": 70
+      },
+      "test": {
+        "images": 33,
+        "boxes": 45
+      }
+    },
+    "CROISSANT_SWEET_BREAD": {
+      "train": {
+        "images": 330,
+        "boxes": 459
+      },
+      "val": {
+        "images": 63,
+        "boxes": 94
+      },
+      "test": {
+        "images": 29,
+        "boxes": 47
+      }
+    },
+    "BEEF_STEAK": {
+      "train": {
+        "images": 238,
+        "boxes": 256
+      },
+      "val": {
+        "images": 51,
+        "boxes": 59
+      },
+      "test": {
+        "images": 22,
+        "boxes": 23
+      }
+    },
+    "STEAMED_SHRIMP": {
+      "train": {
+        "images": 100,
+        "boxes": 159
+      },
+      "val": {
+        "images": 30,
+        "boxes": 48
+      },
+      "test": {
+        "images": 14,
+        "boxes": 21
+      }
+    },
+    "ICE_CREAM_DESSERT": {
+      "train": {
+        "images": 178,
+        "boxes": 233
+      },
+      "val": {
+        "images": 52,
+        "boxes": 59
+      },
+      "test": {
+        "images": 24,
+        "boxes": 26
+      }
+    },
+    "FRUIT_JUICE_SMOOTHIE": {
+      "train": {
+        "images": 188,
+        "boxes": 222
+      },
+      "val": {
+        "images": 53,
+        "boxes": 77
+      },
+      "test": {
+        "images": 25,
+        "boxes": 34
+      }
+    },
+    "TOFU": {
+      "train": {
+        "images": 47,
+        "boxes": 70
+      },
+      "val": {
+        "images": 14,
+        "boxes": 25
+      },
+      "test": {
+        "images": 7,
+        "boxes": 9
+      }
+    },
+    "CHOCOLATE_CANDY": {
+      "train": {
+        "images": 186,
+        "boxes": 303
+      },
+      "val": {
+        "images": 57,
+        "boxes": 101
+      },
+      "test": {
+        "images": 25,
+        "boxes": 37
+      }
+    },
+    "BOILED_EGG": {
+      "train": {
+        "images": 68,
+        "boxes": 111
+      },
+      "val": {
+        "images": 19,
+        "boxes": 33
+      },
+      "test": {
+        "images": 10,
+        "boxes": 17
+      }
+    },
+    "BUN_CHA": {
+      "train": {
+        "images": 28,
+        "boxes": 33
+      },
+      "val": {
+        "images": 8,
+        "boxes": 11
+      },
+      "test": {
+        "images": 4,
+        "boxes": 6
+      }
+    },
+    "BANH_MI_THIT": {
+      "train": {
+        "images": 175,
+        "boxes": 176
+      },
+      "val": {
+        "images": 20,
+        "boxes": 20
+      },
+      "test": {
+        "images": 12,
+        "boxes": 12
+      }
+    },
+    "BEEF_PHO": {
+      "train": {
+        "images": 231,
+        "boxes": 245
+      },
+      "val": {
+        "images": 35,
+        "boxes": 38
+      },
+      "test": {
+        "images": 16,
+        "boxes": 16
+      }
+    },
+    "COM_TAM_SUON": {
+      "train": {
+        "images": 182,
+        "boxes": 190
+      },
+      "val": {
+        "images": 21,
+        "boxes": 24
+      },
+      "test": {
+        "images": 9,
+        "boxes": 10
+      }
+    }
+  },
+  "source_class_mapping": [
+    {
+      "source": "chicken",
+      "label": "cookedchicken",
+      "class_code": "GRILLED_CHICKEN_BREAST",
+      "boxes": 49
+    },
+    {
+      "source": "chicken",
+      "label": "uncookedchicken",
+      "class_code": null,
+      "boxes": 108
+    },
+    {
+      "source": "coco-val",
+      "label": "apple",
+      "class_code": "APPLE",
+      "boxes": 151
+    },
+    {
+      "source": "coco-val",
+      "label": "banana",
+      "class_code": "BANANA",
+      "boxes": 296
+    },
+    {
+      "source": "coco-val",
+      "label": "bottle",
+      "class_code": "BOTTLED_DRINK",
+      "boxes": 424
+    },
+    {
+      "source": "coco-val",
+      "label": "broccoli",
+      "class_code": "BROCCOLI",
+      "boxes": 287
+    },
+    {
+      "source": "coco-val",
+      "label": "cake",
+      "class_code": "CAKE_MUFFIN_PASTRY",
+      "boxes": 237
+    },
+    {
+      "source": "coco-val",
+      "label": "cup",
+      "class_code": "COFFEE_MILK_TEA",
+      "boxes": 433
+    },
+    {
+      "source": "coco-val",
+      "label": "donut",
+      "class_code": "DONUT_WAFFLE_PANCAKE",
+      "boxes": 216
+    },
+    {
+      "source": "coco-val",
+      "label": "hot dog",
+      "class_code": "BURGER_PIZZA_FASTFOOD",
+      "boxes": 98
+    },
+    {
+      "source": "coco-val",
+      "label": "pizza",
+      "class_code": "BURGER_PIZZA_FASTFOOD",
+      "boxes": 248
+    },
+    {
+      "source": "food-detection",
+      "label": "ayam",
+      "class_code": null,
+      "boxes": 121
+    },
+    {
+      "source": "food-detection",
+      "label": "blueberry-muffin",
+      "class_code": "CAKE_MUFFIN_PASTRY",
+      "boxes": 140
+    },
+    {
+      "source": "food-detection",
+      "label": "bubur",
+      "class_code": null,
+      "boxes": 145
+    },
+    {
+      "source": "food-detection",
+      "label": "burger",
+      "class_code": "BURGER_PIZZA_FASTFOOD",
+      "boxes": 151
+    },
+    {
+      "source": "food-detection",
+      "label": "chocolate-chip-cookie",
+      "class_code": "COOKIE_BISCUIT",
+      "boxes": 135
+    },
+    {
+      "source": "food-detection",
+      "label": "croissant",
+      "class_code": "CROISSANT_SWEET_BREAD",
+      "boxes": 127
+    },
+    {
+      "source": "food-detection",
+      "label": "doughnut",
+      "class_code": "DONUT_WAFFLE_PANCAKE",
+      "boxes": 153
+    },
+    {
+      "source": "food-detection",
+      "label": "es-pisang-ijo",
+      "class_code": null,
+      "boxes": 104
+    },
+    {
+      "source": "food-detection",
+      "label": "french-fries",
+      "class_code": "FRENCH_FRIES",
+      "boxes": 177
+    },
+    {
+      "source": "food-detection",
+      "label": "ikan-goreng",
+      "class_code": null,
+      "boxes": 140
+    },
+    {
+      "source": "food-detection",
+      "label": "kacang-mete",
+      "class_code": "CHIPS_POPCORN_SNACK",
+      "boxes": 125
+    },
+    {
+      "source": "food-detection",
+      "label": "kangkung",
+      "class_code": null,
+      "boxes": 156
+    },
+    {
+      "source": "food-detection",
+      "label": "klepon",
+      "class_code": null,
+      "boxes": 177
+    },
+    {
+      "source": "food-detection",
+      "label": "kopi-hitam",
+      "class_code": "COFFEE_MILK_TEA",
+      "boxes": 122
+    },
+    {
+      "source": "food-detection",
+      "label": "macaroni-cheese",
+      "class_code": null,
+      "boxes": 172
+    },
+    {
+      "source": "food-detection",
+      "label": "martabak-manis",
+      "class_code": null,
+      "boxes": 103
+    },
+    {
+      "source": "food-detection",
+      "label": "mie-ayam",
+      "class_code": null,
+      "boxes": 170
+    },
+    {
+      "source": "food-detection",
+      "label": "nasi-goreng",
+      "class_code": null,
+      "boxes": 160
+    },
+    {
+      "source": "food-detection",
+      "label": "nasi-putih",
+      "class_code": "WHITE_RICE",
+      "boxes": 199
+    },
+    {
+      "source": "food-detection",
+      "label": "onde-onde",
+      "class_code": null,
+      "boxes": 101
+    },
+    {
+      "source": "food-detection",
+      "label": "pancake",
+      "class_code": "DONUT_WAFFLE_PANCAKE",
+      "boxes": 190
+    },
+    {
+      "source": "food-detection",
+      "label": "pempek",
+      "class_code": null,
+      "boxes": 141
+    },
+    {
+      "source": "food-detection",
+      "label": "pizza",
+      "class_code": "BURGER_PIZZA_FASTFOOD",
+      "boxes": 107
+    },
+    {
+      "source": "food-detection",
+      "label": "red-velvet",
+      "class_code": "CAKE_MUFFIN_PASTRY",
+      "boxes": 142
+    },
+    {
+      "source": "food-detection",
+      "label": "rendang",
+      "class_code": null,
+      "boxes": 141
+    },
+    {
+      "source": "food-detection",
+      "label": "roti-slice",
+      "class_code": "CROISSANT_SWEET_BREAD",
+      "boxes": 157
+    },
+    {
+      "source": "food-detection",
+      "label": "salad",
+      "class_code": "GREEN_SALAD",
+      "boxes": 132
+    },
+    {
+      "source": "food-detection",
+      "label": "salmon",
+      "class_code": "SALMON_FILLET",
+      "boxes": 137
+    },
+    {
+      "source": "food-detection",
+      "label": "sate",
+      "class_code": null,
+      "boxes": 118
+    },
+    {
+      "source": "food-detection",
+      "label": "sayur-asem",
+      "class_code": null,
+      "boxes": 142
+    },
+    {
+      "source": "food-detection",
+      "label": "seafood",
+      "class_code": null,
+      "boxes": 221
+    },
+    {
+      "source": "food-detection",
+      "label": "semangka",
+      "class_code": null,
+      "boxes": 99
+    },
+    {
+      "source": "food-detection",
+      "label": "soto-ayam",
+      "class_code": null,
+      "boxes": 147
+    },
+    {
+      "source": "food-detection",
+      "label": "spaghetti-bolognese",
+      "class_code": null,
+      "boxes": 142
+    },
+    {
+      "source": "food-detection",
+      "label": "steak",
+      "class_code": "BEEF_STEAK",
+      "boxes": 146
+    },
+    {
+      "source": "food-detection",
+      "label": "sushi-makizushi",
+      "class_code": null,
+      "boxes": 100
+    },
+    {
+      "source": "food-detection",
+      "label": "sushi-nigiri",
+      "class_code": null,
+      "boxes": 136
+    },
+    {
+      "source": "food-detection",
+      "label": "telur-balado",
+      "class_code": null,
+      "boxes": 178
+    },
+    {
+      "source": "food-detection",
+      "label": "telur-dadar",
+      "class_code": null,
+      "boxes": 142
+    },
+    {
+      "source": "food-detection",
+      "label": "telur-mata-sapi",
+      "class_code": "FRIED_EGG",
+      "boxes": 156
+    },
+    {
+      "source": "foodseg103",
+      "label": "almond",
+      "class_code": "CHIPS_POPCORN_SNACK",
+      "boxes": 219
+    },
+    {
+      "source": "foodseg103",
+      "label": "apple",
+      "class_code": "APPLE",
+      "boxes": 206
+    },
+    {
+      "source": "foodseg103",
+      "label": "banana",
+      "class_code": "BANANA",
+      "boxes": 198
+    },
+    {
+      "source": "foodseg103",
+      "label": "biscuit",
+      "class_code": "COOKIE_BISCUIT",
+      "boxes": 315
+    },
+    {
+      "source": "foodseg103",
+      "label": "bread",
+      "class_code": "CROISSANT_SWEET_BREAD",
+      "boxes": 836
+    },
+    {
+      "source": "foodseg103",
+      "label": "broccoli",
+      "class_code": "BROCCOLI",
+      "boxes": 366
+    },
+    {
+      "source": "foodseg103",
+      "label": "cake",
+      "class_code": "CAKE_MUFFIN_PASTRY",
+      "boxes": 381
+    },
+    {
+      "source": "foodseg103",
+      "label": "candy",
+      "class_code": "CHOCOLATE_CANDY",
+      "boxes": 64
+    },
+    {
+      "source": "foodseg103",
+      "label": "cashew",
+      "class_code": "CHIPS_POPCORN_SNACK",
+      "boxes": 67
+    },
+    {
+      "source": "foodseg103",
+      "label": "chicken_duck",
+      "class_code": "GRILLED_CHICKEN_BREAST",
+      "boxes": 418
+    },
+    {
+      "source": "foodseg103",
+      "label": "chocolate",
+      "class_code": "CHOCOLATE_CANDY",
+      "boxes": 146
+    },
+    {
+      "source": "foodseg103",
+      "label": "coffee",
+      "class_code": "COFFEE_MILK_TEA",
+      "boxes": 190
+    },
+    {
+      "source": "foodseg103",
+      "label": "egg_tart",
+      "class_code": "CAKE_MUFFIN_PASTRY",
+      "boxes": 5
+    },
+    {
+      "source": "foodseg103",
+      "label": "french_fries",
+      "class_code": "FRENCH_FRIES",
+      "boxes": 233
+    },
+    {
+      "source": "foodseg103",
+      "label": "hamburg",
+      "class_code": "BURGER_PIZZA_FASTFOOD",
+      "boxes": 6
+    },
+    {
+      "source": "foodseg103",
+      "label": "ice_cream",
+      "class_code": "ICE_CREAM_DESSERT",
+      "boxes": 502
+    },
+    {
+      "source": "foodseg103",
+      "label": "juice",
+      "class_code": "FRUIT_JUICE_SMOOTHIE",
+      "boxes": 196
+    },
+    {
+      "source": "foodseg103",
+      "label": "lettuce",
+      "class_code": "GREEN_SALAD",
+      "boxes": 407
+    },
+    {
+      "source": "foodseg103",
+      "label": "milk",
+      "class_code": "COFFEE_MILK_TEA",
+      "boxes": 77
+    },
+    {
+      "source": "foodseg103",
+      "label": "milkshake",
+      "class_code": "COFFEE_MILK_TEA",
+      "boxes": 115
+    },
+    {
+      "source": "foodseg103",
+      "label": "peanut",
+      "class_code": "CHIPS_POPCORN_SNACK",
+      "boxes": 17
+    },
+    {
+      "source": "foodseg103",
+      "label": "pie",
+      "class_code": "CAKE_MUFFIN_PASTRY",
+      "boxes": 309
+    },
+    {
+      "source": "foodseg103",
+      "label": "pizza",
+      "class_code": "BURGER_PIZZA_FASTFOOD",
+      "boxes": 73
+    },
+    {
+      "source": "foodseg103",
+      "label": "popcorn",
+      "class_code": "CHIPS_POPCORN_SNACK",
+      "boxes": 25
+    },
+    {
+      "source": "foodseg103",
+      "label": "pudding",
+      "class_code": "ICE_CREAM_DESSERT",
+      "boxes": 6
+    },
+    {
+      "source": "foodseg103",
+      "label": "rice",
+      "class_code": "WHITE_RICE",
+      "boxes": 325
+    },
+    {
+      "source": "foodseg103",
+      "label": "salad",
+      "class_code": "GREEN_SALAD",
+      "boxes": 22
+    },
+    {
+      "source": "foodseg103",
+      "label": "shrimp",
+      "class_code": "STEAMED_SHRIMP",
+      "boxes": 228
+    },
+    {
+      "source": "foodseg103",
+      "label": "steak",
+      "class_code": "BEEF_STEAK",
+      "boxes": 373
+    },
+    {
+      "source": "foodseg103",
+      "label": "tea",
+      "class_code": "COFFEE_MILK_TEA",
+      "boxes": 31
+    },
+    {
+      "source": "foodseg103",
+      "label": "tofu",
+      "class_code": "TOFU",
+      "boxes": 104
+    },
+    {
+      "source": "matthijs-snacks",
+      "label": "apple",
+      "class_code": "APPLE",
+      "boxes": 312
+    },
+    {
+      "source": "matthijs-snacks",
+      "label": "banana",
+      "class_code": "BANANA",
+      "boxes": 377
+    },
+    {
+      "source": "matthijs-snacks",
+      "label": "cake",
+      "class_code": "CAKE_MUFFIN_PASTRY",
+      "boxes": 247
+    },
+    {
+      "source": "matthijs-snacks",
+      "label": "candy",
+      "class_code": "CHOCOLATE_CANDY",
+      "boxes": 294
+    },
+    {
+      "source": "matthijs-snacks",
+      "label": "cookie",
+      "class_code": "COOKIE_BISCUIT",
+      "boxes": 333
+    },
+    {
+      "source": "matthijs-snacks",
+      "label": "doughnut",
+      "class_code": "DONUT_WAFFLE_PANCAKE",
+      "boxes": 413
+    },
+    {
+      "source": "matthijs-snacks",
+      "label": "hot dog",
+      "class_code": "BURGER_PIZZA_FASTFOOD",
+      "boxes": 370
+    },
+    {
+      "source": "matthijs-snacks",
+      "label": "ice cream",
+      "class_code": "ICE_CREAM_DESSERT",
+      "boxes": 300
+    },
+    {
+      "source": "matthijs-snacks",
+      "label": "juice",
+      "class_code": "FRUIT_JUICE_SMOOTHIE",
+      "boxes": 299
+    },
+    {
+      "source": "matthijs-snacks",
+      "label": "muffin",
+      "class_code": "CAKE_MUFFIN_PASTRY",
+      "boxes": 335
+    },
+    {
+      "source": "matthijs-snacks",
+      "label": "popcorn",
+      "class_code": "CHIPS_POPCORN_SNACK",
+      "boxes": 392
+    },
+    {
+      "source": "matthijs-snacks",
+      "label": "pretzel",
+      "class_code": "CROISSANT_SWEET_BREAD",
+      "boxes": 376
+    },
+    {
+      "source": "matthijs-snacks",
+      "label": "waffle",
+      "class_code": "DONUT_WAFFLE_PANCAKE",
+      "boxes": 425
+    },
+    {
+      "source": "pork-rice",
+      "label": "Pork rice",
+      "class_code": null,
+      "boxes": 178
+    },
+    {
+      "source": "pork-rice",
+      "label": "egg",
+      "class_code": "BOILED_EGG",
+      "boxes": 161
+    },
+    {
+      "source": "pork-rice",
+      "label": "leg pork",
+      "class_code": null,
+      "boxes": 985
+    },
+    {
+      "source": "soda-bottles",
+      "label": "soda-bottles",
+      "class_code": "BOTTLED_DRINK",
+      "boxes": 11087
+    },
+    {
+      "source": "vn-streetfood",
+      "label": "Beef Pho",
+      "class_code": "BEEF_PHO",
+      "boxes": 381
+    },
+    {
+      "source": "vn-streetfood",
+      "label": "Broken Rice",
+      "class_code": "COM_TAM_SUON",
+      "boxes": 502
+    },
+    {
+      "source": "vn-streetfood",
+      "label": "Flattened green rice",
+      "class_code": null,
+      "boxes": 56
+    },
+    {
+      "source": "vn-streetfood",
+      "label": "Fried Rice",
+      "class_code": null,
+      "boxes": 45
+    },
+    {
+      "source": "vn-streetfood",
+      "label": "Grilled Pork Banh Mi",
+      "class_code": "BANH_MI_THIT",
+      "boxes": 620
+    },
+    {
+      "source": "vn-streetfood",
+      "label": "Grilled Pork Vermicelli",
+      "class_code": null,
+      "boxes": 43
+    },
+    {
+      "source": "vn-streetfood",
+      "label": "Grilled Pork with Vermicelli",
+      "class_code": "BUN_CHA",
+      "boxes": 50
+    },
+    {
+      "source": "vn-streetfood",
+      "label": "Hue-style Spicy Beef Noodle Soup",
+      "class_code": null,
+      "boxes": 433
+    },
+    {
+      "source": "vn-streetfood",
+      "label": "Pork Offal Porridge",
+      "class_code": null,
+      "boxes": 1038
+    },
+    {
+      "source": "vn-streetfood",
+      "label": "Spring Rolls",
+      "class_code": null,
+      "boxes": 54
+    },
+    {
+      "source": "vn-streetfood",
+      "label": "Steamed Rice Rolls",
+      "class_code": null,
+      "boxes": 46
+    },
+    {
+      "source": "vn-streetfood",
+      "label": "Sticky Rice",
+      "class_code": null,
+      "boxes": 313
+    },
+    {
+      "source": "vn-streetfood",
+      "label": "Vermicelli with Tofu",
+      "class_code": null,
+      "boxes": 382
+    },
+    {
+      "source": "vn-streetfood",
+      "label": "Vietnamese pyramid rice dumpling",
+      "class_code": null,
+      "boxes": 55
+    }
+  ],
+  "unmapped_source_classes": {
+    "vn-streetfood:Pork Offal Porridge": 1038,
+    "pork-rice:leg pork": 985,
+    "vn-streetfood:Hue-style Spicy Beef Noodle Soup": 433,
+    "vn-streetfood:Vermicelli with Tofu": 382,
+    "vn-streetfood:Sticky Rice": 313,
+    "food-detection:seafood": 221,
+    "food-detection:telur-balado": 178,
+    "pork-rice:Pork rice": 178,
+    "food-detection:klepon": 177,
+    "food-detection:macaroni-cheese": 172,
+    "food-detection:mie-ayam": 170,
+    "food-detection:nasi-goreng": 160,
+    "food-detection:kangkung": 156,
+    "food-detection:soto-ayam": 147,
+    "food-detection:bubur": 145,
+    "food-detection:telur-dadar": 142,
+    "food-detection:spaghetti-bolognese": 142,
+    "food-detection:sayur-asem": 142,
+    "food-detection:pempek": 141,
+    "food-detection:rendang": 141,
+    "food-detection:ikan-goreng": 140,
+    "food-detection:sushi-nigiri": 136,
+    "food-detection:ayam": 121,
+    "food-detection:sate": 118,
+    "chicken:uncookedchicken": 108,
+    "food-detection:es-pisang-ijo": 104,
+    "food-detection:martabak-manis": 103,
+    "food-detection:onde-onde": 101,
+    "food-detection:sushi-makizushi": 100,
+    "food-detection:semangka": 99,
+    "vn-streetfood:Flattened green rice": 56,
+    "vn-streetfood:Vietnamese pyramid rice dumpling": 55,
+    "vn-streetfood:Spring Rolls": 54,
+    "vn-streetfood:Steamed Rice Rolls": 46,
+    "vn-streetfood:Fried Rice": 45,
+    "vn-streetfood:Grilled Pork Vermicelli": 43
+  },
+  "warnings": [
+    "BROWN_RICE: KHONG co anh nao",
+    "BOILED_EGG: chi co 97 anh (< 100 khuyen nghi)",
+    "TOFU: chi co 68 anh (< 100 khuyen nghi)",
+    "SWEET_POTATO: KHONG co anh nao",
+    "BUN_CHA: chi co 40 anh (< 100 khuyen nghi)"
+  ]
+}

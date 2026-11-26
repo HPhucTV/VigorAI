@@ -1,0 +1,75 @@
+{
+  "model": "yolov8s.pt",
+  "model_version": "yolov8s-gymfood-v1.2",
+  "device": "0",
+  "epochs_requested": 60,
+  "imgsz": 640,
+  "images_per_split": {
+    "train": 4013,
+    "val": 805,
+    "test": 400
+  },
+  "weights": "/content/runs/model_b_v4/weights/best.pt",
+  "weights_sha256": "34e7935af9c4299a8ac4632f570d25452b369cbb5654c0d8ddc8ae1f75e3ef36",
+  "onnx": "/content/runs/model_b_v4/weights/best.onnx",
+  "onnx_sha256": "b918c2b07ba1d3a13d565bd6f16e345fbd664c55221d48b5cf69109b9de73dad",
+  "test_metrics": {
+    "precision": 0.6113,
+    "recall": 0.5636,
+    "f1_score": 0.5865,
+    "map50": 0.5803,
+    "map50_95": 0.4176,
+    "per_class_ap50": {
+      "WHITE_RICE": 0.6848,
+      "GRILLED_CHICKEN_BREAST": 0.3171,
+      "BOILED_EGG": 1.0,
+      "FRIED_EGG": 0.598,
+      "BEEF_STEAK": 0.2614,
+      "SALMON_FILLET": 0.6634,
+      "STEAMED_SHRIMP": 0.2472,
+      "TOFU": 0.1594,
+      "BROCCOLI": 0.7689,
+      "GREEN_SALAD": 0.4204,
+      "BANANA": 0.5773,
+      "APPLE": 0.2791,
+      "BEEF_PHO": 1.0,
+      "COM_TAM_SUON": 0.9717,
+      "BANH_MI_THIT": 0.9134,
+      "BUN_CHA": 0.8696,
+      "BOTTLED_DRINK": 0.8985,
+      "COFFEE_MILK_TEA": 0.4688,
+      "FRUIT_JUICE_SMOOTHIE": 0.5066,
+      "COOKIE_BISCUIT": 0.5832,
+      "CAKE_MUFFIN_PASTRY": 0.3744,
+      "DONUT_WAFFLE_PANCAKE": 0.4616,
+      "CROISSANT_SWEET_BREAD": 0.5039,
+      "CHIPS_POPCORN_SNACK": 0.4845,
+      "CHOCOLATE_CANDY": 0.3227,
+      "ICE_CREAM_DESSERT": 0.4963,
+      "FRENCH_FRIES": 0.8909,
+      "BURGER_PIZZA_FASTFOOD": 0.5247
+    },
+    "speed_ms_per_image": {
+      "preprocess": 1.12,
+      "inference": 8.86,
+      "loss": 0.0,
+      "postprocess": 1.69
+    }
+  },
+  "kpi_target": {
+    "map50": 0.8,
+    "map50_95": 0.58,
+    "precision": 0.82,
+    "recall": 0.78,
+    "f1": 0.8,
+    "inference_ms": 150.0
+  },
+  "kpi_pass": {
+    "map50>=0.80": false,
+    "map50_95>=0.58": false,
+    "precision>=0.82": false,
+    "recall>=0.78": false,
+    "f1>=0.80": false,
+    "inference<150ms": true
+  }
+}

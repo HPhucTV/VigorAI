@@ -1,24 +1,64 @@
 # [OWNER: M4] AI Router (Model B Food YOLOv8 & Model C Readiness/Overload)
-from fastapi import APIRouter, File, Form, UploadFile
+import logging
+import os
 
+from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
+from fastapi.concurrency import run_in_threadpool
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.db.seed_catalog_and_exercises import FOOD_CATALOG_SEED
+from app.db.session import get_db
+from app.models.entities import FoodNutritionCatalog
 from app.schemas.ai_schema import (
     DetectedFoodItem,
     FoodAnalyzeResponse,
+    FoodModelInfoResponse,
     ReadinessAndOverloadResponse,
     TotalNutritionSummary,
     WeightRecommendation,
 )
+from app.services.ai_food_yolo import (
+    EXTENDED_BEVERAGE_SNACK_CATALOG,
+    FoodModelUnavailable,
+    InvalidImageError,
+    get_food_service,
+)
 
+logger = logging.getLogger(__name__)
 router = APIRouter()
 
+MAX_UPLOAD_BYTES = 5 * 1024 * 1024  # app gui anh < 300KB, 5MB la tran an toan
+VALID_MEAL_TYPES = {"BREAKFAST", "LUNCH", "DINNER", "SNACK"}
 
-@router.post("/food-analyze", response_model=FoodAnalyzeResponse)
-async def analyze_food_image(
-    image: UploadFile = File(...),
-    meal_type: str = Form(default="LUNCH"),
-) -> FoodAnalyzeResponse:
-    """Stub chuan hop dong JSON cho AI Model B (T-M4-03 / T-M4-10)."""
-    _ = (image.filename, meal_type)
+
+async def load_catalog_map(db: AsyncSession | None) -> dict[str, dict]:
+    """Bang tra dinh duong theo class_code: gop seed M3 + nhom nuoc uong/snack M4 + DB override."""
+    catalog = {entry["class_code"]: dict(entry) for entry in FOOD_CATALOG_SEED}
+    for entry in EXTENDED_BEVERAGE_SNACK_CATALOG:
+        catalog.setdefault(entry["class_code"], dict(entry))
+    if db is None:
+        return catalog
+    try:
+        rows = (await db.execute(select(FoodNutritionCatalog))).scalars().all()
+    except Exception:  # DB loi hoac khong co: van dung duoc ban seed
+        logger.warning("Khong doc duoc food_nutrition_catalog tu DB, dung ban seed.")
+        return catalog
+    for row in rows:
+        catalog[row.class_code] = {
+            "class_code": row.class_code,
+            "name_vi": row.name_vi,
+            "kcal_per_100g": row.kcal_per_100g,
+            "protein_per_100g": row.protein_per_100g,
+            "carbs_per_100g": row.carbs_per_100g,
+            "fat_per_100g": row.fat_per_100g,
+            "default_serving_g": row.default_serving_g,
+        }
+    return catalog
+
+
+def _stub_food_response() -> FoodAnalyzeResponse:
+    """Du lieu gia chuan hop dong JSON, dung khi chua co trong so Model B (cho M1 test giao dien)."""
     return FoodAnalyzeResponse(
         inference_time_ms=112,
         model_version="yolov8s-gymfood-stub",
@@ -30,6 +70,9 @@ async def analyze_food_image(
                 bbox_norm=[0.18, 0.25, 0.52, 0.61],
                 estimated_grams=180.0,
                 calories=297.0,
+                calories_min=240,
+                calories_max=360,
+                calories_range_label="~240 \u2013 360 kcal",
                 protein_g=55.8,
                 carbs_g=0.0,
                 fat_g=6.5,
@@ -41,6 +84,9 @@ async def analyze_food_image(
                 bbox_norm=[0.54, 0.30, 0.88, 0.72],
                 estimated_grams=150.0,
                 calories=195.0,
+                calories_min=150,
+                calories_max=240,
+                calories_range_label="~150 \u2013 240 kcal",
                 protein_g=4.0,
                 carbs_g=42.3,
                 fat_g=0.4,
@@ -48,6 +94,9 @@ async def analyze_food_image(
         ],
         total_nutrition=TotalNutritionSummary(
             calories=492.0,
+            calories_min=390,
+            calories_max=600,
+            calories_range_label="~390 \u2013 600 kcal",
             protein_g=59.8,
             carbs_g=42.3,
             fat_g=6.9,
@@ -57,6 +106,65 @@ async def analyze_food_image(
             "vui lòng kiểm tra lại khẩu phần gram trước khi lưu."
         ),
     )
+
+
+def _stub_allowed() -> bool:
+    # Mac dinh cho phep tra du lieu gia de M1 test; dat VIGOR_FOOD_ALLOW_STUB=0 tren Production.
+    return os.environ.get("VIGOR_FOOD_ALLOW_STUB", "1") != "0"
+
+
+@router.get("/food-model/info", response_model=FoodModelInfoResponse)
+async def get_food_model_info(
+    db: AsyncSession = Depends(get_db),
+) -> FoodModelInfoResponse:
+    """Thong tin trang thai & phien ban AI Model B dang nap tren Server."""
+    catalog = await load_catalog_map(db)
+    service = get_food_service()
+    return FoodModelInfoResponse(**service.info(catalog_size=len(catalog), stub_allowed=_stub_allowed()))
+
+
+@router.post("/food-analyze", response_model=FoodAnalyzeResponse)
+async def analyze_food_image(
+    image: UploadFile = File(...),
+    meal_type: str = Form(default="LUNCH"),
+    db: AsyncSession = Depends(get_db),
+) -> FoodAnalyzeResponse:
+    """Nhan dien mon an (YOLOv8 ONNX/PyTorch) -> uoc luong gram -> Calo/Macro (T-M4-04 / T-M4-06)."""
+    normalized_meal = (meal_type or "LUNCH").strip().upper()
+    if normalized_meal not in VALID_MEAL_TYPES:
+        normalized_meal = "LUNCH"
+
+    data = await image.read(MAX_UPLOAD_BYTES + 1)
+    if not data:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Ảnh tải lên bị rỗng.")
+    if len(data) > MAX_UPLOAD_BYTES:
+        raise HTTPException(413, "Ảnh vượt quá 5MB.")
+
+    service = get_food_service()
+    if not service.available:
+        if _stub_allowed():
+            return _stub_food_response()
+        raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, "Model nhận diện món ăn chưa sẵn sàng.")
+
+    catalog = await load_catalog_map(db)
+    try:
+        payload = await run_in_threadpool(service.analyze, data, catalog)
+    except InvalidImageError:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Không đọc được ảnh tải lên.")
+    except FoodModelUnavailable:
+        if _stub_allowed():
+            return _stub_food_response()
+        raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, "Model nhận diện món ăn chưa sẵn sàng.")
+
+    logger.info(
+        "food-analyze meal=%s backend=%s version=%s items=%d ms=%d",
+        normalized_meal,
+        getattr(service, "backend_name", "unknown"),
+        payload["model_version"],
+        len(payload["detected_items"]),
+        payload["inference_time_ms"],
+    )
+    return FoodAnalyzeResponse(**payload)
 
 
 @router.get("/readiness-and-overload", response_model=ReadinessAndOverloadResponse)
