@@ -125,6 +125,61 @@ SNACKS_KEEP: set[str] = {
     "waffle",
 }
 
+VN_COMBINED_BASE = "https://huggingface.co/datasets/jeandeanny/vn-food-combined-2026/resolve/main"
+VN_COMBINED_FILES = (
+    ("val0", "data/validation-00000-of-00002.parquet"),
+    ("val1", "data/validation-00001-of-00002.parquet"),
+    ("test0", "data/test-00000-of-00002.parquet"),
+    ("test1", "data/test-00001-of-00002.parquet"),
+)
+VN_COMBINED_CLASSES: tuple[str, ...] = (
+    "baba-nau-chuoi-dau", "banh-bao", "banh-beo", "banh-bo", "banh-bot-loc",
+    "banh-can", "banh-canh", "banh-chung", "banh-cong", "banh-cuon",
+    "banh-da-cua", "banh-da-lon", "banh-duc", "banh-gai", "banh-giay",
+    "banh-gio", "banh-hoi", "banh-khot", "banh-la", "banh-mi",
+    "banh-mi-chao", "banh-pia", "banh-tai-heo", "banh-tet", "banh-tieu",
+    "banh-tom-ho-tay", "banh-trang-nuong", "banh-troi-nuoc", "banh-trung-thu", "banh-u",
+    "banh-xeo", "bo-kho", "bo-la-lot", "bo-luc-lac", "bo-ne",
+    "bo-nuong-la-lot", "bun-bo-hue", "bun-cha", "bun-cha-ca", "bun-dau-mam-tom",
+    "bun-mam", "bun-rieu", "bun-thit-nuong", "ca-kho-to", "ca-loc-nuong",
+    "ca-muoi-xoi", "ca-ri-ga", "ca-sot-ca-chua", "canh-bi-do", "canh-chua",
+    "canh-cua", "canh-kho-hoa", "canh-khoai-tim", "cao-lau", "cha-ca-la-vong",
+    "cha-com", "cha-lui", "chao-long", "chao-vit", "com-chay-cha-bong",
+    "com-chien", "com-ga-xoi-mo", "com-lam", "com-rang-dua-bo", "com-tam",
+    "cua-hap-bia", "cut-lon-xao-me", "ga-chien-nuoc-mam", "ga-hap-la-chanh", "goi-ca-chich",
+    "goi-cuon", "hu-tieu", "khau-nhuc", "kho-muc-nuong", "kho-quet",
+    "lap-xuong", "luon-om-chuoi-dau", "luon-xao-xa-ot", "mam-chung", "mam-tep-chung-thit",
+    "mi-quang", "mi-xao-gion", "muc-nhoi-thit", "nam-pia", "nem-chua",
+    "nem-nuong-nha-trang", "nui-xao", "oc-buou-hap", "oc-huong-xao", "oc-len-xao-dua",
+    "pho", "rau-muong-xao", "sup-cua", "tau-hu-nhoi-thit", "tau-hu-non",
+    "thit-dong", "thit-kho-tau", "thit-trau-gac-bep", "tiet-canh", "trung-vit-lon",
+    "xoi-gac", "xoi-nep-than", "xoi-xeo",
+)
+VN_COMBINED_KEEP: set[str] = {
+    "banh-cuon",
+    "banh-gio",
+    "goi-cuon",
+    "bun-cha",
+    "bun-thit-nuong",
+    "rau-muong-xao",
+    "canh-chua",
+    "banh-xeo",
+    "banh-khot",
+    "bun-rieu",
+    "hu-tieu",
+    "banh-canh",
+    "banh-bao",
+    "banh-chung",
+    "banh-tet",
+    "thit-kho-tau",
+    "ca-kho-to",
+    "mi-quang",
+    "cao-lau",
+    "mi-xao-gion",
+    "com-ga-xoi-mo",
+    "ga-chien-nuoc-mam",
+}
+
 MIN_MASK_PIXELS = 120
 MIN_BOX_AREA_RATIO = 0.004  # bo manh nhieu qua nho (< 0.4% dien tich anh)
 MIN_BOX_SIDE = 0.02
@@ -588,13 +643,154 @@ def fetch_matthijs_snacks(
     return out_dir
 
 
+def estimate_dish_bbox(rgb: Image.Image) -> tuple[float, float, float, float]:
+    """Uoc luong bounding box gon bam sat dia/to mon an bang saliency mau + bien Sobel."""
+    small = rgb.resize((128, 128), Image.Resampling.BILINEAR)
+    arr = np.asarray(small, dtype=np.float32) / 255.0
+    gray = 0.299 * arr[:, :, 0] + 0.587 * arr[:, :, 1] + 0.114 * arr[:, :, 2]
+
+    # Mau nen uoc luong tu vien 8px xung quanh anh
+    pad = 8
+    border = np.concatenate(
+        [
+            arr[:pad, :, :].reshape(-1, 3),
+            arr[-pad:, :, :].reshape(-1, 3),
+            arr[:, :pad, :].reshape(-1, 3),
+            arr[:, -pad:, :].reshape(-1, 3),
+        ],
+        axis=0,
+    )
+    bg_color = np.median(border, axis=0)
+    color_diff = np.linalg.norm(arr - bg_color, axis=2)
+
+    gx = ndimage.sobel(gray, axis=1)
+    gy = ndimage.sobel(gray, axis=0)
+    grad = np.hypot(gx, gy)
+    grad_norm = grad / (float(np.percentile(grad, 95)) + 1e-5)
+
+    # Trong so tam nhe de uu tien mon an nam trung tam anh
+    yy, xx = np.mgrid[0:128, 0:128]
+    dist_center = np.hypot((xx - 63.5) / 64.0, (yy - 63.5) / 64.0)
+    center_w = np.clip(1.15 - 0.55 * dist_center, 0.35, 1.0)
+
+    sal = (0.65 * (color_diff / (float(color_diff.max()) + 1e-5)) + 0.35 * np.clip(grad_norm, 0.0, 1.0)) * center_w
+    thresh = max(float(np.percentile(sal, 42)), float(sal.mean()) * 0.85)
+    mask = sal >= thresh
+    mask = ndimage.binary_closing(mask, structure=np.ones((7, 7)))
+    mask = ndimage.binary_opening(mask, structure=np.ones((3, 3)))
+
+    labeled, n_feat = ndimage.label(mask)
+    if n_feat > 0:
+        sizes = ndimage.sum(mask, labeled, range(1, n_feat + 1))
+        best_id = int(np.argmax(sizes)) + 1
+        ys, xs = np.where(labeled == best_id)
+        if xs.size > 0:
+            x1 = max(0.0, float(xs.min()) / 128.0 - 0.03)
+            y1 = max(0.0, float(ys.min()) / 128.0 - 0.03)
+            x2 = min(1.0, float(xs.max() + 1) / 128.0 + 0.03)
+            y2 = min(1.0, float(ys.max() + 1) / 128.0 + 0.03)
+            bw, bh = x2 - x1, y2 - y1
+            area = bw * bh
+            if bw >= 0.35 and bh >= 0.35 and 0.20 <= area <= 0.96:
+                return ((x1 + x2) / 2.0, (y1 + y2) / 2.0, bw, bh)
+    return (0.5, 0.5, 0.92, 0.92)
+
+
+def fetch_vn_food_combined(
+    raw_dir: Path,
+    cache_dir: Path,
+    max_per_class: int = 180,
+    force: bool = False,
+) -> Path:
+    import pyarrow.parquet as pq
+
+    out_dir = raw_dir / "vn-food-combined"
+    if (out_dir / "data.yaml").is_file() and not force:
+        print(f"[SKIP] Da tao san: {out_dir}")
+        return out_dir
+    if out_dir.exists():
+        shutil.rmtree(out_dir)
+
+    names = sorted(VN_COMBINED_KEEP)
+    name_to_idx = {n: i for i, n in enumerate(names)}
+    img_out = out_dir / "images"
+    lbl_out = out_dir / "labels"
+    img_out.mkdir(parents=True, exist_ok=True)
+    lbl_out.mkdir(parents=True, exist_ok=True)
+
+    per_class_imgs: Counter = Counter()
+    saved = 0
+    scanned = 0
+
+    for split_tag, rel_path in VN_COMBINED_FILES:
+        if max_per_class > 0 and all(per_class_imgs[n] >= max_per_class for n in names):
+            break
+        pq_path = download_file(
+            f"{VN_COMBINED_BASE}/{rel_path}",
+            cache_dir / "vn_food_combined" / Path(rel_path).name,
+        )
+        pf = pq.ParquetFile(pq_path)
+        for batch in pf.iter_batches(batch_size=128):
+            for row in batch.to_pylist():
+                scanned += 1
+                raw_lbl = row.get("label")
+                if isinstance(raw_lbl, int):
+                    cname = VN_COMBINED_CLASSES[raw_lbl] if 0 <= raw_lbl < len(VN_COMBINED_CLASSES) else ""
+                else:
+                    cname = str(raw_lbl or "").strip().lower()
+                if cname not in name_to_idx:
+                    continue
+                if max_per_class > 0 and per_class_imgs[cname] >= max_per_class:
+                    continue
+                try:
+                    rgb = _open_hf_image(row["image"]).convert("RGB")
+                except Exception:
+                    continue
+                w0, h0 = rgb.size
+                if min(w0, h0) < 120:
+                    continue
+                if max(w0, h0) > 800:
+                    rgb.thumbnail((800, 800), Image.Resampling.LANCZOS)
+
+                xc, yc, bw, bh = estimate_dish_bbox(rgb)
+                stem = f"vncomb_{split_tag}_{scanned}"
+                rgb.save(img_out / f"{stem}.jpg", format="JPEG", quality=88)
+                (lbl_out / f"{stem}.txt").write_text(
+                    f"{name_to_idx[cname]} {xc:.6f} {yc:.6f} {bw:.6f} {bh:.6f}\n",
+                    encoding="utf-8",
+                )
+                saved += 1
+                per_class_imgs[cname] += 1
+
+        # Xoa ngay shard parquet da xu ly xong de tiet kiem dung luong o dia
+        try:
+            pq_path.unlink(missing_ok=True)
+        except OSError:
+            pass
+        print(f"  Da quet xong {pq_path.name}: luu={saved} (quet={scanned})", flush=True)
+
+    _write_yolo_dataset_yaml(out_dir, names)
+    summary = {
+        "source": "jeandeanny/vn-food-combined-2026",
+        "license": "CC-BY-NC-SA-4.0",
+        "images_scanned": scanned,
+        "images_saved": saved,
+        "per_class_images": dict(per_class_imgs),
+    }
+    (out_dir / "extract_summary.json").write_text(
+        json.dumps(summary, indent=2, ensure_ascii=False), encoding="utf-8"
+    )
+    print("[OK] vn-food-combined extract:", json.dumps(summary["per_class_images"], ensure_ascii=False))
+    return out_dir
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Tai dataset mo cho AI Model B (T-M4-01, T-M4-09)")
     parser.add_argument("--raw-dir", type=Path, default=RAW_DIR)
     parser.add_argument("--cache-dir", type=Path, default=CACHE_DIR)
     parser.add_argument(
         "--only",
-        choices=("all", "vn-streetfood", "foodseg103", "drinks-snacks", "soda-bottles", "coco-val", "matthijs-snacks"),
+        choices=("all", "vn-streetfood", "foodseg103", "drinks-snacks", "soda-bottles", "coco-val", "matthijs-snacks", "vn-food-combined"),
         default="all",
     )
     parser.add_argument("--max-per-class", type=int, default=260)
@@ -611,6 +807,8 @@ def main(argv: list[str] | None = None) -> int:
         fetch_coco_val_drinks_snacks(args.raw_dir, args.cache_dir, max_per_class=args.max_per_class, force=args.force)
     if args.only in ("all", "drinks-snacks", "matthijs-snacks"):
         fetch_matthijs_snacks(args.raw_dir, args.cache_dir, max_per_class=args.max_per_class, force=args.force)
+    if args.only in ("all", "vn-food-combined"):
+        fetch_vn_food_combined(args.raw_dir, args.cache_dir, max_per_class=min(180, args.max_per_class), force=args.force)
     return 0
 
 

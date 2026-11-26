@@ -1,9 +1,10 @@
-# [OWNER: M4] 40 lop mon an Viet, do Gym, nuoc uong & snack cho AI Model B v1.3 (T-M4-01, T-M4-09)
-"""Danh sach 40 lop v1.3 + bang alias de gop nhan tu Roboflow / HuggingFace / COCO ve `class_code`.
+# [OWNER: M4] 50 lop mon an Viet, do Gym, nuoc uong & snack cho AI Model B v1.4 (T-M4-01, T-M4-09, T-M4-10)
+"""Danh sach 50 lop v1.4 + bang alias de gop nhan tu Roboflow / HuggingFace / COCO ve `class_code`.
 
 18 lop dau (0..17) giu nguyen thu tu v1.0/v1.1 khop `food_nutrition_catalog` (seed boi M3).
 12 lop mo rong v1.2 (18..29) bo sung nhom Nuoc uong & Banh snack / Do an nhanh.
-10 lop mo rong v1.3 (30..39) bat them nhom Mon Viet pho bien da co san du lieu tho.
+10 lop mo rong v1.3 (30..39) bat nhom Mon Viet tu `vn-streetfood` + `food-detection`.
+10 lop mo rong v1.4 (40..49) bo sung Mon an & Dac san Viet Nam pho bien tu `vn-food-combined`.
 """
 from __future__ import annotations
 
@@ -179,11 +180,11 @@ CORE_CLASSES_V1: list[tuple[str, tuple[str, ...]]] = [
     ),
     (
         "COM_CHIEN",
-        ("com chien", "com rang", "cơm chiên", "cơm rang", "fried rice", "nasi goreng", "nasi-goreng"),
+        ("com chien", "com rang", "com-rang-dua-bo", "cơm chiên", "cơm rang", "fried rice", "nasi goreng", "nasi-goreng"),
     ),
     (
         "XOI_MAN",
-        ("xoi", "xoi man", "xôi", "xôi mặn", "sticky rice"),
+        ("xoi", "xoi man", "xoi-xeo", "xoi-gac", "xôi", "xôi mặn", "xôi xéo", "xôi gấc", "sticky rice"),
     ),
     (
         "GOI_CUON_NEM",
@@ -195,7 +196,7 @@ CORE_CLASSES_V1: list[tuple[str, tuple[str, ...]]] = [
     ),
     (
         "CHAO_THIT",
-        ("chao", "chao long", "chao thit", "cháo", "cháo lòng", "cháo thịt", "porridge", "pork offal porridge", "bubur"),
+        ("chao", "chao long", "chao thit", "chao-vit", "cháo", "cháo lòng", "cháo thịt", "porridge", "pork offal porridge", "bubur"),
     ),
     (
         "BANH_CUON",
@@ -208,6 +209,47 @@ CORE_CLASSES_V1: list[tuple[str, tuple[str, ...]]] = [
     (
         "COM_XANH",
         ("com xanh", "banh com", "cốm", "bánh cốm", "flattened green rice"),
+    ),
+    # 10 mon an & dac san Viet Nam bo sung cho v1.4 (40..49)
+    (
+        "CANH_CHUA_CA",
+        ("canh chua", "canh-chua", "canh chua ca", "canh chua cá lóc", "sour fish soup"),
+    ),
+    (
+        "BANH_XEO",
+        ("banh xeo", "banh-xeo", "bánh xèo", "banh khot", "banh-khot", "bánh khọt"),
+    ),
+    (
+        "BUN_RIEU",
+        ("bun rieu", "bun-rieu", "bún riêu", "bún riêu cua"),
+    ),
+    (
+        "HU_TIEU",
+        ("hu tieu", "hu-tieu", "hủ tiếu", "banh canh", "banh-canh", "bánh canh"),
+    ),
+    (
+        "BANH_BAO",
+        ("banh bao", "banh-bao", "bánh bao"),
+    ),
+    (
+        "BANH_CHUNG_TET",
+        ("banh chung", "banh-chung", "bánh chưng", "banh tet", "banh-tet", "bánh tét"),
+    ),
+    (
+        "THIT_KHO_TRUNG",
+        ("thit kho", "thit kho tau", "thit-kho-tau", "thịt kho tàu", "thịt kho trứng"),
+    ),
+    (
+        "CA_KHO_TO",
+        ("ca kho", "ca kho to", "ca-kho-to", "cá kho tộ", "cá kho"),
+    ),
+    (
+        "MI_QUANG_XAO",
+        ("mi quang", "mi-quang", "mì quảng", "cao lau", "cao-lau", "cao lầu", "mi xao", "mi-xao-gion", "mì xào"),
+    ),
+    (
+        "COM_GA_XOI_MO",
+        ("com ga", "com ga xoi mo", "com-ga-xoi-mo", "cơm gà", "cơm gà xối mỡ", "ga-chien-nuoc-mam"),
     ),
 ]
 
