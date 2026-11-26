@@ -38,7 +38,10 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-import numpy as np
+try:
+    import numpy as np
+except ImportError:  # pragma: no cover - optional when scientific deps omitted
+    np = None  # type: ignore[assignment]
 
 logger = logging.getLogger(__name__)
 
@@ -374,7 +377,10 @@ def build_response_payload(
 # --------------------------------------------------------------------------- #
 def decode_image(data: bytes):
     """Bytes -> anh PIL RGB, xoay dung chieu theo EXIF (anh chup bang dien thoai)."""
-    from PIL import Image, ImageOps
+    try:
+        from PIL import Image, ImageOps
+    except ImportError as exc:
+        raise FoodModelUnavailable("Thiếu thư viện Pillow để giải mã ảnh.") from exc
 
     try:
         with Image.open(io.BytesIO(data)) as raw:
@@ -391,7 +397,12 @@ def decode_image(data: bytes):
 
 def letterbox_image(image, target_size: int = 640) -> tuple[np.ndarray, float, int, int, int, int]:
     """Resize giu ty le + dem vien xam 114 dung chuan YOLOv8 -> tensor float32 (1, 3, H, W)."""
-    from PIL import Image
+    if np is None:
+        raise FoodModelUnavailable("Thiếu thư viện NumPy để tiền xử lý ảnh.")
+    try:
+        from PIL import Image
+    except ImportError as exc:
+        raise FoodModelUnavailable("Thiếu thư viện Pillow để giải mã ảnh.") from exc
 
     orig_w, orig_h = image.size
     scale = min(target_size / float(orig_w), target_size / float(orig_h))
@@ -744,7 +755,14 @@ class FoodYoloService:
 
     @property
     def available(self) -> bool:
-        return self._model is not None or self._onnx_session is not None or self.model_path is not None
+        if self._model is not None or self._onnx_session is not None:
+            return True
+        path = self.model_path
+        if path is None:
+            return False
+        if path.suffix.lower() == ".onnx" and np is None:
+            return False
+        return True
 
     @property
     def backend_name(self) -> str:
@@ -785,6 +803,8 @@ class FoodYoloService:
 
     # ----- nap model (double-checked locking) ----- #
     def _load_onnx(self, path: Path) -> None:
+        if np is None:
+            raise FoodModelUnavailable("Thiếu thư viện NumPy để suy luận ONNX.")
         try:
             import onnxruntime as ort
         except ImportError as exc:

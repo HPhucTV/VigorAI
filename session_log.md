@@ -33,7 +33,7 @@
   - `flutter analyze --no-fatal-infos`: Exit `0`.
   - `flutter test --no-pub`: **`49 / 49` tests passed**.
 - **Lưu ý triển khai Server thật (`https://vigorai-production.up.railway.app`):**
-  - Hiện API `GET /api/v1/exercises` trên Railway vẫn đang chạy bản build trước khi có 8 file `.glb` mới nên server vẫn trả `base_mannequin.glb` cho 8 bài này cho tới khi commit & push lên `main` để Railway build lại (`Dockerfile.railway` sẽ copy `assets_3d/exported_glb/` + tự đồng bộ lên S3 Bucket `gym3d-assets` khi khởi động).
+  - Khi push lần đầu (`b306f80`), phát hiện deploy trên Railway bị lỗi `failure` (lỗi có sẵn từ PR #20 `b9837cc`): `backend/app/services/ai_food_yolo.py` import `numpy` ở top-level trong khi `backend/Dockerfile.railway` (`INSTALL_AI_DEPS=false`) loại bỏ `numpy`/`pillow`/`onnxruntime`. Đã hotfix bằng cách bọc optional import `numpy`/`PIL` trong `ai_food_yolo.py` và giữ bộ ONNX Runtime gọn nhẹ (`onnxruntime`, `numpy`, `pillow` + `libgomp1`) trong `Dockerfile.railway` trước khi redeploy lại lên `main`.
 
 ---
 
