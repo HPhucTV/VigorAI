@@ -733,5 +733,173 @@ class ExerciseCoachingGuide {
         ),
       ],
     ),
+    'MACHINE_CHEST_PRESS': ExerciseCoachingGuide(
+      setupSteps: [
+        'Điều chỉnh chiều cao ghế sao cho hai tay cầm nằm ngang mức giữa ngực.',
+        'Khép nhẹ và nhấn chặt hai bả vai áp sát đệm lưng ghế (Scapular Retraction), chân đạp vững trên sàn.',
+      ],
+      eccentricDetail:
+          '2–3 giây · Hít sâu gồng lõi, mở rộng khuỷu tay kiểm soát đưa tay cầm lùi về ngang giữa ngực (góc khuỷu ~50–60°).',
+      isometricDetail:
+          '0.5 giây · Giữ căng hai dải cơ ngực tại điểm thu về sâu nhất trước khi phát lực.',
+      concentricDetail:
+          '1–1.5 giây · Thở ra dứt khoát, đẩy tay cầm về trước gần thẳng cánh tay mà không nhô vai rời đệm ghế.',
+      mindMuscleCue:
+          'Giữ lồng ngực mở cao hơn vai — cảm giác dùng lực ép hai nách tiến về phía nhau.',
+      badFormDetails: [
+        ExerciseBadFormDetail(
+          error: 'Nhô vai và cuộn lưng trên rời khỏi đệm tựa khi đẩy tạ hết tầm.',
+          risk: 'Mất khóa xương bả vai khiến cơ vai trước gánh lực thay cho cơ ngực.',
+          fix: 'Ghì hai xương bả vai cố định vào mặt đệm suốt cả pha đẩy lẫn pha thu tay.',
+        ),
+      ],
+    ),
+    'ONE_ARM_DUMBBELL_ROW': ExerciseCoachingGuide(
+      setupSteps: [
+        'Đặt một đầu gối và cùng bên tay chống thẳng vững chắc trên ghế phẳng, chân còn lại bước rộng trụ chặt trên sàn.',
+        'Giữ lưng hoàn toàn phẳng gần song song mặt sàn (~15°), tay còn lại cầm tạ đơn duỗi thẳng tự nhiên dưới vai.',
+      ],
+      eccentricDetail:
+          '2–3 giây · Hít sâu, hạ quả tạ xuống thẳng đứng có kiểm soát để mở nhẹ xương bả vai kéo giãn hết phần cơ xô.',
+      isometricDetail:
+          '0.5 giây · Cảm nhận dải cơ lưng xô kéo dài hết biên độ mà không xoay vai chúi xuống.',
+      concentricDetail:
+          '1 giây · Thở ra, dẫn khuỷu tay kéo theo đường vòng cung về phía túi quần sau/hông chứ không kéo thẳng lên vai.',
+      mindMuscleCue:
+          'Hãy nghĩ cánh tay chỉ là cái móc treo tạ — lực kéo bắt nguồn từ xương bả vai và cơ lưng xô bên dưới.',
+      badFormDetails: [
+        ExerciseBadFormDetail(
+          error: 'Xoay vặn cột sống ngửa vai lên trần và giật thân người lấy đà.',
+          risk: 'Gây lực xoắn bất đối xứng lên cột sống thắt lưng và làm cầu vai cướp tải.',
+          fix: 'Khóa hai hông và hai vai ngang bằng song song mặt đất từ lúc bắt đầu đến khi kết thúc hiệp.',
+        ),
+      ],
+    ),
+    'BARBELL_OVERHEAD_PRESS': ExerciseCoachingGuide(
+      setupSteps: [
+        'Đứng thẳng hai chân rộng bằng vai, nắm thanh đòn rộng hơn vai nhẹ với cẳng tay thẳng đứng dưới cổ tay.',
+        'Siết chặt cơ mông và cơ bụng để khóa khung chậu trước khi đẩy thanh đòn rời ngực trên.',
+      ],
+      eccentricDetail:
+          '2–3 giây · Hít sâu giữ hơi lõi, thu nhẹ cằm ra sau để hạ thanh đòn thẳng đứng về ngang xương đòn.',
+      isometricDetail:
+          '0.5 giây · Giữ khuỷu tay hướng hơi chếch ~35° về trước ngay dưới thanh tạ ở điểm đáy.',
+      concentricDetail:
+          '1–1.5 giây · Thở ra khi thanh tạ vừa vượt qua đỉnh trán, đẩy thẳng qua đỉnh đầu và hơi đưa đầu về trước.',
+      mindMuscleCue:
+          'Đường đi thanh đòn phải thẳng đứng — tưởng tượng đẩy qua trần nhà bằng toàn bộ vai trước và vai giữa.',
+      badFormDetails: [
+        ExerciseBadFormDetail(
+          error: 'Ngả lưng dưới cong vồng quá mức (Hyperextension) để biến bài đẩy vai thành đẩy ngực.',
+          risk: 'Dồn nén áp lực cắt lên đốt sống thắt lưng khi chịu tải đứng.',
+          fix: 'Siết cứng cơ mông + gồng chặt cơ bụng ấn xương sườn xuống trong suốt quá trình đẩy.',
+        ),
+      ],
+    ),
+    'CABLE_BICEP_CURL': ExerciseCoachingGuide(
+      setupSteps: [
+        'Đứng đối diện trụ ròng rọc thấp, chân rộng bằng vai, hai tay nắm ngửa thanh thẳng với độ rộng ngang vai.',
+        'Ép cố định hai khuỷu tay sát mạn sườn và lùi nửa bước để dây cáp luôn có lực căng ngay từ điểm đáy.',
+      ],
+      eccentricDetail:
+          '2–3 giây · Hít sâu, hạ thanh cáp xuống có kiểm soát gần thẳng tay mà vẫn giữ căng bắp tay trước.',
+      isometricDetail:
+          '0.5 giây · Giữ khuỷu tay yên cạnh hông ở đáy chuyển động, không để vai trôi chúi về trước.',
+      concentricDetail:
+          '1 giây · Thở ra, cuốn cẳng tay lên hướng về vai trước đồng thời siết chặt cơ nhị đầu ở đỉnh 0.5 giây.',
+      mindMuscleCue:
+          'Khác với tạ đơn, lực cáp căng đều suốt 100% quỹ đạo — tập trung ép chặt bắp tay ở cả nửa dưới lẫn đỉnh.',
+      badFormDetails: [
+        ExerciseBadFormDetail(
+          error: 'Nhấc bổng vai lên cao theo nhịp kéo hoặc ngả người ra sau giật thanh cáp.',
+          risk: 'Cơ cầu vai trên và lưng dưới gánh tải thay cho cơ bắp tay trước.',
+          fix: 'Giữ hai vai hạ thấp tự nhiên rời xa tai và chỉ chuyển động quanh bản lề khuỷu tay.',
+        ),
+      ],
+    ),
+    'CLOSE_GRIP_BENCH_PRESS': ExerciseCoachingGuide(
+      setupSteps: [
+        'Nằm ngửa trên ghế phẳng, hai bả vai ép chặt xuống đệm, bàn chân đạp vững trên sàn.',
+        'Nắm thanh đòn rộng xấp xỉ ngang vai (~2 bên sườn), cổ tay giữ thẳng vuông góc sàn.',
+      ],
+      eccentricDetail:
+          '2–3 giây · Hít sâu, khép hai khuỷu tay đi sát thân (~20°) hạ thanh tạ về vùng chấn thủy/ngực dưới.',
+      isometricDetail:
+          '0.5 giây · Dừng nhẹ khi thanh đòn chạm nhẹ ngực dưới, kiểm tra cẳng tay vẫn thẳng đứng.',
+      concentricDetail:
+          '1–1.5 giây · Thở ra, phát lực chủ yếu bằng cơ tay sau và ngực trong đẩy tạ thẳng lên vị trí khóa.',
+      mindMuscleCue:
+          'Cảm nhận phần mặt sau cánh tay gánh tải chủ đạo khi khuỷu tay đi sát hai bên thân người.',
+      badFormDetails: [
+        ExerciseBadFormDetail(
+          error: 'Nắm hai tay sát dính vào nhau ở giữa đòn tạ gây xoắn cổ tay và xòe rộng khuỷu tay.',
+          risk: 'Gây chấn thương khớp cổ tay (Ulnar Deviation) và đau khuỷu tay.',
+          fix: 'Chỉ cần nắm hẹp bằng độ rộng vai — đủ để kích hoạt tối đa cơ tam đầu mà cổ tay vẫn thoải mái.',
+        ),
+      ],
+    ),
+    'GOBLET_SQUAT': ExerciseCoachingGuide(
+      setupSteps: [
+        'Đứng chân rộng hơn vai nhẹ, mũi chân mở 15–20°, hai bàn tay nâng đỡ sát một đầu quả tạ đơn trước xương ức.',
+        'Hạ bả vai xuống, khép nhẹ hai khuỷu tay hướng xuống dưới và gồng chặt cơ lõi.',
+      ],
+      eccentricDetail:
+          '2–3 giây · Hít sâu, đẩy hông ra sau và hạ người xuống sâu sao cho hai khuỷu tay lọt gọn vào mặt trong hai gối.',
+      isometricDetail:
+          '0.5–1 giây · Giữ đáy Squat với lồng ngực mở thẳng cao, tránh gù lưng chúi đầu về trước.',
+      concentricDetail:
+          '1–1.5 giây · Thở ra, đạp cả hai bàn chân xuống sàn giữ tạ áp sát ngực đẩy người đứng thẳng lên.',
+      mindMuscleCue:
+          'Quả tạ trước ngực đóng vai trò đối trọng giúp thân thẳng hơn — hãy tận dụng để ngồi xuống sâu hơn nữa.',
+      badFormDetails: [
+        ExerciseBadFormDetail(
+          error: 'Gù lưng trên để tạ trôi xa khỏi ngực hoặc để hai gối chụm vào trong khi đứng lên.',
+          risk: 'Căng cơ lưng trên và tăng lực xoắn lên khớp gối.',
+          fix: 'Giữ quả tạ chạm nhẹ xương ức suốt bài và chủ động mở hai gối theo hướng mũi chân.',
+        ),
+      ],
+    ),
+    'STANDING_CALF_RAISE': ExerciseCoachingGuide(
+      setupSteps: [
+        'Đứng đặt phần ụ mũi bàn chân vững trên mép bục kê để hai gót chân treo tự do phía sau.',
+        'Đặt hai đệm vai chắc chắn trên cầu vai, tay nắm tay vịn phía trước và giữ hai đầu gối thẳng tự nhiên.',
+      ],
+      eccentricDetail:
+          '2.5–3 giây · Hít sâu, hạ chậm hai gót chân xuống sâu dưới mép bục để cơ bắp chân giãn hết biên độ.',
+      isometricDetail:
+          '1 giây · Bắt buộc dừng giữ đủ 1 giây ở điểm căng nhất dưới đáy nhằm triệt tiêu lực bật của gân Achilles.',
+      concentricDetail:
+          '1–1.5 giây · Thở ra, đạp mạnh ụ mũi bàn chân nhón gót lên cao tối đa và siết cứng bắp chân 0.5 giây ở đỉnh.',
+      mindMuscleCue:
+          'Tuyệt đối không bật nảy như lò xo — cơ bắp chân đáp ứng tốt nhất với nhịp kéo giãn sâu + giữ đáy 1 giây.',
+      badFormDetails: [
+        ExerciseBadFormDetail(
+          error: 'Nhún quá nhanh biên độ ngắn (nảy gân Achilles) và chùng gập đầu gối lấy đà.',
+          risk: 'Mất hoàn toàn kích thích phì đại cơ Gastrocnemius và dễ viêm gân gót.',
+          fix: 'Giữ đầu gối thẳng (không khóa cứng quá mức), hạ chậm 3s xuống đáy và đếm đủ "1-0-0-1" rồi mới nhón lên.',
+        ),
+      ],
+    ),
+    'KETTLEBELL_SWING': ExerciseCoachingGuide(
+      setupSteps: [
+        'Đứng hai chân rộng hơn vai, hai tay nắm chắc quai tạ ấm Kettlebell ở phía trước thân.',
+        'Khóa nhẹ xương bả vai, gồng bụng và giữ cột sống thành một đường thẳng từ đầu tới xương cụt.',
+      ],
+      eccentricDetail:
+          '1.5 giây · Hít sâu qua mũi, chờ tạ rơi gần tới hông mới đẩy mạnh hông ra sau (Hip Hinge) để dẫn tạ lọt giữa hai đùi trên.',
+      isometricDetail:
+          '0.2 giây · Đổi hướng tức thì ở đáy bản lề hông với cẳng chân gần thẳng đứng và cẳng tay chạm mặt trong đùi.',
+      concentricDetail:
+          '0.5–1 giây · Thở mạnh dứt khoát, siết bùng nổ cơ mông và đùi sau đẩy hông thẳng tiến về trước giúp tạ bay ngang vai.',
+      mindMuscleCue:
+          'Đây là bài tập BẢN LỀ HÔNG bùng nổ (Horizontal Hip Snap) — hai tay chỉ như sợi dây giữ tạ, tuyệt đối không nhấc bằng vai.',
+      badFormDetails: [
+        ExerciseBadFormDetail(
+          error: 'Ngồi Squat gập sâu gối hoặc gập khuỷu tay cố nâng quả tạ lên cao ngang mặt.',
+          risk: 'Làm mất lực phát động của chuỗi cơ sau (Mông/Đùi sau) và gây mỏi vai trước/thắt lưng.',
+          fix: 'Đẩy hông thật mạnh về sau thay vì hạ thấp gối, giữ cánh tay thẳng thả lỏng để lực bật hông tự đẩy tạ lên ngang ngực.',
+        ),
+      ],
+    ),
   };
 }

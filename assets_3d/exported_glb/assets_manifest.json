@@ -3,14 +3,14 @@
   "owner": "M2",
   "compression": "Binary_glTF_FastLoad",
   "max_triangles_budget": 25000,
-  "total_bundled_bytes": 6867500,
+  "total_bundled_bytes": 5600600,
   "assets": [
     {
       "code": "BASE_MANNEQUIN",
       "file_name": "base_mannequin.glb",
       "bundled": true,
-      "size_bytes": 1315060,
-      "sha256": "70ba0dbd3549311b54db5f8dcc468dc3a178f263dc801a3416e89705d44e1f18",
+      "size_bytes": 683984,
+      "sha256": "e7c7e192e099154f43ba04f65817322b9b41e96d7e4eefb26696660bd55f1bbf",
       "extensions_used": [],
       "materials": [
         "Mat_Muscle_Abs_Core",
@@ -30,8 +30,8 @@
       "code": "BASE_MANNEQUIN_FEMALE",
       "file_name": "base_mannequin_female.glb",
       "bundled": true,
-      "size_bytes": 1320316,
-      "sha256": "3be97294b3d36af319cfe964b428b996ffde80612b342a0edf07707e286aa1da",
+      "size_bytes": 684492,
+      "sha256": "5ece116275bd665956f0006690744022dbf7b58f5b1d245b06078d9b7a00b0e9",
       "extensions_used": [],
       "materials": [
         "Mat_Muscle_Abs_Core",
@@ -1223,6 +1223,318 @@
       "bundled": false,
       "size_bytes": 1401552,
       "sha256": "2fe21ed182aa6c874233532eb37942cd26013f3f951b8c26c3b6acc2bfc0cc13",
+      "extensions_used": [],
+      "materials": [
+        "Mat_Muscle_Abs_Core",
+        "Mat_Muscle_Back_Lats",
+        "Mat_Muscle_Biceps",
+        "Mat_Muscle_Calves",
+        "Mat_Muscle_Chest",
+        "Mat_Muscle_Glutes",
+        "Mat_Muscle_Hamstrings",
+        "Mat_Muscle_Quads",
+        "Mat_Muscle_Shoulders",
+        "Mat_Muscle_Traps",
+        "Mat_Muscle_Triceps"
+      ],
+      "clips": [
+        "Anim_GoodForm",
+        "Anim_BadForm"
+      ],
+      "phase_keyframes": {
+        "eccentric": [
+          0,
+          45
+        ],
+        "isometric": [
+          45,
+          55
+        ],
+        "concentric": [
+          55,
+          100
+        ]
+      }
+    },
+    {
+      "code": "MACHINE_CHEST_PRESS",
+      "file_name": "machine_chest_press.glb",
+      "bundled": false,
+      "size_bytes": 792512,
+      "sha256": "1f045e9db43e4eb523ffdb8b26d119b0774e189b41858450cc588ca74e476055",
+      "extensions_used": [],
+      "materials": [
+        "Mat_Muscle_Abs_Core",
+        "Mat_Muscle_Back_Lats",
+        "Mat_Muscle_Biceps",
+        "Mat_Muscle_Calves",
+        "Mat_Muscle_Chest",
+        "Mat_Muscle_Glutes",
+        "Mat_Muscle_Hamstrings",
+        "Mat_Muscle_Quads",
+        "Mat_Muscle_Shoulders",
+        "Mat_Muscle_Traps",
+        "Mat_Muscle_Triceps"
+      ],
+      "clips": [
+        "Anim_GoodForm",
+        "Anim_BadForm"
+      ],
+      "phase_keyframes": {
+        "eccentric": [
+          0,
+          45
+        ],
+        "isometric": [
+          45,
+          55
+        ],
+        "concentric": [
+          55,
+          100
+        ]
+      }
+    },
+    {
+      "code": "ONE_ARM_DUMBBELL_ROW",
+      "file_name": "one_arm_dumbbell_row.glb",
+      "bundled": false,
+      "size_bytes": 764304,
+      "sha256": "1319b87721b1f3de3d45e583dc6ec619f931a063753454f0b7748035152af731",
+      "extensions_used": [],
+      "materials": [
+        "Mat_Muscle_Abs_Core",
+        "Mat_Muscle_Back_Lats",
+        "Mat_Muscle_Biceps",
+        "Mat_Muscle_Calves",
+        "Mat_Muscle_Chest",
+        "Mat_Muscle_Glutes",
+        "Mat_Muscle_Hamstrings",
+        "Mat_Muscle_Quads",
+        "Mat_Muscle_Shoulders",
+        "Mat_Muscle_Traps",
+        "Mat_Muscle_Triceps"
+      ],
+      "clips": [
+        "Anim_GoodForm",
+        "Anim_BadForm"
+      ],
+      "phase_keyframes": {
+        "eccentric": [
+          0,
+          45
+        ],
+        "isometric": [
+          45,
+          55
+        ],
+        "concentric": [
+          55,
+          100
+        ]
+      }
+    },
+    {
+      "code": "BARBELL_OVERHEAD_PRESS",
+      "file_name": "barbell_overhead_press.glb",
+      "bundled": false,
+      "size_bytes": 792164,
+      "sha256": "19bb39deb1cffa1e06e60ed0bdcd92ab8e906a32781fd2f285e358f8b0b43d2b",
+      "extensions_used": [],
+      "materials": [
+        "Mat_Muscle_Abs_Core",
+        "Mat_Muscle_Back_Lats",
+        "Mat_Muscle_Biceps",
+        "Mat_Muscle_Calves",
+        "Mat_Muscle_Chest",
+        "Mat_Muscle_Glutes",
+        "Mat_Muscle_Hamstrings",
+        "Mat_Muscle_Quads",
+        "Mat_Muscle_Shoulders",
+        "Mat_Muscle_Traps",
+        "Mat_Muscle_Triceps"
+      ],
+      "clips": [
+        "Anim_GoodForm",
+        "Anim_BadForm"
+      ],
+      "phase_keyframes": {
+        "eccentric": [
+          0,
+          45
+        ],
+        "isometric": [
+          45,
+          55
+        ],
+        "concentric": [
+          55,
+          100
+        ]
+      }
+    },
+    {
+      "code": "CABLE_BICEP_CURL",
+      "file_name": "cable_bicep_curl.glb",
+      "bundled": false,
+      "size_bytes": 777532,
+      "sha256": "8bc2f713b48c97bda92c721cc20fd1129cbeaaea5e1f30ed7d5c47fbbe6c6608",
+      "extensions_used": [],
+      "materials": [
+        "Mat_Muscle_Abs_Core",
+        "Mat_Muscle_Back_Lats",
+        "Mat_Muscle_Biceps",
+        "Mat_Muscle_Calves",
+        "Mat_Muscle_Chest",
+        "Mat_Muscle_Glutes",
+        "Mat_Muscle_Hamstrings",
+        "Mat_Muscle_Quads",
+        "Mat_Muscle_Shoulders",
+        "Mat_Muscle_Traps",
+        "Mat_Muscle_Triceps"
+      ],
+      "clips": [
+        "Anim_GoodForm",
+        "Anim_BadForm"
+      ],
+      "phase_keyframes": {
+        "eccentric": [
+          0,
+          45
+        ],
+        "isometric": [
+          45,
+          55
+        ],
+        "concentric": [
+          55,
+          100
+        ]
+      }
+    },
+    {
+      "code": "CLOSE_GRIP_BENCH_PRESS",
+      "file_name": "close_grip_bench_press.glb",
+      "bundled": false,
+      "size_bytes": 772120,
+      "sha256": "b1a5a0c341ad85802c93f429dd83d136789211880c0cf54750e58a5cfb864be5",
+      "extensions_used": [],
+      "materials": [
+        "Mat_Muscle_Abs_Core",
+        "Mat_Muscle_Back_Lats",
+        "Mat_Muscle_Biceps",
+        "Mat_Muscle_Calves",
+        "Mat_Muscle_Chest",
+        "Mat_Muscle_Glutes",
+        "Mat_Muscle_Hamstrings",
+        "Mat_Muscle_Quads",
+        "Mat_Muscle_Shoulders",
+        "Mat_Muscle_Traps",
+        "Mat_Muscle_Triceps"
+      ],
+      "clips": [
+        "Anim_GoodForm",
+        "Anim_BadForm"
+      ],
+      "phase_keyframes": {
+        "eccentric": [
+          0,
+          45
+        ],
+        "isometric": [
+          45,
+          55
+        ],
+        "concentric": [
+          55,
+          100
+        ]
+      }
+    },
+    {
+      "code": "GOBLET_SQUAT",
+      "file_name": "goblet_squat.glb",
+      "bundled": false,
+      "size_bytes": 783452,
+      "sha256": "451f4c89d5b5c37d8b5d6d2ca8303e1e79bde5d9a8ff8be1e52a9cfecc6ecae8",
+      "extensions_used": [],
+      "materials": [
+        "Mat_Muscle_Abs_Core",
+        "Mat_Muscle_Back_Lats",
+        "Mat_Muscle_Biceps",
+        "Mat_Muscle_Calves",
+        "Mat_Muscle_Chest",
+        "Mat_Muscle_Glutes",
+        "Mat_Muscle_Hamstrings",
+        "Mat_Muscle_Quads",
+        "Mat_Muscle_Shoulders",
+        "Mat_Muscle_Traps",
+        "Mat_Muscle_Triceps"
+      ],
+      "clips": [
+        "Anim_GoodForm",
+        "Anim_BadForm"
+      ],
+      "phase_keyframes": {
+        "eccentric": [
+          0,
+          45
+        ],
+        "isometric": [
+          45,
+          55
+        ],
+        "concentric": [
+          55,
+          100
+        ]
+      }
+    },
+    {
+      "code": "STANDING_CALF_RAISE",
+      "file_name": "standing_calf_raise.glb",
+      "bundled": false,
+      "size_bytes": 758436,
+      "sha256": "fa523aa7f8982f3f130484eac06bb151eb4b32985d8096176d9025daa2b45f2f",
+      "extensions_used": [],
+      "materials": [
+        "Mat_Muscle_Abs_Core",
+        "Mat_Muscle_Back_Lats",
+        "Mat_Muscle_Biceps",
+        "Mat_Muscle_Calves",
+        "Mat_Muscle_Chest",
+        "Mat_Muscle_Glutes",
+        "Mat_Muscle_Hamstrings",
+        "Mat_Muscle_Quads",
+        "Mat_Muscle_Shoulders",
+        "Mat_Muscle_Traps",
+        "Mat_Muscle_Triceps"
+      ],
+      "clips": [
+        "Anim_GoodForm",
+        "Anim_BadForm"
+      ],
+      "phase_keyframes": {
+        "eccentric": [
+          0,
+          45
+        ],
+        "isometric": [
+          45,
+          55
+        ],
+        "concentric": [
+          55,
+          100
+        ]
+      }
+    },
+    {
+      "code": "KETTLEBELL_SWING",
+      "file_name": "kettlebell_swing.glb",
+      "bundled": false,
+      "size_bytes": 785280,
+      "sha256": "463af34a2cb1261899eca2fd53cce10f9c75438d08635f6e9787ef93445ebf95",
       "extensions_used": [],
       "materials": [
         "Mat_Muscle_Abs_Core",

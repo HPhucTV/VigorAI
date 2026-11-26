@@ -23,7 +23,7 @@ class AiCoachHubScreen extends ConsumerWidget {
     const tabBar = TabBar(
       tabs: [
         Tab(icon: Icon(Icons.accessibility_new, size: 18), text: 'Phục hồi 3D'),
-        Tab(icon: Icon(Icons.bar_chart, size: 18), text: 'Volume & PR'),
+        Tab(icon: Icon(Icons.bar_chart, size: 18), text: 'Khối lượng & PR'),
         Tab(icon: Icon(Icons.radar, size: 18), text: 'Radar Cơ'),
       ],
     );

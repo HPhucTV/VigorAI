@@ -438,6 +438,7 @@ class _OnboardingDisclaimerScreenState
     required bool highlightPriorityMuscles,
   }) {
     final preset = _draft.recommendedAvatarPreset;
+    final morph = _draft.computedBodyMorph;
     final muscleColors = highlightPriorityMuscles
         ? {
             for (final matId in _draft.priorityMuscleMaterialIds)
@@ -447,6 +448,8 @@ class _OnboardingDisclaimerScreenState
 
     return _SafeOnboarding3DStage(
       avatarPreset: preset,
+      bodyMorph: morph,
+      statusBadgeText: '${preset.shortLabelVi} · BMI ${_draft.bmi}',
       muscleColorsMap: muscleColors,
       highlightedGroupLabels:
           _draft.priorityMuscles.map((m) => m.labelVi).toList(),
@@ -1081,12 +1084,16 @@ class _OnboardingDisclaimerScreenState
 
 class _SafeOnboarding3DStage extends StatelessWidget {
   final BodyAvatarPreset avatarPreset;
+  final BodyMorphWeights bodyMorph;
+  final String statusBadgeText;
   final Map<String, Color> muscleColorsMap;
   final List<String> highlightedGroupLabels;
   final bool showMuscleLegend;
 
   const _SafeOnboarding3DStage({
     required this.avatarPreset,
+    required this.bodyMorph,
+    required this.statusBadgeText,
     required this.muscleColorsMap,
     required this.highlightedGroupLabels,
     required this.showMuscleLegend,
@@ -1165,9 +1172,10 @@ class _SafeOnboarding3DStage extends StatelessWidget {
     return Stack(
       children: [
         Muscle3DViewerWidget(
-          glbAssetOrUrl: avatarPreset.baseMannequinAssetPath,
+          glbAssetOrUrl: avatarPreset.masterMannequinAssetPath,
           muscleColorsMap: muscleColorsMap,
           avatarPreset: avatarPreset,
+          bodyMorph: bodyMorph,
           isPlaying: false,
           height: 205,
         ),
@@ -1181,7 +1189,7 @@ class _SafeOnboarding3DStage extends StatelessWidget {
               borderRadius: BorderRadius.circular(16),
             ),
             child: Text(
-              avatarPreset.shortLabelVi,
+              statusBadgeText,
               style: const TextStyle(
                 color: Colors.white,
                 fontSize: 11,

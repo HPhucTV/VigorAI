@@ -44,15 +44,15 @@ class SmartRoutineGenerator {
   static const List<ProProgramCatalogItem> proProgramsCatalog = [
     ProProgramCatalogItem(
       type: ProgramChoiceType.cbumPpl,
-      title: 'CBum Classic Physique PPL',
+      title: 'Hình thể Cổ điển (Đẩy / Kéo / Chân)',
       athleteTag: 'Cổ điển · Thẩm mỹ V-Taper',
       frequencyLabel: '6 buổi/tuần',
       focusSummary: 'Vai rộng, ngực trên dày và lưng xô hình chữ V sắc nét.',
-      targetAudience: 'Phù hợp người thích tập PPL chuẩn thể hình cổ điển.',
+      targetAudience: 'Phù hợp người thích tập Đẩy/Kéo/Chân chuẩn thể hình cổ điển.',
     ),
     ProProgramCatalogItem(
       type: ProgramChoiceType.jeffNippardUl,
-      title: 'Jeff Nippard Khoa học Upper/Lower',
+      title: 'Khoa học Thân trên / Thân dưới',
       athleteTag: 'Khoa học Thể thao · Cân bằng',
       frequencyLabel: '4 buổi/tuần',
       focusSummary: 'Tối ưu phì đại cơ với tỷ lệ Đẩy/Kéo cân đối và RPE chuẩn.',
@@ -60,7 +60,7 @@ class SmartRoutineGenerator {
     ),
     ProProgramCatalogItem(
       type: ProgramChoiceType.arnoldVolume,
-      title: 'Arnold Golden Era Volume',
+      title: 'Kỷ nguyên Vàng (Khối lượng Cao)',
       athleteTag: 'Thể hình Huyền thoại · Superset',
       frequencyLabel: '5–6 buổi/tuần',
       focusSummary: 'Phối hợp Ngực–Lưng đối kháng Superset, chú trọng tay & vai.',
@@ -68,7 +68,7 @@ class SmartRoutineGenerator {
     ),
     ProProgramCatalogItem(
       type: ProgramChoiceType.gluteCoreSculpt,
-      title: 'Glute & Core Sculpt — Nữ Fitness',
+      title: 'Độ Mông & Lõi — Nữ Fitness',
       athleteTag: 'Vóc dáng Đồng hồ cát',
       frequencyLabel: '4 buổi/tuần',
       focusSummary: 'Trọng tâm Mông tròn, Đùi sau săn, Bụng lõi & Lưng thon.',
@@ -76,7 +76,7 @@ class SmartRoutineGenerator {
     ),
     ProProgramCatalogItem(
       type: ProgramChoiceType.homeShred,
-      title: 'Home Dumbbell & Bodyweight Shred',
+      title: 'Đốt mỡ Tại nhà (Tạ đơn & Tự do)',
       athleteTag: 'Tại nhà · Đốt mỡ giữ cơ',
       frequencyLabel: '3–4 buổi/tuần',
       focusSummary: 'Linh hoạt 30–45 phút chỉ với tạ đơn hoặc trọng lượng cơ thể.',

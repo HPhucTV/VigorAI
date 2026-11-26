@@ -644,11 +644,11 @@ async def delete_supplement(
     if supp is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Khong tim thay lich nhac thuc pham bo sung.",
+            detail="Không tìm thấy lịch nhắc thực phẩm bổ sung.",
         )
     now_utc = datetime.now(timezone.utc)
     supp.is_active = False
     supp.deleted_at = now_utc
     supp.updated_at = now_utc
     await db.commit()
-    return MessageResponse(status="deleted", message="Da xoa lich nhac supplement.")
+    return MessageResponse(status="deleted", message="Đã xóa lịch nhắc thực phẩm bổ sung.")

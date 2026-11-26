@@ -214,7 +214,7 @@ async def create_workout_session(
         if ex_obj is None:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Bai tap trong hiep {idx} khong ton tai: {set_in.exercise_code or set_in.exercise_id}",
+                detail=f"Bài tập trong hiệp {idx} không tồn tại: {set_in.exercise_code or set_in.exercise_id}",
             )
 
         set_type = set_in.set_type.strip().upper()

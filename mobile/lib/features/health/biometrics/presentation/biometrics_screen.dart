@@ -173,7 +173,7 @@ class BiometricsScreen extends ConsumerWidget {
                       _LegendDot(color: AppColors.primary, label: 'Thực tế'),
                       _LegendDot(
                         color: AppColors.calorieOrange,
-                        label: '7-Day Moving Avg',
+                        label: 'Trung bình 7 ngày',
                       ),
                     ],
                   ),
@@ -362,7 +362,7 @@ class BiometricsScreen extends ConsumerWidget {
                           decimal: true,
                         ),
                         decoration: const InputDecoration(
-                          labelText: 'Body Fat (%)',
+                          labelText: 'Tỷ lệ mỡ (%)',
                         ),
                       ),
                     ),

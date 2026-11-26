@@ -499,7 +499,9 @@ class _LiveWorkoutLoggerScreenState
             .map(
               (ex) => SimpleDialogOption(
                 onPressed: () => Navigator.of(ctx).pop(ex),
-                child: Text('${ex.nameVi} (${ex.equipmentType})'),
+                child: Text(
+                  '${ex.nameVi} (${ExerciseRepository.equipmentLabelVi(ex.equipmentType)})',
+                ),
               ),
             )
             .toList(),

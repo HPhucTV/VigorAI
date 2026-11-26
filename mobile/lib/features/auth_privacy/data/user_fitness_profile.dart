@@ -226,32 +226,32 @@ enum ProgramChoiceType {
   ),
   cbumPpl(
     code: 'CBUM_PPL',
-    labelVi: 'CBum Classic Physique PPL',
-    shortLabelVi: 'CBum PPL',
+    labelVi: 'Hình thể Cổ điển (Đẩy / Kéo / Chân)',
+    shortLabelVi: 'Đẩy/Kéo/Chân',
     subtitleVi: '6 buổi/tuần · Vai rộng, ngực trên dày và lưng xô chữ V.',
   ),
   jeffNippardUl(
     code: 'JEFF_NIPPARD_UL',
-    labelVi: 'Jeff Nippard Khoa học Upper/Lower',
-    shortLabelVi: 'Jeff Nippard U/L',
+    labelVi: 'Khoa học Thân trên / Thân dưới',
+    shortLabelVi: 'Trên / Dưới',
     subtitleVi: '4 buổi/tuần · Tối ưu phì đại cơ theo khoa học, cân bằng Đẩy/Kéo.',
   ),
   arnoldVolume(
     code: 'ARNOLD_VOLUME',
-    labelVi: 'Arnold Golden Era Volume',
-    shortLabelVi: 'Arnold Volume',
+    labelVi: 'Kỷ nguyên Vàng (Khối lượng Cao)',
+    shortLabelVi: 'Khối lượng Cao',
     subtitleVi: '5–6 buổi/tuần · Superset Ngực–Lưng đối kháng, tay & vai cổ điển.',
   ),
   gluteCoreSculpt(
     code: 'GLUTE_CORE_SCULPT',
-    labelVi: 'Glute & Core Sculpt — Nữ Fitness',
-    shortLabelVi: 'Glute & Core',
+    labelVi: 'Độ Mông & Lõi — Nữ Fitness',
+    shortLabelVi: 'Mông & Lõi',
     subtitleVi: '4 buổi/tuần · Trọng tâm Mông tròn, Đùi sau, Lõi và Lưng thon.',
   ),
   homeShred(
     code: 'HOME_SHRED',
-    labelVi: 'Home Dumbbell & Bodyweight Shred',
-    shortLabelVi: 'Home Shred',
+    labelVi: 'Đốt mỡ Tại nhà (Tạ đơn & Tự do)',
+    shortLabelVi: 'Đốt mỡ Tại nhà',
     subtitleVi: '3–4 buổi/tuần · Đốt mỡ giữ cơ 30–45 phút tại nhà.',
   );
 
@@ -462,15 +462,89 @@ class UserFitnessProfile {
     return out;
   }
 
+  BodyMorphWeights get computedBodyMorph {
+    final isFemale = gender.toUpperCase() == 'FEMALE';
+    final currentBmi = bmi;
+
+    var slim = 0.0;
+    if (currentBmi < 21.0) {
+      slim = ((21.0 - currentBmi) / 5.5).clamp(0.0, 1.0);
+    }
+    if (somatotype == Somatotype.ectomorph) {
+      slim = (slim + 0.15).clamp(0.0, 1.15);
+    }
+
+    final bmiSurplus = ((currentBmi - 20.5) / 14.5).clamp(0.0, 1.2);
+    final bfNorm = isFemale
+        ? ((estimatedBodyFatPct - 20.0) / 18.0).clamp(0.0, 1.15)
+        : ((estimatedBodyFatPct - 12.0) / 18.0).clamp(0.0, 1.15);
+
+    final bmiFatDrive = ((currentBmi - 22.0) / 13.0).clamp(0.0, 1.20);
+    final somatotypeFatBias = somatotype == Somatotype.endomorph
+        ? 0.22
+        : (somatotype == Somatotype.ectomorph ? -0.10 : 0.0);
+    final somatotypeMuscleBias = somatotype == Somatotype.mesomorph
+        ? 0.28
+        : (somatotype == Somatotype.endomorph ? 0.08 : -0.05);
+
+    double bodyFat;
+    if (currentBmi > 23.5 && bfNorm < 0.20) {
+      // Van dong vien kho mo nhung can nang cao (BMI cao do co bap)
+      bodyFat = (0.20 * bmiFatDrive + 0.40 * bfNorm).clamp(0.0, 1.20);
+    } else {
+      bodyFat =
+          (0.65 * bmiFatDrive + 0.45 * bfNorm + somatotypeFatBias)
+              .clamp(0.0, 1.20);
+    }
+
+    final leanFactor = (1.0 - 0.65 * bfNorm.clamp(0.0, 1.0)).clamp(0.20, 1.0);
+    var muscleMass = ((bmiSurplus * 0.85 * leanFactor) +
+            somatotypeMuscleBias +
+            (bfNorm < 0.25 && currentBmi >= 20.5 ? 0.25 : 0.0))
+        .clamp(0.0, 1.20);
+    if (currentBmi < 19.0) {
+      muscleMass *= ((currentBmi - 15.0) / 4.0).clamp(0.0, 1.0);
+    }
+
+    return BodyMorphWeights(
+      slim: slim,
+      bodyFat: bodyFat,
+      muscleMass: muscleMass,
+    );
+  }
+
   BodyAvatarPreset get recommendedAvatarPreset {
-    if (preferredAvatarCode == 'FEMALE_FIT') {
+    final isFemale = gender.toUpperCase() == 'FEMALE';
+    final currentBmi = bmi;
+
+    if (isFemale) {
+      if (currentBmi < 18.8 ||
+          (somatotype == Somatotype.ectomorph && currentBmi < 21.0)) {
+        return BodyAvatarPreset.femaleSlim;
+      }
+      if (currentBmi >= 25.0 ||
+          bodyFatPreset == BodyFatPreset.higherFat ||
+          (somatotype == Somatotype.endomorph && currentBmi >= 22.8)) {
+        return BodyAvatarPreset.femaleCurvy;
+      }
+      if (derivedFitnessGoal == 'BULK' ||
+          somatotype == Somatotype.mesomorph &&
+              (bodyFatPreset == BodyFatPreset.lean ||
+                  bodyFatPreset == BodyFatPreset.athletic) &&
+              currentBmi >= 20.5) {
+        return BodyAvatarPreset.femaleToned;
+      }
       return BodyAvatarPreset.femaleFit;
     }
-    if (preferredAvatarCode == 'MALE_BULK') {
-      return BodyAvatarPreset.maleBulk;
+
+    if (currentBmi < 19.2 ||
+        (somatotype == Somatotype.ectomorph && currentBmi < 21.2)) {
+      return BodyAvatarPreset.maleSlim;
     }
-    if (gender.toUpperCase() == 'FEMALE') {
-      return BodyAvatarPreset.femaleFit;
+    if (currentBmi >= 26.0 ||
+        bodyFatPreset == BodyFatPreset.higherFat ||
+        (somatotype == Somatotype.endomorph && currentBmi >= 24.0)) {
+      return BodyAvatarPreset.maleHeavy;
     }
     if (derivedFitnessGoal == 'BULK' &&
         (bodyFatPreset == BodyFatPreset.lean ||

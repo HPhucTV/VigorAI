@@ -400,14 +400,20 @@ void main() {
       expect(summary.streakDays, 0);
     });
 
-    test('prevents double scaling on base_mannequin_female.glb', () {
-      final femaleBase = Muscle3DViewerWidget.effectiveScaleFor(
-        BodyAvatarPreset.femaleFit,
-        'assets/3d_bundled/base_mannequin_female.glb',
-      );
-      expect(femaleBase.x, 1.0);
-      expect(femaleBase.y, 1.0);
-      expect(femaleBase.z, 1.0);
+    test('prevents double scaling on all 8 base_mannequin presets', () {
+      expect(BodyAvatarPreset.values.length, 8);
+      expect(BodyAvatarPreset.forGender('MALE').length, 4);
+      expect(BodyAvatarPreset.forGender('FEMALE').length, 4);
+
+      for (final preset in BodyAvatarPreset.values) {
+        final baseScale = Muscle3DViewerWidget.effectiveScaleFor(
+          preset,
+          preset.baseMannequinAssetPath,
+        );
+        expect(baseScale.x, 1.0);
+        expect(baseScale.y, 1.0);
+        expect(baseScale.z, 1.0);
+      }
 
       final femaleExercise = Muscle3DViewerWidget.effectiveScaleFor(
         BodyAvatarPreset.femaleFit,
@@ -754,6 +760,99 @@ void main() {
         expect(guide.concentricDetail.isNotEmpty, isTrue, reason: ex.code);
         expect(guide.mindMuscleCue.isNotEmpty, isTrue, reason: ex.code);
         expect(guide.badFormDetails, isNotEmpty, reason: ex.code);
+      }
+    });
+
+    test('all 39 mock exercises use dedicated animated 3D GLBs and upgrade cached base_mannequin rows', () async {
+      final rawMock = jsonDecode(
+        await rootBundle.loadString('assets/mock_json/mock_m2_exercises.json'),
+      ) as Map<String, dynamic>;
+      final allExercises = ((rawMock['exercises'] as List)
+              .cast<Map<String, dynamic>>())
+          .map(ExerciseModel.fromJson)
+          .toList();
+
+      expect(allExercises.length, 39);
+      for (final ex in allExercises) {
+        expect(
+          ex.model3dGlbUrl.contains('base_mannequin.glb'),
+          isFalse,
+          reason: '${ex.code} still points to static base_mannequin.glb',
+        );
+        expect(
+          ex.clips,
+          containsAll(const ['Anim_GoodForm', 'Anim_BadForm']),
+          reason: '${ex.code} missing required Good/Bad animation clips',
+        );
+      }
+
+      const upgradedCodes = [
+        'BARBELL_OVERHEAD_PRESS',
+        'ONE_ARM_DUMBBELL_ROW',
+        'GOBLET_SQUAT',
+        'KETTLEBELL_SWING',
+        'MACHINE_CHEST_PRESS',
+        'CABLE_BICEP_CURL',
+        'CLOSE_GRIP_BENCH_PRESS',
+        'STANDING_CALF_RAISE',
+      ];
+      final byCode = {for (final ex in allExercises) ex.code.toUpperCase(): ex};
+
+      // Simulate existing device SQLite cache still holding old base_mannequin.glb rows
+      final db = AppDatabase.forTesting(NativeDatabase.memory());
+      addTearDown(db.close);
+      await db.batch((b) {
+        for (final ex in allExercises) {
+          final isOldStatic = upgradedCodes.contains(ex.code.toUpperCase());
+          b.insert(
+            db.exercisesTable,
+            ExercisesTableCompanion.insert(
+              id: 'uuid-${ex.code.toLowerCase()}',
+              code: ex.code.toUpperCase(),
+              nameVi: ex.nameVi,
+              equipmentType: ex.equipmentType,
+              model3dGlbUrl: isOldStatic
+                  ? 'assets/3d_bundled/base_mannequin.glb'
+                  : ex.model3dGlbUrl,
+              assetChecksum: isOldStatic
+                  ? '70ba0dbd3549311b54db5f8dcc468dc3a178f263dc801a3416e89705d44e1f18'
+                  : ex.assetChecksum,
+              primaryMusclesJson: jsonEncode(ex.primaryMuscles),
+            ),
+          );
+        }
+      });
+
+      final dio = Dio(BaseOptions(baseUrl: 'https://test.local'));
+      final mockItems =
+          (rawMock['exercises'] as List).cast<Map<String, dynamic>>();
+      var remoteCalls = 0;
+      dio.interceptors.add(
+        InterceptorsWrapper(
+          onRequest: (options, handler) {
+            remoteCalls += 1;
+            handler.resolve(
+              Response<Map<String, dynamic>>(
+                requestOptions: options,
+                statusCode: 200,
+                data: {'items': mockItems},
+              ),
+            );
+          },
+        ),
+      );
+
+      final repo = ExerciseRepository(db, dio, useMockApi: false);
+      final refreshed = await repo.loadExercises();
+      expect(remoteCalls, 1);
+      final refreshedByCode = {
+        for (final ex in refreshed) ex.code.toUpperCase(): ex,
+      };
+      for (final code in upgradedCodes) {
+        final item = refreshedByCode[code]!;
+        expect(item.model3dGlbUrl, endsWith('/api/v1/exercises/$code/glb'));
+        expect(item.assetChecksum, byCode[code]!.assetChecksum);
+        expect(item.clips, containsAll(const ['Anim_GoodForm', 'Anim_BadForm']));
       }
     });
   });

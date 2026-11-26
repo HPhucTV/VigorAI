@@ -134,7 +134,7 @@ async def download_exercise_glb(code: str) -> Any:
 
     raise HTTPException(
         status_code=status.HTTP_404_NOT_FOUND,
-        detail=f"Khong tim thay file 3D .glb cho bai tap '{code}'.",
+        detail=f"Không tìm thấy tệp 3D .glb cho bài tập '{code}'.",
     )
 
 
@@ -153,7 +153,7 @@ async def get_exercise_detail(
     if ex is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Khong tim thay bai tap 3D voi ma '{code}'.",
+            detail=f"Không tìm thấy bài tập 3D với mã '{code}'.",
         )
     return _serialize_exercise(ex, api_base_url=_resolve_api_base(request))
 
@@ -174,7 +174,7 @@ async def get_exercise_alternatives(
     if target is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Khong tim thay bai tap '{code}'.",
+            detail=f"Không tìm thấy bài tập '{code}'.",
         )
 
     target_primary = set(target.primary_muscles or [])

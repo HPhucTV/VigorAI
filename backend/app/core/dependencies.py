@@ -21,7 +21,7 @@ async def get_current_user(
     """Xac thuc Access Token va dam bao tai khoan van ton tai trong PostgreSQL."""
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Thong tin xac thuc khong hop le hoac tai khoan da bi xoa.",
+        detail="Thông tin xác thực không hợp lệ hoặc tài khoản đã bị xóa.",
         headers={"WWW-Authenticate": "Bearer"},
     )
 

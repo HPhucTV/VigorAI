@@ -17,6 +17,13 @@
 
 ---
 
+## Phiên 45 — 2026-11-26 21:55 | Thành viên: M3 + M4 | Task: Xử lý Xung đột PR #21 (`vu` $\rightarrow$ `main`), Merge AI Model B v1.4 (50 lớp / 66 món) & Redeploy Railway
+- **Mục tiêu phiên:** Xử lý xung đột `session_log.md` trên PR #21 (`vu:abc20b3` $\rightarrow$ `main:16934b1`), hợp nhất bản nâng cấp **AI Model B `yolov8s-gymfood-v1.4` (`50` lớp / `66` món)** mà vẫn bảo toàn bản vá `numpy`/ONNX + **39/39 mô hình 3D chuyển động** trên `main`, rồi kích hoạt redeploy lại lên Railway Production.
+- **Những file đã xử lý (`0` file `[LOCKED STUB]` bị chạm):**
+  - Hợp nhất sạch PR #21 gồm: `ai_research/SOURCES.md`, `ai_research/model_b_food_yolo/{food_classes,fetch_open_datasets}.py`, `ai_research/evaluation_reports/model_b_v1_{3_38classes,4_48classes}/`, `ai_research/evaluation_reports/model_b_v{5,6}_dataset_report.json`, `backend/ai_models/model_b_manifest.json`, `backend/app/services/ai_food_yolo.py` (giữ cả 66 món VN/Gym + bộ bảo vệ optional import `numpy`/`PIL` & `Dockerfile.railway`), `backend/tests/test_ai_api.py`, `docs/taskboard.md`, `session_log.md`.
+
+---
+
 ## Phiên 44 — 2026-11-26 21:16 | Thành viên: M4 (Pure AI Engineer) | Task: `T-M4-09` (`[x]`), `T-M4-10` (`[~]`)
 - **Mục tiêu phiên:** Tải thêm dữ liệu món ăn Việt Nam còn thiếu từ `jeandeanny/vn-food-combined-2026`, nâng cấp AI Model B từ `40` lên đủ **`50` lớp (`yolov8s-gymfood-v1.4`, `48/50` lớp hoạt động, `9.286` ảnh)** — vừa tăng gấp 5 lần ảnh cho `GOI_CUON_NEM`, `BANH_CUON`, `BANH_GIO`, vừa bật thêm **10 món Việt phổ biến** (`Canh chua cá lóc`, `Bánh xèo`, `Bún riêu`, `Hủ tiếu`, `Bánh bao`, `Bánh chưng/tét`, `Thịt kho tàu`, `Cá kho tộ`, `Mì Quảng/Cao lầu`, `Cơm gà xối mỡ`) rồi deploy nóng lên Railway Production.
 - **Những file đã tạo / chỉnh sửa (`0` file `[LOCKED STUB]` và `0` file `M3` bị chạm):**
@@ -35,7 +42,27 @@
 
 ---
 
-## Phiên 43 — 2026-11-26 17:05 | Thành viên: M4 (Pure AI Engineer) | Task: `T-M4-09` (`[x]`), `T-M4-10` (`[~]`)
+## Phiên 43 (M2 — 8 Mô hình 3D Chuyển động & Hotfix Deploy) — 2026-11-26 19:03 | Thành viên: M2 (+ Git Sync `origin/main`) | Task: Pull `origin/main` (`b9837cc`) & Dựng 8 Mô hình 3D Chuyển động Còn thiếu (Đạt 39/39 Bài tập)
+- **Mục tiêu phiên:**
+  1. Kéo code mới nhất từ `origin/main` (`53bcc0a..b9837cc`, PR #20 M4 Model B v1.2) về nhánh `HPhucTV` an toàn, bảo toàn trọn vẹn công việc Phiên 40 và xử lý sạch xung đột `session_log.md`.
+  2. Khắc phục triệt để lỗi 8 bài tập 3D đứng yên do rơi về `base_mannequin.glb`: `BARBELL_OVERHEAD_PRESS`, `ONE_ARM_DUMBBELL_ROW`, `GOBLET_SQUAT`, `KETTLEBELL_SWING`, `MACHINE_CHEST_PRESS`, `CABLE_BICEP_CURL`, `CLOSE_GRIP_BENCH_PRESS`, `STANDING_CALF_RAISE`.
+- **Những file đã tạo / chỉnh sửa (`[OWNER: M2]` + `session_log.md`, `0` file `[LOCKED STUB]` bị chạm):**
+  - `assets_3d/scripts_blender_mcp/build_remaining_8_exercises.py` *(mới)* & `assets_3d/scripts_blender_mcp/build_sprint2_exercises.py`: Bổ sung 3 builder dụng cụ (`_build_kettlebell_object`, `_build_chest_press_machine`, `_build_standing_calf_machine`) và 8 hàm rig/animation IK (`30 FPS`, `100` frames, `Anim_GoodForm` & `Anim_BadForm`, `13,752` tam giác cơ thể `<= 25,000`, đủ 11 `Mesh_Muscle_*` / `Mat_Muscle_*` & 4 Sockets); đồng bộ SHA-256 vào `assets_3d/exported_glb/assets_manifest.json` (`41` assets: `2` mannequin gốc + `39/39` bài tập) và `mobile/assets/mock_json/mock_m2_exercises.json` (`0` bài trỏ `base_mannequin.glb`, giữ `bundled = False` nên `mobile/assets/3d_bundled/` vẫn `5.89 MB << 40 MB`).
+  - `assets_3d/exported_glb/*.glb` & `assets_3d/source_blend/*.blend`: Xuất đủ 8 file `.glb` (`~758–793 KB`/bài) và 8 file `.blend` tương ứng.
+  - `mobile/lib/features/gym3d/data/exercise_repository.dart`: Sửa `_hasStaleUrl()` để coi bản ghi cache `base_mannequin.glb` ở các bài không đóng gói sẵn là cũ (`stale = true`), tự động làm mới SQLite trên thiết bị đang cài app; đồng bộ `clips: const ['Anim_GoodForm', 'Anim_BadForm']` trong `_rowToModel()`.
+  - `mobile/lib/features/gym3d/data/exercise_coaching_guide.dart` & `mobile/lib/features/gym3d/presentation/exercise_3d_detail_screen.dart`: Bổ sung Cẩm nang 4 phần tiếng Việt có dấu cho đủ 8 bài mới, Việt hóa các khóa `setup_guide` (`seat_height`, `stance`, `range_of_motion`, v.v.) và thay lỗi raw màn tải 3D bằng thông báo thân thiện kèm nút **Thử lại**.
+  - `mobile/test/workout/workout_sprint2_test.dart`: Bổ sung 2 test kiểm tra 39/39 bài dùng `.glb` có animation riêng và cơ chế tự nâng cấp cache SQLite từ `base_mannequin.glb`.
+- **Kiểm tra / Kết quả chạy thử:**
+  - Blender 5.3 EEVEE render đa khung hình (`f=1`, `f=50`, `Anim_BadForm`) và soi ảnh trực quan cả 8 bài (sau khi tinh chỉnh `CLOSE_GRIP_BENCH_PRESS`, `STANDING_CALF_RAISE`, `KETTLEBELL_SWING`): Tay nắm đúng dụng cụ, không xuyên lưới, chuyển động chuẩn giải phẫu.
+  - Script kiểm tra toàn bộ 39/39 `.glb`: `Manifest entries: 41 Exercises: 39`, `Total errors: 0 []` (khớp 100% SHA-256, 11 `Mat_Muscle_*`, 2 clips).
+  - `flutter analyze --no-fatal-infos`: Exit `0`.
+  - `flutter test --no-pub`: **`49 / 49` tests passed**.
+- **Lưu ý triển khai Server thật (`https://vigorai-production.up.railway.app`):**
+  - Khi push lần đầu (`b306f80`), phát hiện deploy trên Railway bị lỗi `failure` (lỗi có sẵn từ PR #20 `b9837cc`): `backend/app/services/ai_food_yolo.py` import `numpy` ở top-level trong khi `backend/Dockerfile.railway` (`INSTALL_AI_DEPS=false`) loại bỏ `numpy`/`pillow`/`onnxruntime`. Đã hotfix bằng cách bọc optional import `numpy`/`PIL` trong `ai_food_yolo.py` và giữ bộ ONNX Runtime gọn nhẹ (`onnxruntime`, `numpy`, `pillow` + `libgomp1`) trong `Dockerfile.railway` trước khi redeploy lại lên `main`.
+
+---
+
+## Phiên 43 (M4 — Model B v1.3 40 lớp) — 2026-11-26 17:05 | Thành viên: M4 (Pure AI Engineer) | Task: `T-M4-09` (`[x]`), `T-M4-10` (`[~]`)
 - **Mục tiêu phiên:** Hoàn tất mở rộng Dataset Đợt 2 (`model_b_v5` — **40 lớp / 38 lớp hoạt động, 7.656 ảnh**) bằng cách bật toàn bộ nhóm món Việt có sẵn (`Bún bò Huế`, `Cơm chiên`, `Xôi`, `Gỏi cuốn / Chả giò`, `Bún đậu`, `Cháo lòng / Cháo thịt`, `Bánh cuốn`, `Bánh giò`, `Cốm`, `Rau muống xào`), đóng `[x]` `T-M4-09`, fine-tune **`yolov8s-gymfood-v1.3`** trên Colab T4, đánh giá ONNX CPU và deploy nóng lên Railway Production (tự động tương thích bản APK `v1.2` đang chạy trên điện thoại).
 - **Những file đã tạo / chỉnh sửa (`0` file `[LOCKED STUB]` và `0` file `M3` bị chạm):**
   - `ai_research/model_b_food_yolo/food_classes.py`, `ai_research/SOURCES.md`: Mở rộng `CORE_CLASSES_V1` từ `30` lên **40 lớp** (`30..39`: `RAU_MUONG_XAO`, `BUN_BO_HUE`, `COM_CHIEN`, `XOI_MAN`, `GOI_CUON_NEM`, `BUN_DAU`, `CHAO_THIT`, `BANH_CUON`, `BANH_GIO`, `COM_XANH`) + gộp thêm alias cho `FRIED_EGG` (`telur-dadar`) và `BUN_CHA` (`Grilled Pork Vermicelli`); dựng `model_b_v5` (**7.656 ảnh**: `6.104 train / 1.034 val / 518 test`, `38/40` lớp hoạt động, `0` lỗi bbox, `0` rò rỉ augment).
@@ -120,6 +147,32 @@
   - Live FastAPI `uvicorn` HTTP (`VIGOR_FOOD_ALLOW_STUB=0`): `GET /openapi.json` (`200 OK`), `GET /api/v1/ai/food-model/info` (`200 OK`, `backend=onnxruntime`, `catalog=36`), `POST /api/v1/ai/food-analyze` (`200 OK`, trả về `Xà lách trộn 250.0g 50.0kcal` trong `83ms`), `GET /api/v1/ai/readiness-and-overload` (`200 OK`).
 - **Việc cần làm ở phiên kế tiếp:**
   - Upload `ai_research/datasets/model_b_v3.zip` lên Google Drive và chạy `ai_research/model_b_food_yolo/train_model_b_colab.ipynb` (Colab T4) để nâng trọng số `food_yolo_v1.onnx` từ 6 lớp lên đủ **16/18 lớp** rồi đóng `[x]` `T-M4-06`; đồng thời triển khai `T-M4-05` & `T-M4-07` cho **Model C**.
+---
+
+## Phiên 40 (M1+M2+M3 — Morph Targets 3D & Việt hóa) — 2026-11-25 17:05 | Thành viên: M1 + M2 + M3 | Task: Nâng cấp 8 Mô hình 3D Nam/Nữ, Morph Targets 60 FPS & Việt hóa Có dấu 100%
+- **Mục tiêu phiên:**
+  1. Khắc phục hiện tượng kéo thanh **Cân nặng** chỉ phóng to/thu nhỏ toàn thân (cả đầu/tay/chân) và nhảy camera trên Onboarding; cải thiện giải phẫu **Nam** & **Nữ** và bổ sung đủ **8 mô hình 3D vóc dáng** (4 Nam + 4 Nữ).
+  2. Rà soát và chuẩn hóa **100% tiếng Việt có dấu** trên toàn bộ Flutter UI, Mock JSON (`mock_m4_ai.json`), `MockApiInterceptor` (`dio_client.dart`), nhãn dụng cụ/macro và thông báo lỗi Backend FastAPI (`backend/app/`).
+- **Những file đã tạo / chỉnh sửa (`0` file `[LOCKED STUB]` bị chạm):**
+  - **Blender 5.3 & 8 Mô hình `.glb` (`[OWNER: M2]`):**
+    - `assets_3d/scripts_blender_mcp/build_base_mannequin.py`: Tách quy tắc phân vùng `_classify_polygon(..., is_female)` riêng cho Nữ (`1.66m`) và Nam (`1.78m`), bật Smooth Anatomical Normals (`use_smooth=True`) giữ sắc nét ranh giới 11 `Mesh_Muscle_*`, nhúng 3 kênh glTF Morph Targets (`Morph_Slim`, `Morph_BodyFat`, `Morph_MuscleMass`, khóa cứng 100% Đầu/Cổ/Tay/Chân) vào `base_mannequin.glb` (`668.0 KB`) & `base_mannequin_female.glb` (`668.4 KB`), đồng thời bake 6 phiên bản Draco chuyên biệt (`base_mannequin_male_{slim,muscular,heavy}.glb` & `base_mannequin_female_{slim,toned,curvy}.glb`, `~93 KB`/file). Tổng toàn bộ `mobile/assets/3d_bundled/` chỉ còn **`5.89 MB`** (`<< 40 MB`).
+  - **Flutter 60 FPS Morph & 8 Preset (`[OWNER: M1, M2]`):**
+    - `mobile/lib/features/gym3d/presentation/widgets/muscle_3d_viewer_widget.dart`: Thêm `BodyMorphWeights`, mở rộng `BodyAvatarPreset` lên 8 biến thể (4 Nam + 4 Nữ, giữ tương thích ngược `maleFit`, `femaleFit`, `maleBulk`), bổ sung JS bridge `window.vigorSetBodyMorph(slim, fat, muscle)` cập nhật `morphTargetInfluences` qua `Symbol('scene')` và gỡ `mv.updateFraming()` chống nhảy zoom.
+    - `mobile/lib/features/auth_privacy/data/user_fitness_profile.dart`: Bổ sung `computedBodyMorph` nội suy liên tục theo BMI + `% Mỡ` + giới tính + tạng người, cập nhật `recommendedAvatarPreset` cho đủ 8 vóc dáng Nam/Nữ.
+    - `mobile/lib/features/auth_privacy/presentation/onboarding_disclaimer_screen.dart`: Kết nối `masterMannequinAssetPath` + `bodyMorph: _draft.computedBodyMorph` để biến đổi cơ–mỡ thời gian thực khi kéo thanh trượt.
+    - `mobile/lib/features/auth_privacy/presentation/profile_settings_screen.dart`, `mobile/lib/features/ai_analytics/readiness_3d/readiness_recovery_3d_view.dart`: Đồng bộ bộ chọn 8 Avatar Nam/Nữ.
+  - **Việt hóa Có dấu & Tests (`[OWNER: M1, M2, M3]`):**
+    - `mobile/assets/mock_json/mock_m4_ai.json`, `mobile/lib/core/network/dio_client.dart`, `mobile/lib/features/gym3d/data/exercise_repository.dart` (`equipmentLabelVi`), `live_workout_logger_screen.dart`, `routines_screen.dart`, `biometrics_screen.dart`, `food_scan_screen.dart`, `nutrition_screen.dart`, `ai_coach_hub_screen.dart`, `smart_routine_generator.dart`.
+    - `backend/app/core/{dependencies,security}.py`, `backend/app/services/auth_service.py`, `backend/app/routers/{exercises,health,routines,users,workouts}.py`.
+    - `mobile/test/health/body_morph_3d_test.dart`, `mobile/test/health/ui_layout_and_copy_test.dart`, `mobile/test/workout/workout_sprint2_test.dart`.
+- **Kiểm tra / Kết quả chạy thử:**
+  - Blender 5.3 CLI + Python glTF Validator: Xuất & xác nhận đủ 8 `.glb` hợp lệ (11 `Mesh_Muscle_*`, 11 `Mat_Muscle_*`, `Armature_GymHuman`, 4 Sockets, `Morph_Slim`/`Morph_BodyFat`/`Morph_MuscleMass` trên 2 Master, tổng `3d_bundled` = `5.89 MB`).
+  - Quét tự động chuỗi không dấu trên `mobile/lib/`, `mobile/assets/mock_json/`, `backend/app/`: **`UNACCENTED HITS: 0`**.
+  - `flutter analyze --no-fatal-infos`: Exit `0`.
+  - `flutter test`: **`48 / 48` tests passed**.
+  - `python -m py_compile` trên toàn bộ 8 file Python backend đã sửa: Exit `0` (chưa chạy `pytest` trực tiếp do máy Windows không cài `sqlalchemy` ngoài Docker).
+- **Việc cần làm ở phiên kế tiếp:**
+  - Test trực tiếp trên thiết bị/emulator Android để ngắm chuyển động biến đổi cơ–mỡ 3D khi kéo thanh Cân nặng, sau đó commit/push và build `.aab` cập nhật cho đợt Closed Testing kế tiếp.
 
 ---
 

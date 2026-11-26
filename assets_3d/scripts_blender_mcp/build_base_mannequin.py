@@ -286,6 +286,7 @@ def _classify_polygon(
     nx: float,
     ny: float,
     nz: float,
+    is_female: bool = False,
 ) -> str:
     """Phan loai tung mat da giac vao dung 11 vung co bap hoac 2 phan khung trung tinh."""
     ax = abs(cx)
@@ -333,7 +334,8 @@ def _classify_polygon(
 
     # 8. Upper Arms -> Shoulders (tapered deltoid cap) vs Biceps (anterior) vs Triceps (posterior)
     if sid in {20, 21}:
-        deltoid_z_floor = 1.352 - 0.42 * max(0.0, ax - 0.180) + 0.018 * abs(cy - 0.015)
+        shoulder_floor = 1.362 if is_female else 1.352
+        deltoid_z_floor = shoulder_floor - 0.42 * max(0.0, ax - 0.180) + 0.018 * abs(cy - 0.015)
         if cz >= deltoid_z_floor:
             return "Mat_Muscle_Shoulders"
         if cz < 1.158:
@@ -344,7 +346,9 @@ def _classify_polygon(
 
     # 9. Pelvis / Hips -> Glutes (posterior) vs V-line lower Abs (anterior) vs neutral briefs
     if sid == 18:
-        if cy >= 0.022 and cz >= 0.825:
+        glute_y_min = 0.014 if is_female else 0.022
+        glute_z_min = 0.810 if is_female else 0.825
+        if cy >= glute_y_min and cz >= glute_z_min:
             return "Mat_Muscle_Glutes"
         if cz >= 0.905 and cy < 0.005 and ax <= 0.095 * max(0.0, (cz - 0.865) / 0.140):
             return "Mat_Muscle_Abs_Core"
@@ -352,40 +356,276 @@ def _classify_polygon(
 
     # 10. Waist / Mid-Core (`FS 19`) -> eliminate awkward horizontal lower-back gap
     if sid == 19:
-        if cy >= 0.035:
-            if cz >= 1.035:
+        if cy >= (0.026 if is_female else 0.035):
+            if cz >= (1.045 if is_female else 1.035):
                 return "Mat_Muscle_Back_Lats"
             return "Mat_Muscle_Glutes"
         return "Mat_Muscle_Abs_Core"
 
     # 11. Upper Torso (`FS 1` & collar overlap of `FS 17`)
     # Deltoid transition on outer shoulder shelf
-    if ax >= 0.155 and cz >= 1.345:
+    if ax >= (0.145 if is_female else 0.155) and cz >= (1.355 if is_female else 1.345):
         return "Mat_Muscle_Shoulders"
 
-    # Upper Trapezius collar flanking neck (visible cleanly from front & back)
-    if cz >= 1.438 and ax >= 0.052 and ax < 0.155 and cy >= -0.045:
+    # Upper Trapezius collar flanking neck (narrower & more graceful on female)
+    trap_ax_max = 0.132 if is_female else 0.155
+    if cz >= 1.438 and ax >= 0.052 and ax < trap_ax_max and cy >= -0.045:
         return "Mat_Muscle_Traps"
 
     # Anterior Torso -> Chest (below clavicle line) vs Abs
-    if cy <= 0.012:
-        if cz >= 1.245 and cz < 1.438:
+    if cy <= (0.016 if is_female else 0.012):
+        chest_z_min = 1.215 if is_female else 1.245
+        chest_z_max = 1.425 if is_female else 1.438
+        if chest_z_min <= cz < chest_z_max:
             return "Mat_Muscle_Chest"
-        if cz < 1.245:
+        if cz < chest_z_min:
             return "Mat_Muscle_Abs_Core"
         return "Mat_Body_Neutral"
 
     # Posterior Torso -> Traps (upper diamond + collar) vs Back Lats (V-taper wings)
     if cz >= 1.280:
         if cz <= 1.445:
-            trap_half_w = 0.035 + 0.105 * ((cz - 1.280) / 0.165)
+            trap_half_w = 0.035 + (0.088 if is_female else 0.105) * ((cz - 1.280) / 0.165)
         else:
-            trap_half_w = 0.140 - 0.065 * min(1.0, (cz - 1.445) / 0.080)
+            max_w = 0.123 if is_female else 0.140
+            trap_half_w = max_w - 0.058 * min(1.0, (cz - 1.445) / 0.080)
         if ax <= trap_half_w:
             return "Mat_Muscle_Traps"
     if cz >= 1.035:
         return "Mat_Muscle_Back_Lats"
     return "Mat_Body_Neutral"
+
+
+def _smoothstep(edge0: float, edge1: float, x: float) -> float:
+    if edge1 <= edge0:
+        return 1.0 if x >= edge1 else 0.0
+    t = max(0.0, min(1.0, (x - edge0) / (edge1 - edge0)))
+    return t * t * (3.0 - 2.0 * t)
+
+
+def _gauss_band(x: float, center: float, half_width: float) -> float:
+    import math
+    if half_width <= 1e-6:
+        return 0.0
+    d = (x - center) / half_width
+    return math.exp(-d * d * 2.2)
+
+
+def _add_anatomical_shape_keys(
+    mesh_obj,
+    orig_kd,
+    orig_sids: list[int],
+    height_scale: float = 1.0,
+    is_female: bool = False,
+    preset_bake_weights: tuple[float, float, float] | None = None,
+) -> None:
+    """Tao 3 kenh bien dang giai phau (Morph_Slim, Morph_BodyFat, Morph_MuscleMass).
+    Khoa tuyet doi Dau, Co tren, Ban tay, Co tay, Ban chan, Co chan.
+    """
+    from mathutils import Vector  # type: ignore
+
+    me = mesh_obj.data
+    n_verts = len(me.vertices)
+    inv_scale = 1.0 / height_scale if height_scale > 0 else 1.0
+
+    # Determine dominant material slot per vertex (for muscle-specific sculpting)
+    vert_mats: list[str] = ["Mat_Body_Neutral"] * n_verts
+    mat_names = [m.name if m else "Mat_Body_Neutral" for m in me.materials]
+    for poly in me.polygons:
+        mname = mat_names[poly.material_index] if poly.material_index < len(mat_names) else "Mat_Body_Neutral"
+        for vi in poly.vertices:
+            if mname.startswith("Mat_Muscle_"):
+                vert_mats[vi] = mname
+
+    # Build vertex adjacency for Laplacian smoothing of displacement fields
+    adj: list[list[int]] = [[] for _ in range(n_verts)]
+    for e in me.edges:
+        a, b = e.vertices[0], e.vertices[1]
+        adj[a].append(b)
+        adj[b].append(a)
+
+    slim_deltas = [Vector((0.0, 0.0, 0.0)) for _ in range(n_verts)]
+    fat_deltas = [Vector((0.0, 0.0, 0.0)) for _ in range(n_verts)]
+    mus_deltas = [Vector((0.0, 0.0, 0.0)) for _ in range(n_verts)]
+
+    muscle_amp_male = {
+        "Mat_Muscle_Chest": 0.022,
+        "Mat_Muscle_Shoulders": 0.025,
+        "Mat_Muscle_Biceps": 0.019,
+        "Mat_Muscle_Triceps": 0.019,
+        "Mat_Muscle_Back_Lats": 0.026,
+        "Mat_Muscle_Traps": 0.015,
+        "Mat_Muscle_Abs_Core": 0.009,
+        "Mat_Muscle_Glutes": 0.018,
+        "Mat_Muscle_Quads": 0.023,
+        "Mat_Muscle_Hamstrings": 0.018,
+        "Mat_Muscle_Calves": 0.014,
+    }
+    muscle_amp_female = {
+        "Mat_Muscle_Chest": 0.008,
+        "Mat_Muscle_Shoulders": 0.011,
+        "Mat_Muscle_Biceps": 0.009,
+        "Mat_Muscle_Triceps": 0.009,
+        "Mat_Muscle_Back_Lats": 0.012,
+        "Mat_Muscle_Traps": 0.003,
+        "Mat_Muscle_Abs_Core": 0.006,
+        "Mat_Muscle_Glutes": 0.028,
+        "Mat_Muscle_Quads": 0.016,
+        "Mat_Muscle_Hamstrings": 0.017,
+        "Mat_Muscle_Calves": 0.010,
+    }
+    amp_table = muscle_amp_female if is_female else muscle_amp_male
+
+    for vi, v in enumerate(me.vertices):
+        _, orig_idx, _ = orig_kd.find(v.co)
+        sid = orig_sids[orig_idx]
+        nx_p = v.co.x * inv_scale
+        ny_p = v.co.y * inv_scale
+        nz_p = v.co.z * inv_scale
+        ax = abs(nx_p)
+        sx = 1.0 if nx_p >= 0.0 else -1.0
+
+        # Lock Head/Neck, Hands/Wrists, Feet/Ankles cleanly with smoothstep falloff
+        if sid in {2, 3, 4, 5, 7, 8, 22, 9, 10, 13, 14} or sid >= 25:
+            if sid in {9, 10, 13, 14} or sid >= 25 or sid in {2, 3, 4, 5, 7, 8, 22}:
+                continue
+        head_lock = 1.0 - _smoothstep(1.430, 1.485, nz_p)
+        foot_lock = _smoothstep(0.155, 0.215, nz_p)
+        hand_lock = 1.0 - _smoothstep(0.305, 0.365, ax)
+        if nz_p < 1.15 and ax > 0.26:
+            hand_lock = 0.0  # Forearms/hands hanging beside thighs
+        lock_w = head_lock * foot_lock * hand_lock
+        if lock_w <= 1e-4:
+            continue
+
+        nrm = v.normal.normalized() if v.normal.length > 1e-6 else Vector((0.0, 0.0, 0.0))
+        mname = vert_mats[vi]
+
+        # ------------------------------------------------------------------
+        # 1. Morph_Slim: radial slimming around local limb/torso centerline
+        # ------------------------------------------------------------------
+        s_vec = Vector((0.0, 0.0, 0.0))
+        if 0.84 <= nz_p <= 1.44 and ax < 0.22:
+            torso_w = _gauss_band(nz_p, 1.06, 0.30)
+            s_vec.x = -nx_p * 0.14 * torso_w
+            s_vec.y = -(ny_p - 0.015) * 0.16 * torso_w
+        elif 0.20 <= nz_p < 0.86 and ax < 0.23:
+            leg_cx = sx * 0.125
+            leg_w = _smoothstep(0.18, 0.30, nz_p) * (1.0 - _smoothstep(0.78, 0.88, nz_p))
+            s_vec.x = -(nx_p - leg_cx) * 0.16 * leg_w
+            s_vec.y = -(ny_p - 0.03) * 0.16 * leg_w
+        if sid in {20, 21} or (ax >= 0.175 and 1.12 <= nz_p <= 1.42):
+            arm_cx = sx * (0.20 + 0.10 * max(0.0, min(1.0, (1.42 - nz_p) / 0.30)))
+            arm_w = _smoothstep(1.12, 1.20, nz_p) * (1.0 - _smoothstep(1.38, 1.44, nz_p))
+            s_vec.x = -(nx_p - arm_cx) * 0.15 * arm_w
+            s_vec.y = -(ny_p - 0.02) * 0.15 * arm_w
+        slim_deltas[vi] = s_vec * height_scale * lock_w
+
+        # ------------------------------------------------------------------
+        # 2. Morph_BodyFat: anatomical subcutaneous fat distribution
+        # ------------------------------------------------------------------
+        f_vec = Vector((0.0, 0.0, 0.0))
+        # Belly & Waist / Love-handles
+        if 0.82 <= nz_p <= 1.26 and ax < 0.22:
+            belly_band = _gauss_band(nz_p, 1.01, 0.19)
+            front_w = _smoothstep(0.02, -0.09, ny_p)
+            side_w = _smoothstep(0.06, 0.15, ax)
+            belly_proj = 0.054 if is_female else 0.068
+            waist_flare = 0.044 if is_female else 0.040
+            f_vec.y += -belly_proj * belly_band * front_w
+            f_vec.x += sx * waist_flare * belly_band * side_w
+            f_vec.y += 0.015 * belly_band * _smoothstep(0.01, 0.09, ny_p)
+            f_vec.z += -0.007 * belly_band * front_w * _smoothstep(1.06, 0.92, nz_p)
+
+        # Chest / Subcutaneous fullness
+        if 1.19 <= nz_p <= 1.40 and ax < 0.19 and ny_p < 0.02:
+            chest_band = _gauss_band(nz_p, 1.29, 0.10)
+            chest_proj = 0.026 if is_female else 0.022
+            f_vec.y += -chest_proj * chest_band * _smoothstep(0.02, -0.08, ny_p)
+            f_vec.x += sx * 0.012 * chest_band
+
+        # Hips, Glutes & Thighs
+        if 0.48 <= nz_p <= 0.94 and ax < 0.24:
+            hip_band = _gauss_band(nz_p, 0.85, 0.12)
+            hip_x = 0.042 if is_female else 0.026
+            glute_y = 0.040 if is_female else 0.028
+            f_vec.x += sx * hip_x * hip_band * _smoothstep(0.08, 0.18, ax)
+            f_vec.y += glute_y * hip_band * _smoothstep(0.02, 0.11, ny_p)
+
+            thigh_band = _smoothstep(0.48, 0.62, nz_p) * (1.0 - _smoothstep(0.84, 0.94, nz_p))
+            thigh_cx = sx * 0.118
+            rad = Vector((nx_p - thigh_cx, ny_p - 0.02, 0.0))
+            if rad.length > 1e-5:
+                rad.normalize()
+                thigh_thick = 0.030 if is_female else 0.025
+                f_vec += rad * (thigh_thick * thigh_band)
+
+        # Calves slight fullness
+        if 0.19 <= nz_p < 0.45 and ax < 0.23:
+            calf_band = _gauss_band(nz_p, 0.33, 0.11)
+            f_vec += Vector((nrm.x, nrm.y, 0.0)) * (0.010 * calf_band)
+
+        # Upper arms (subcutaneous tricep/arm fullness)
+        if (sid in {20, 21} or (ax >= 0.175 and 1.12 <= nz_p <= 1.39)) and 1.12 <= nz_p <= 1.39:
+            arm_band = _smoothstep(1.12, 1.20, nz_p) * (1.0 - _smoothstep(1.34, 1.40, nz_p))
+            f_vec += Vector((nrm.x, nrm.y, 0.0)) * (0.015 * arm_band)
+
+        fat_deltas[vi] = f_vec * height_scale * lock_w
+
+        # ------------------------------------------------------------------
+        # 3. Morph_MuscleMass: hypertrophy along surface normals per muscle
+        # ------------------------------------------------------------------
+        m_vec = Vector((0.0, 0.0, 0.0))
+        amp = amp_table.get(mname, 0.002)
+        m_vec += nrm * amp
+        if mname == "Mat_Muscle_Chest":
+            m_vec.y += (-0.008 if not is_female else -0.005)
+        elif mname == "Mat_Muscle_Back_Lats":
+            m_vec.x += sx * (0.014 if not is_female else 0.006)
+        elif mname == "Mat_Muscle_Shoulders":
+            m_vec.x += sx * (0.012 if not is_female else 0.005)
+        elif mname == "Mat_Muscle_Glutes" and is_female:
+            m_vec.y += 0.012
+            m_vec.z += 0.006
+        elif mname == "Mat_Muscle_Abs_Core":
+            if is_female:
+                m_vec.x += -sx * 0.008 * _gauss_band(nz_p, 1.05, 0.11)
+            else:
+                m_vec.x += -sx * 0.004 * _gauss_band(nz_p, 1.05, 0.11)
+                m_vec.y += -0.005 * _smoothstep(0.01, -0.09, ny_p)
+
+        mus_deltas[vi] = m_vec * height_scale * lock_w
+
+    # Smooth displacement fields (2 Laplacian passes) for seamless organic curves
+    for field in (slim_deltas, fat_deltas, mus_deltas):
+        for _ in range(2):
+            nxt = list(field)
+            for vi in range(n_verts):
+                nbrs = adj[vi]
+                if not nbrs or field[vi].length_squared < 1e-12:
+                    continue
+                avg = sum((field[nb] for nb in nbrs), Vector((0.0, 0.0, 0.0))) / len(nbrs)
+                nxt[vi] = field[vi] * 0.60 + avg * 0.40
+            field[:] = nxt
+
+    if preset_bake_weights is not None:
+        w_slim, w_fat, w_mus = preset_bake_weights
+        for vi, v in enumerate(me.vertices):
+            v.co = v.co + slim_deltas[vi] * w_slim + fat_deltas[vi] * w_fat + mus_deltas[vi] * w_mus
+        me.update()
+        return
+
+    # Create Basis + 3 Shape Keys for glTF Morph Targets
+    mesh_obj.shape_key_add(name="Basis", from_mix=False)
+    for sk_name, field in (
+        ("Morph_Slim", slim_deltas),
+        ("Morph_BodyFat", fat_deltas),
+        ("Morph_MuscleMass", mus_deltas),
+    ):
+        sk = mesh_obj.shape_key_add(name=sk_name, from_mix=False)
+        for vi, v in enumerate(me.vertices):
+            sk.data[vi].co = v.co + field[vi]
+    me.update()
 
 
 def _create_armature(collection, height_scale: float = 1.0):
@@ -671,14 +911,16 @@ def build_mannequin(
     blend_path: str | Path | None = None,
     glb_paths: Iterable[str | Path] = (),
     bundle_path: Path | None = None,
-    decimate_ratio: float = 0.56,
+    decimate_ratio: float = 0.65,
     keep_heatmap_preview: bool = False,
     mesh_object_name: str = "GEO-body_male_realistic",
     target_height: float = 1.78,
     use_draco: bool = False,
     grip_hands: bool = False,
+    preset_bake_weights: tuple[float, float, float] | None = None,
+    export_morph_targets: bool = True,
 ) -> dict:
-    """Dung hoan chinh Base Mannequin Low-Poly Anatomical Faceted tu Blender Human Base Meshes."""
+    """Dung hoan chinh Base Mannequin Anatomical Smooth tu Blender Human Base Meshes."""
     import bpy  # type: ignore
     import bmesh  # type: ignore
     from mathutils.kdtree import KDTree  # type: ignore
@@ -693,6 +935,7 @@ def build_mannequin(
 
     resolved_bundle = resolve_bundle_path(bundle_path)
     height_scale = target_height / 1.78
+    is_female = "female" in mesh_object_name.lower()
 
     # 1. Load & normalize official Blender Human Base Mesh
     unified = _load_and_normalize_base_mesh(
@@ -713,7 +956,7 @@ def build_mannequin(
         orig_sids.append(orig_fs.data[i].value if orig_fs else 1)
     kd.balance()
 
-    # 2. Decimate symmetrically to Low-Poly Anatomical Faceted (~11k - 13k triangles)
+    # 2. Decimate symmetrically (~13.5k triangles)
     bpy.ops.object.select_all(action="DESELECT")
     unified.select_set(True)
     bpy.context.view_layer.objects.active = unified
@@ -733,10 +976,10 @@ def build_mannequin(
     bm.to_mesh(unified.data)
     bm.free()
 
-    # Enforce strict Flat Shading (Low-Poly Faceted look)
+    # Use Smooth Shading per separated muscle mesh: keeps 11 muscle borders crisp while body curves look organic
     me = unified.data
     if len(me.polygons) > 0:
-        me.polygons.foreach_set("use_smooth", [False] * len(me.polygons))
+        me.polygons.foreach_set("use_smooth", [True] * len(me.polygons))
     me.update()
 
     # 3. Create all 11 muscle materials + temporary head/neck + neutral body material
@@ -747,7 +990,7 @@ def build_mannequin(
     mat_name_to_obj = {}
     for mname in mat_slots_order:
         rgba = COLOR_BODY_NEUTRAL if "Body_" in mname else COLOR_MUSCLE_GREY
-        mat_obj = _create_pbr_material(mname, rgba, roughness=0.55, metallic=0.05)
+        mat_obj = _create_pbr_material(mname, rgba, roughness=0.52, metallic=0.04)
         me.materials.append(mat_obj)
         mat_name_to_obj[mname] = mat_obj
 
@@ -768,6 +1011,7 @@ def build_mannequin(
             n.x,
             n.y,
             n.z,
+            is_female=is_female,
         )
         poly.material_index = slot_index[target_mat]
     me.update()
@@ -785,6 +1029,16 @@ def build_mannequin(
         print(f"[VigorAI] Fallback nearest-bone weights assigned to {fixed_verts} vertices")
 
     _smooth_and_lock_skin_weights(unified, kd, orig_sids, height_scale=height_scale)
+
+    # 4b. Create anatomical Shape Keys (or bake preset) BEFORE mesh.separate(type="MATERIAL")
+    _add_anatomical_shape_keys(
+        unified,
+        kd,
+        orig_sids,
+        height_scale=height_scale,
+        is_female=is_female,
+        preset_bake_weights=preset_bake_weights,
+    )
 
     # 5. Separate unified skinned mesh by material into 13 seamless objects
     bpy.ops.object.select_all(action="DESELECT")
@@ -843,12 +1097,20 @@ def build_mannequin(
         print(f"[VigorAI] Saved .blend -> {blend_path}")
 
     for glb_out in glb_paths:
-        export_draco_glb(str(glb_out), use_draco=use_draco)
+        export_draco_glb(
+            str(glb_out),
+            use_draco=use_draco,
+            export_morph_targets=export_morph_targets,
+        )
 
     return {"total_triangles": total_tris}
 
 
-def export_draco_glb(filepath: str, use_draco: bool = False) -> None:
+def export_draco_glb(
+    filepath: str,
+    use_draco: bool = False,
+    export_morph_targets: bool = True,
+) -> None:
     import bpy  # type: ignore
 
     out = Path(filepath)
@@ -860,6 +1122,8 @@ def export_draco_glb(filepath: str, use_draco: bool = False) -> None:
         export_texcoords=False,
         export_tangents=False,
         export_normals=True,
+        export_morph=export_morph_targets,
+        export_morph_normal=export_morph_targets,
         export_animations=True,
         export_animation_mode="NLA_TRACKS",
         export_force_sampling=False,
@@ -872,9 +1136,8 @@ def export_draco_glb(filepath: str, use_draco: bool = False) -> None:
 if __name__ == "__main__":
     repo_root = Path(__file__).resolve().parents[2]
     preview = bool(os.environ.get("VIGORAI_HEATMAP_PREVIEW"))
-    use_draco = bool(os.environ.get("VIGORAI_USE_DRACO"))
 
-    # 1. Male Mannequin (1.78m)
+    # 1. Male Master (1.78m) with 3 Live Morph Targets (no Draco to preserve morph vertex indices)
     build_mannequin(
         blend_path=repo_root / "assets_3d" / "source_blend" / "base_mannequin.blend",
         glb_paths=[
@@ -884,10 +1147,12 @@ if __name__ == "__main__":
         mesh_object_name="GEO-body_male_realistic",
         target_height=1.78,
         keep_heatmap_preview=preview,
-        use_draco=use_draco,
+        use_draco=False,
+        preset_bake_weights=None,
+        export_morph_targets=True,
     )
 
-    # 2. Female Mannequin (1.66m) for Body Avatar F13
+    # 2. Female Master (1.66m) with 3 Live Morph Targets
     build_mannequin(
         blend_path=repo_root / "assets_3d" / "source_blend" / "base_mannequin_female.blend",
         glb_paths=[
@@ -897,5 +1162,31 @@ if __name__ == "__main__":
         mesh_object_name="GEO-body_female_realistic",
         target_height=1.66,
         keep_heatmap_preview=preview,
-        use_draco=use_draco,
+        use_draco=False,
+        preset_bake_weights=None,
+        export_morph_targets=True,
     )
+
+    # 3. 6 Dedicated Static Physique Presets (3 Male + 3 Female, Draco compressed for small .aab)
+    preset_specs = [
+        ("base_mannequin_male_slim.glb", "GEO-body_male_realistic", 1.78, (0.85, 0.0, 0.0)),
+        ("base_mannequin_male_muscular.glb", "GEO-body_male_realistic", 1.78, (0.0, 0.05, 0.92)),
+        ("base_mannequin_male_heavy.glb", "GEO-body_male_realistic", 1.78, (0.0, 0.88, 0.22)),
+        ("base_mannequin_female_slim.glb", "GEO-body_female_realistic", 1.66, (0.82, 0.0, 0.0)),
+        ("base_mannequin_female_toned.glb", "GEO-body_female_realistic", 1.66, (0.15, 0.0, 0.90)),
+        ("base_mannequin_female_curvy.glb", "GEO-body_female_realistic", 1.66, (0.0, 0.85, 0.15)),
+    ]
+    for filename, mesh_name, height_m, bake_w in preset_specs:
+        build_mannequin(
+            blend_path=None,
+            glb_paths=[
+                repo_root / "assets_3d" / "exported_glb" / filename,
+                repo_root / "mobile" / "assets" / "3d_bundled" / filename,
+            ],
+            mesh_object_name=mesh_name,
+            target_height=height_m,
+            keep_heatmap_preview=preview,
+            use_draco=True,
+            preset_bake_weights=bake_w,
+            export_morph_targets=False,
+        )

@@ -418,7 +418,7 @@ class _AddMealSheetState extends State<_AddMealSheet> {
                     child: TextField(
                       controller: _carbsCtrl,
                       keyboardType: TextInputType.number,
-                      decoration: const InputDecoration(labelText: 'Carb (g)'),
+                      decoration: const InputDecoration(labelText: 'Tinh bột (g)'),
                     ),
                   ),
                   const SizedBox(width: 8),
@@ -426,7 +426,7 @@ class _AddMealSheetState extends State<_AddMealSheet> {
                     child: TextField(
                       controller: _fatCtrl,
                       keyboardType: TextInputType.number,
-                      decoration: const InputDecoration(labelText: 'Fat (g)'),
+                      decoration: const InputDecoration(labelText: 'Chất béo (g)'),
                     ),
                   ),
                 ],

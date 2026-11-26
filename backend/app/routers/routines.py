@@ -142,7 +142,7 @@ async def create_routine(
         if ex_obj is None:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Bai tap khong ton tai: {item.exercise_code or item.exercise_id}",
+                detail=f"Bài tập không tồn tại: {item.exercise_code or item.exercise_id}",
             )
         db.add(
             RoutineExercise(
@@ -186,7 +186,7 @@ async def update_routine(
     if routine is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Khong tim thay giao an cua nguoi dung.",
+            detail="Không tìm thấy giáo án của người dùng.",
         )
 
     now_utc = payload.updated_at or datetime.now(timezone.utc)
@@ -214,7 +214,7 @@ async def update_routine(
         if ex_obj is None:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Bai tap khong ton tai: {item.exercise_code or item.exercise_id}",
+                detail=f"Bài tập không tồn tại: {item.exercise_code or item.exercise_id}",
             )
         db.add(
             RoutineExercise(
@@ -257,11 +257,11 @@ async def delete_routine(
     if routine is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Khong tim thay giao an cua nguoi dung.",
+            detail="Không tìm thấy giáo án của người dùng.",
         )
 
     now_utc = datetime.now(timezone.utc)
     routine.deleted_at = now_utc
     routine.updated_at = now_utc
     await db.commit()
-    return MessageResponse(status="deleted", message="Da xoa giao an tap luyen.")
+    return MessageResponse(status="deleted", message="Đã xóa giáo án tập luyện.")
