@@ -1,0 +1,1034 @@
+{
+  "model_file": "food_yolo_v1.onnx",
+  "model_sha256": "bafffc3a249703b00f32795af5b505ced84b5ac367ded2a544ba6bd5d604369f",
+  "backend": "onnxruntime",
+  "dataset": "C:\\Users\\ASUS\\Downloads\\VigorAI\\ai_research\\datasets\\model_b_v8\\data.yaml",
+  "split": "test",
+  "num_images": 1122,
+  "metrics_at_operating_conf": {
+    "operating_conf": 0.3,
+    "active_classes": 69,
+    "precision": 0.8369,
+    "recall": 0.7951,
+    "f1_score": 0.8154,
+    "map50": 0.8738,
+    "per_class_ap50": {
+      "ALMONDS": 0.8368,
+      "APPLE": 0.6481,
+      "AVOCADO": 0.5975,
+      "BANANA": 0.7435,
+      "BANH_BAO": 0.995,
+      "BANH_CHUNG_TET": 0.9939,
+      "BANH_CUON": 0.995,
+      "BANH_GIO": 0.99,
+      "BANH_MI_THIT": 0.9777,
+      "BANH_XEO": 0.973,
+      "BEEF_PHO": 0.995,
+      "BEEF_STEAK": 0.7942,
+      "BOILED_EGG": 0.995,
+      "BOTTLED_DRINK": 0.8287,
+      "BROCCOLI": 0.7451,
+      "BROWN_RICE": 0.895,
+      "BUN_BO_HUE": 0.8159,
+      "BUN_CHA": 0.9743,
+      "BUN_DAU": 0.995,
+      "BUN_RIEU": 0.9661,
+      "BURGER_PIZZA_FASTFOOD": 0.8626,
+      "CAKE_MUFFIN_PASTRY": 0.777,
+      "CANH_CHUA_CA": 0.963,
+      "CA_KHO_TO": 0.995,
+      "CHAO_THIT": 0.7163,
+      "CHERRY_TOMATO": 0.5227,
+      "CHIPS_POPCORN_SNACK": 0.7594,
+      "CHOCOLATE_CANDY": 0.7789,
+      "COFFEE_MILK_TEA": 0.9201,
+      "COM_CHIEN": 0.9677,
+      "COM_GA_XOI_MO": 0.963,
+      "COM_TAM_SUON": 0.8529,
+      "COM_XANH": 0.995,
+      "COOKIE_BISCUIT": 0.7695,
+      "CROISSANT_SWEET_BREAD": 0.914,
+      "CUCUMBER": 0.4144,
+      "DONUT_WAFFLE_PANCAKE": 0.7677,
+      "DRINK_BEER": 0.9055,
+      "DRINK_BOTTLED_COFFEE": 0.8685,
+      "DRINK_BOTTLED_TEA": 0.9515,
+      "DRINK_CITRUS_SODA": 0.9945,
+      "DRINK_COCONUT_WATER": 0.9246,
+      "DRINK_COLA": 0.9934,
+      "DRINK_ENERGY": 0.9924,
+      "DRINK_MILK_CARTON": 0.8296,
+      "DRINK_MINERAL_WATER": 0.9909,
+      "DRINK_SPORTS_ISOTONIC": 0.9754,
+      "DRINK_YOGURT_PROBIOTIC": 0.909,
+      "FRENCH_FRIES": 0.9795,
+      "FRIED_EGG": 0.995,
+      "FRUIT_JUICE_SMOOTHIE": 0.7819,
+      "GOI_CUON_NEM": 0.995,
+      "GREEK_YOGURT": 0.9685,
+      "GREEN_SALAD": 0.8109,
+      "GRILLED_CHICKEN_BREAST": 0.8036,
+      "HU_TIEU": 0.9611,
+      "ICE_CREAM_DESSERT": 0.6744,
+      "LEAN_PORK": 0.7981,
+      "MI_QUANG_XAO": 0.8471,
+      "OATMEAL": 0.8104,
+      "RAU_MUONG_XAO": 0.995,
+      "SALMON_FILLET": 0.865,
+      "STEAMED_SHRIMP": 0.8991,
+      "SWEET_POTATO": 0.5469,
+      "THIT_KHO_TRUNG": 0.886,
+      "TOFU": 0.973,
+      "WHEY_SHAKE": 0.9192,
+      "WHITE_RICE": 0.8715,
+      "XOI_MAN": 0.8837
+    },
+    "per_class_details": {
+      "ALMONDS": {
+        "gt_boxes": 23,
+        "tp": 18,
+        "fp": 4,
+        "fn": 5,
+        "precision": 0.8182,
+        "recall": 0.7826,
+        "f1": 0.8,
+        "ap50": 0.8368
+      },
+      "APPLE": {
+        "gt_boxes": 63,
+        "tp": 32,
+        "fp": 11,
+        "fn": 31,
+        "precision": 0.7442,
+        "recall": 0.5079,
+        "f1": 0.6038,
+        "ap50": 0.6481
+      },
+      "AVOCADO": {
+        "gt_boxes": 21,
+        "tp": 13,
+        "fp": 6,
+        "fn": 8,
+        "precision": 0.6842,
+        "recall": 0.619,
+        "f1": 0.65,
+        "ap50": 0.5975
+      },
+      "BANANA": {
+        "gt_boxes": 56,
+        "tp": 36,
+        "fp": 8,
+        "fn": 20,
+        "precision": 0.8182,
+        "recall": 0.6429,
+        "f1": 0.72,
+        "ap50": 0.7435
+      },
+      "BANH_BAO": {
+        "gt_boxes": 6,
+        "tp": 6,
+        "fp": 2,
+        "fn": 0,
+        "precision": 0.75,
+        "recall": 1.0,
+        "f1": 0.8571,
+        "ap50": 0.995
+      },
+      "BANH_CHUNG_TET": {
+        "gt_boxes": 26,
+        "tp": 26,
+        "fp": 1,
+        "fn": 0,
+        "precision": 0.963,
+        "recall": 1.0,
+        "f1": 0.9811,
+        "ap50": 0.9939
+      },
+      "BANH_CUON": {
+        "gt_boxes": 16,
+        "tp": 16,
+        "fp": 2,
+        "fn": 0,
+        "precision": 0.8889,
+        "recall": 1.0,
+        "f1": 0.9412,
+        "ap50": 0.995
+      },
+      "BANH_GIO": {
+        "gt_boxes": 19,
+        "tp": 19,
+        "fp": 1,
+        "fn": 0,
+        "precision": 0.95,
+        "recall": 1.0,
+        "f1": 0.9744,
+        "ap50": 0.99
+      },
+      "BANH_MI_THIT": {
+        "gt_boxes": 16,
+        "tp": 15,
+        "fp": 2,
+        "fn": 1,
+        "precision": 0.8824,
+        "recall": 0.9375,
+        "f1": 0.9091,
+        "ap50": 0.9777
+      },
+      "BANH_XEO": {
+        "gt_boxes": 26,
+        "tp": 24,
+        "fp": 1,
+        "fn": 2,
+        "precision": 0.96,
+        "recall": 0.9231,
+        "f1": 0.9412,
+        "ap50": 0.973
+      },
+      "BEEF_PHO": {
+        "gt_boxes": 5,
+        "tp": 5,
+        "fp": 1,
+        "fn": 0,
+        "precision": 0.8333,
+        "recall": 1.0,
+        "f1": 0.9091,
+        "ap50": 0.995
+      },
+      "BEEF_STEAK": {
+        "gt_boxes": 28,
+        "tp": 20,
+        "fp": 5,
+        "fn": 8,
+        "precision": 0.8,
+        "recall": 0.7143,
+        "f1": 0.7547,
+        "ap50": 0.7942
+      },
+      "BOILED_EGG": {
+        "gt_boxes": 17,
+        "tp": 17,
+        "fp": 1,
+        "fn": 0,
+        "precision": 0.9444,
+        "recall": 1.0,
+        "f1": 0.9714,
+        "ap50": 0.995
+      },
+      "BOTTLED_DRINK": {
+        "gt_boxes": 51,
+        "tp": 41,
+        "fp": 8,
+        "fn": 10,
+        "precision": 0.8367,
+        "recall": 0.8039,
+        "f1": 0.82,
+        "ap50": 0.8287
+      },
+      "BROCCOLI": {
+        "gt_boxes": 51,
+        "tp": 31,
+        "fp": 7,
+        "fn": 20,
+        "precision": 0.8158,
+        "recall": 0.6078,
+        "f1": 0.6966,
+        "ap50": 0.7451
+      },
+      "BROWN_RICE": {
+        "gt_boxes": 4,
+        "tp": 3,
+        "fp": 1,
+        "fn": 1,
+        "precision": 0.75,
+        "recall": 0.75,
+        "f1": 0.75,
+        "ap50": 0.895
+      },
+      "BUN_BO_HUE": {
+        "gt_boxes": 11,
+        "tp": 8,
+        "fp": 1,
+        "fn": 3,
+        "precision": 0.8889,
+        "recall": 0.7273,
+        "f1": 0.8,
+        "ap50": 0.8159
+      },
+      "BUN_CHA": {
+        "gt_boxes": 22,
+        "tp": 21,
+        "fp": 1,
+        "fn": 1,
+        "precision": 0.9545,
+        "recall": 0.9545,
+        "f1": 0.9545,
+        "ap50": 0.9743
+      },
+      "BUN_DAU": {
+        "gt_boxes": 4,
+        "tp": 4,
+        "fp": 0,
+        "fn": 0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "ap50": 0.995
+      },
+      "BUN_RIEU": {
+        "gt_boxes": 18,
+        "tp": 17,
+        "fp": 1,
+        "fn": 1,
+        "precision": 0.9444,
+        "recall": 0.9444,
+        "f1": 0.9444,
+        "ap50": 0.9661
+      },
+      "BURGER_PIZZA_FASTFOOD": {
+        "gt_boxes": 28,
+        "tp": 23,
+        "fp": 5,
+        "fn": 5,
+        "precision": 0.8214,
+        "recall": 0.8214,
+        "f1": 0.8214,
+        "ap50": 0.8626
+      },
+      "CAKE_MUFFIN_PASTRY": {
+        "gt_boxes": 37,
+        "tp": 24,
+        "fp": 7,
+        "fn": 13,
+        "precision": 0.7742,
+        "recall": 0.6486,
+        "f1": 0.7059,
+        "ap50": 0.777
+      },
+      "CANH_CHUA_CA": {
+        "gt_boxes": 18,
+        "tp": 17,
+        "fp": 1,
+        "fn": 1,
+        "precision": 0.9444,
+        "recall": 0.9444,
+        "f1": 0.9444,
+        "ap50": 0.963
+      },
+      "CA_KHO_TO": {
+        "gt_boxes": 18,
+        "tp": 18,
+        "fp": 0,
+        "fn": 0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "ap50": 0.995
+      },
+      "CHAO_THIT": {
+        "gt_boxes": 18,
+        "tp": 13,
+        "fp": 5,
+        "fn": 5,
+        "precision": 0.7222,
+        "recall": 0.7222,
+        "f1": 0.7222,
+        "ap50": 0.7163
+      },
+      "CHERRY_TOMATO": {
+        "gt_boxes": 46,
+        "tp": 23,
+        "fp": 22,
+        "fn": 23,
+        "precision": 0.5111,
+        "recall": 0.5,
+        "f1": 0.5055,
+        "ap50": 0.5227
+      },
+      "CHIPS_POPCORN_SNACK": {
+        "gt_boxes": 41,
+        "tp": 26,
+        "fp": 5,
+        "fn": 15,
+        "precision": 0.8387,
+        "recall": 0.6341,
+        "f1": 0.7222,
+        "ap50": 0.7594
+      },
+      "CHOCOLATE_CANDY": {
+        "gt_boxes": 41,
+        "tp": 29,
+        "fp": 5,
+        "fn": 12,
+        "precision": 0.8529,
+        "recall": 0.7073,
+        "f1": 0.7733,
+        "ap50": 0.7789
+      },
+      "COFFEE_MILK_TEA": {
+        "gt_boxes": 49,
+        "tp": 46,
+        "fp": 11,
+        "fn": 3,
+        "precision": 0.807,
+        "recall": 0.9388,
+        "f1": 0.8679,
+        "ap50": 0.9201
+      },
+      "COM_CHIEN": {
+        "gt_boxes": 10,
+        "tp": 9,
+        "fp": 1,
+        "fn": 1,
+        "precision": 0.9,
+        "recall": 0.9,
+        "f1": 0.9,
+        "ap50": 0.9677
+      },
+      "COM_GA_XOI_MO": {
+        "gt_boxes": 12,
+        "tp": 12,
+        "fp": 3,
+        "fn": 0,
+        "precision": 0.8,
+        "recall": 1.0,
+        "f1": 0.8889,
+        "ap50": 0.963
+      },
+      "COM_TAM_SUON": {
+        "gt_boxes": 6,
+        "tp": 6,
+        "fp": 2,
+        "fn": 0,
+        "precision": 0.75,
+        "recall": 1.0,
+        "f1": 0.8571,
+        "ap50": 0.8529
+      },
+      "COM_XANH": {
+        "gt_boxes": 6,
+        "tp": 6,
+        "fp": 1,
+        "fn": 0,
+        "precision": 0.8571,
+        "recall": 1.0,
+        "f1": 0.9231,
+        "ap50": 0.995
+      },
+      "COOKIE_BISCUIT": {
+        "gt_boxes": 43,
+        "tp": 25,
+        "fp": 1,
+        "fn": 18,
+        "precision": 0.9615,
+        "recall": 0.5814,
+        "f1": 0.7246,
+        "ap50": 0.7695
+      },
+      "CROISSANT_SWEET_BREAD": {
+        "gt_boxes": 51,
+        "tp": 43,
+        "fp": 9,
+        "fn": 8,
+        "precision": 0.8269,
+        "recall": 0.8431,
+        "f1": 0.835,
+        "ap50": 0.914
+      },
+      "CUCUMBER": {
+        "gt_boxes": 39,
+        "tp": 13,
+        "fp": 9,
+        "fn": 26,
+        "precision": 0.5909,
+        "recall": 0.3333,
+        "f1": 0.4262,
+        "ap50": 0.4144
+      },
+      "DONUT_WAFFLE_PANCAKE": {
+        "gt_boxes": 47,
+        "tp": 32,
+        "fp": 12,
+        "fn": 15,
+        "precision": 0.7273,
+        "recall": 0.6809,
+        "f1": 0.7033,
+        "ap50": 0.7677
+      },
+      "DRINK_BEER": {
+        "gt_boxes": 26,
+        "tp": 22,
+        "fp": 3,
+        "fn": 4,
+        "precision": 0.88,
+        "recall": 0.8462,
+        "f1": 0.8627,
+        "ap50": 0.9055
+      },
+      "DRINK_BOTTLED_COFFEE": {
+        "gt_boxes": 26,
+        "tp": 24,
+        "fp": 11,
+        "fn": 2,
+        "precision": 0.6857,
+        "recall": 0.9231,
+        "f1": 0.7869,
+        "ap50": 0.8685
+      },
+      "DRINK_BOTTLED_TEA": {
+        "gt_boxes": 26,
+        "tp": 24,
+        "fp": 0,
+        "fn": 2,
+        "precision": 1.0,
+        "recall": 0.9231,
+        "f1": 0.96,
+        "ap50": 0.9515
+      },
+      "DRINK_CITRUS_SODA": {
+        "gt_boxes": 60,
+        "tp": 60,
+        "fp": 4,
+        "fn": 0,
+        "precision": 0.9375,
+        "recall": 1.0,
+        "f1": 0.9677,
+        "ap50": 0.9945
+      },
+      "DRINK_COCONUT_WATER": {
+        "gt_boxes": 9,
+        "tp": 8,
+        "fp": 3,
+        "fn": 1,
+        "precision": 0.7273,
+        "recall": 0.8889,
+        "f1": 0.8,
+        "ap50": 0.9246
+      },
+      "DRINK_COLA": {
+        "gt_boxes": 49,
+        "tp": 49,
+        "fp": 1,
+        "fn": 0,
+        "precision": 0.98,
+        "recall": 1.0,
+        "f1": 0.9899,
+        "ap50": 0.9934
+      },
+      "DRINK_ENERGY": {
+        "gt_boxes": 26,
+        "tp": 26,
+        "fp": 2,
+        "fn": 0,
+        "precision": 0.9286,
+        "recall": 1.0,
+        "f1": 0.963,
+        "ap50": 0.9924
+      },
+      "DRINK_MILK_CARTON": {
+        "gt_boxes": 20,
+        "tp": 14,
+        "fp": 3,
+        "fn": 6,
+        "precision": 0.8235,
+        "recall": 0.7,
+        "f1": 0.7568,
+        "ap50": 0.8296
+      },
+      "DRINK_MINERAL_WATER": {
+        "gt_boxes": 26,
+        "tp": 26,
+        "fp": 1,
+        "fn": 0,
+        "precision": 0.963,
+        "recall": 1.0,
+        "f1": 0.9811,
+        "ap50": 0.9909
+      },
+      "DRINK_SPORTS_ISOTONIC": {
+        "gt_boxes": 26,
+        "tp": 25,
+        "fp": 1,
+        "fn": 1,
+        "precision": 0.9615,
+        "recall": 0.9615,
+        "f1": 0.9615,
+        "ap50": 0.9754
+      },
+      "DRINK_YOGURT_PROBIOTIC": {
+        "gt_boxes": 16,
+        "tp": 14,
+        "fp": 3,
+        "fn": 2,
+        "precision": 0.8235,
+        "recall": 0.875,
+        "f1": 0.8485,
+        "ap50": 0.909
+      },
+      "FRENCH_FRIES": {
+        "gt_boxes": 23,
+        "tp": 23,
+        "fp": 5,
+        "fn": 0,
+        "precision": 0.8214,
+        "recall": 1.0,
+        "f1": 0.902,
+        "ap50": 0.9795
+      },
+      "FRIED_EGG": {
+        "gt_boxes": 4,
+        "tp": 4,
+        "fp": 0,
+        "fn": 0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "ap50": 0.995
+      },
+      "FRUIT_JUICE_SMOOTHIE": {
+        "gt_boxes": 35,
+        "tp": 24,
+        "fp": 5,
+        "fn": 11,
+        "precision": 0.8276,
+        "recall": 0.6857,
+        "f1": 0.75,
+        "ap50": 0.7819
+      },
+      "GOI_CUON_NEM": {
+        "gt_boxes": 22,
+        "tp": 22,
+        "fp": 0,
+        "fn": 0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "ap50": 0.995
+      },
+      "GREEK_YOGURT": {
+        "gt_boxes": 21,
+        "tp": 20,
+        "fp": 1,
+        "fn": 1,
+        "precision": 0.9524,
+        "recall": 0.9524,
+        "f1": 0.9524,
+        "ap50": 0.9685
+      },
+      "GREEN_SALAD": {
+        "gt_boxes": 61,
+        "tp": 47,
+        "fp": 13,
+        "fn": 14,
+        "precision": 0.7833,
+        "recall": 0.7705,
+        "f1": 0.7769,
+        "ap50": 0.8109
+      },
+      "GRILLED_CHICKEN_BREAST": {
+        "gt_boxes": 35,
+        "tp": 26,
+        "fp": 6,
+        "fn": 9,
+        "precision": 0.8125,
+        "recall": 0.7429,
+        "f1": 0.7761,
+        "ap50": 0.8036
+      },
+      "HU_TIEU": {
+        "gt_boxes": 26,
+        "tp": 26,
+        "fp": 5,
+        "fn": 0,
+        "precision": 0.8387,
+        "recall": 1.0,
+        "f1": 0.9123,
+        "ap50": 0.9611
+      },
+      "ICE_CREAM_DESSERT": {
+        "gt_boxes": 37,
+        "tp": 23,
+        "fp": 9,
+        "fn": 14,
+        "precision": 0.7188,
+        "recall": 0.6216,
+        "f1": 0.6667,
+        "ap50": 0.6744
+      },
+      "LEAN_PORK": {
+        "gt_boxes": 22,
+        "tp": 16,
+        "fp": 4,
+        "fn": 6,
+        "precision": 0.8,
+        "recall": 0.7273,
+        "f1": 0.7619,
+        "ap50": 0.7981
+      },
+      "MI_QUANG_XAO": {
+        "gt_boxes": 26,
+        "tp": 21,
+        "fp": 6,
+        "fn": 5,
+        "precision": 0.7778,
+        "recall": 0.8077,
+        "f1": 0.7925,
+        "ap50": 0.8471
+      },
+      "OATMEAL": {
+        "gt_boxes": 8,
+        "tp": 7,
+        "fp": 3,
+        "fn": 1,
+        "precision": 0.7,
+        "recall": 0.875,
+        "f1": 0.7778,
+        "ap50": 0.8104
+      },
+      "RAU_MUONG_XAO": {
+        "gt_boxes": 12,
+        "tp": 12,
+        "fp": 0,
+        "fn": 0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "ap50": 0.995
+      },
+      "SALMON_FILLET": {
+        "gt_boxes": 5,
+        "tp": 4,
+        "fp": 1,
+        "fn": 1,
+        "precision": 0.8,
+        "recall": 0.8,
+        "f1": 0.8,
+        "ap50": 0.865
+      },
+      "STEAMED_SHRIMP": {
+        "gt_boxes": 28,
+        "tp": 23,
+        "fp": 1,
+        "fn": 5,
+        "precision": 0.9583,
+        "recall": 0.8214,
+        "f1": 0.8846,
+        "ap50": 0.8991
+      },
+      "SWEET_POTATO": {
+        "gt_boxes": 22,
+        "tp": 11,
+        "fp": 5,
+        "fn": 11,
+        "precision": 0.6875,
+        "recall": 0.5,
+        "f1": 0.5789,
+        "ap50": 0.5469
+      },
+      "THIT_KHO_TRUNG": {
+        "gt_boxes": 6,
+        "tp": 5,
+        "fp": 0,
+        "fn": 1,
+        "precision": 1.0,
+        "recall": 0.8333,
+        "f1": 0.9091,
+        "ap50": 0.886
+      },
+      "TOFU": {
+        "gt_boxes": 9,
+        "tp": 8,
+        "fp": 1,
+        "fn": 1,
+        "precision": 0.8889,
+        "recall": 0.8889,
+        "f1": 0.8889,
+        "ap50": 0.973
+      },
+      "WHEY_SHAKE": {
+        "gt_boxes": 26,
+        "tp": 24,
+        "fp": 6,
+        "fn": 2,
+        "precision": 0.8,
+        "recall": 0.9231,
+        "f1": 0.8571,
+        "ap50": 0.9192
+      },
+      "WHITE_RICE": {
+        "gt_boxes": 40,
+        "tp": 32,
+        "fp": 7,
+        "fn": 8,
+        "precision": 0.8205,
+        "recall": 0.8,
+        "f1": 0.8101,
+        "ap50": 0.8715
+      },
+      "XOI_MAN": {
+        "gt_boxes": 10,
+        "tp": 9,
+        "fp": 3,
+        "fn": 1,
+        "precision": 0.75,
+        "recall": 0.9,
+        "f1": 0.8182,
+        "ap50": 0.8837
+      }
+    }
+  },
+  "recommended_conf_by_f1": {
+    "conf": 0.35,
+    "precision": 0.8532,
+    "recall": 0.7833,
+    "f1_score": 0.8167
+  },
+  "conf_threshold_sweep": [
+    {
+      "conf": 0.2,
+      "precision": 0.7964,
+      "recall": 0.817,
+      "f1_score": 0.8065
+    },
+    {
+      "conf": 0.25,
+      "precision": 0.8179,
+      "recall": 0.8069,
+      "f1_score": 0.8123
+    },
+    {
+      "conf": 0.3,
+      "precision": 0.8369,
+      "recall": 0.7951,
+      "f1_score": 0.8154
+    },
+    {
+      "conf": 0.35,
+      "precision": 0.8532,
+      "recall": 0.7833,
+      "f1_score": 0.8167
+    },
+    {
+      "conf": 0.4,
+      "precision": 0.8692,
+      "recall": 0.7687,
+      "f1_score": 0.8159
+    },
+    {
+      "conf": 0.45,
+      "precision": 0.8794,
+      "recall": 0.7535,
+      "f1_score": 0.8116
+    },
+    {
+      "conf": 0.5,
+      "precision": 0.8905,
+      "recall": 0.7395,
+      "f1_score": 0.808
+    }
+  ],
+  "cpu_latency": {
+    "samples": 1122,
+    "inference_mean_ms": 88.82,
+    "inference_median_ms": 88.0,
+    "inference_p95_ms": 98.0,
+    "e2e_mean_ms": 93.34,
+    "e2e_p95_ms": 106.08
+  },
+  "kpi_target": {
+    "map50": 0.8,
+    "precision": 0.82,
+    "recall": 0.78,
+    "f1": 0.8,
+    "inference_ms": 150.0
+  },
+  "kpi_pass": {
+    "map50>=0.80": true,
+    "precision>=0.82": true,
+    "recall>=0.78": true,
+    "f1>=0.80": true,
+    "cpu_inference_mean<150ms": true,
+    "e2e<3000ms": true
+  },
+  "sample_api_outputs": [
+    {
+      "image": "branded-beverages__0037af2b8a15__da292bad3b.jpg",
+      "inference_time_ms": 76,
+      "model_version": "food_yolo_v1",
+      "detected_items": [
+        {
+          "class_code": "DRINK_BOTTLED_COFFEE",
+          "name_vi": "Cà phê sữa đóng chai / lon (Kirin Latte / Nescafé)",
+          "confidence": 0.951,
+          "bbox_norm": [
+            0.3074,
+            0.0656,
+            0.7009,
+            0.9468
+          ],
+          "estimated_grams": 478.4,
+          "calories": 277.5,
+          "protein_g": 7.7,
+          "carbs_g": 45.4,
+          "fat_g": 7.2,
+          "calories_min": 200,
+          "calories_max": 350,
+          "calories_range_label": "~200 – 350 kcal"
+        }
+      ],
+      "total_nutrition": {
+        "calories": 277.5,
+        "protein_g": 7.7,
+        "carbs_g": 45.4,
+        "fat_g": 7.2,
+        "calories_min": 200,
+        "calories_max": 350,
+        "calories_range_label": "~200 – 350 kcal"
+      },
+      "disclaimer": "Lượng calo được AI ước chừng trong khoảng tham khảo từ hình ảnh (nước lọc đóng chai không đường ~0 kcal); bạn có thể kéo thanh trượt để chỉnh khẩu phần."
+    },
+    {
+      "image": "branded-beverages__014a7c64a113__ae22e93d17.jpg",
+      "inference_time_ms": 77,
+      "model_version": "food_yolo_v1",
+      "detected_items": [
+        {
+          "class_code": "DRINK_MINERAL_WATER",
+          "name_vi": "Nước suối / Nước khoáng (Aquafina / LaVie)",
+          "confidence": 0.924,
+          "bbox_norm": [
+            0.0212,
+            0.0014,
+            1.0,
+            0.9993
+          ],
+          "estimated_grams": 1250.0,
+          "calories": 0.0,
+          "protein_g": 0.0,
+          "carbs_g": 0.0,
+          "fat_g": 0.0,
+          "calories_min": 0,
+          "calories_max": 0,
+          "calories_range_label": "0 kcal"
+        }
+      ],
+      "total_nutrition": {
+        "calories": 0.0,
+        "protein_g": 0.0,
+        "carbs_g": 0.0,
+        "fat_g": 0.0,
+        "calories_min": 0,
+        "calories_max": 0,
+        "calories_range_label": "0 kcal"
+      },
+      "disclaimer": "Lượng calo được AI ước chừng trong khoảng tham khảo từ hình ảnh (nước lọc đóng chai không đường ~0 kcal); bạn có thể kéo thanh trượt để chỉnh khẩu phần."
+    },
+    {
+      "image": "branded-beverages__01d46f9b3003__f43404de16.jpg",
+      "inference_time_ms": 80,
+      "model_version": "food_yolo_v1",
+      "detected_items": [
+        {
+          "class_code": "DRINK_BOTTLED_COFFEE",
+          "name_vi": "Cà phê sữa đóng chai / lon (Kirin Latte / Nescafé)",
+          "confidence": 0.953,
+          "bbox_norm": [
+            0.2186,
+            0.1281,
+            0.7733,
+            0.9134
+          ],
+          "estimated_grams": 601.1,
+          "calories": 348.6,
+          "protein_g": 9.6,
+          "carbs_g": 57.1,
+          "fat_g": 9.0,
+          "calories_min": 260,
+          "calories_max": 440,
+          "calories_range_label": "~260 – 440 kcal"
+        }
+      ],
+      "total_nutrition": {
+        "calories": 348.6,
+        "protein_g": 9.6,
+        "carbs_g": 57.1,
+        "fat_g": 9.0,
+        "calories_min": 260,
+        "calories_max": 440,
+        "calories_range_label": "~260 – 440 kcal"
+      },
+      "disclaimer": "Lượng calo được AI ước chừng trong khoảng tham khảo từ hình ảnh (nước lọc đóng chai không đường ~0 kcal); bạn có thể kéo thanh trượt để chỉnh khẩu phần."
+    },
+    {
+      "image": "branded-beverages__02276d63516b__ce0c145052.jpg",
+      "inference_time_ms": 72,
+      "model_version": "food_yolo_v1",
+      "detected_items": [
+        {
+          "class_code": "DRINK_COLA",
+          "name_vi": "Nước ngọt Cola (Coca-Cola / Pepsi)",
+          "confidence": 0.705,
+          "bbox_norm": [
+            0.0181,
+            0.0855,
+            0.9883,
+            0.916
+          ],
+          "estimated_grams": 825.0,
+          "calories": 346.5,
+          "protein_g": 0.0,
+          "carbs_g": 87.5,
+          "fat_g": 0.0,
+          "calories_min": 270,
+          "calories_max": 420,
+          "calories_range_label": "~270 – 420 kcal"
+        }
+      ],
+      "total_nutrition": {
+        "calories": 346.5,
+        "protein_g": 0.0,
+        "carbs_g": 87.5,
+        "fat_g": 0.0,
+        "calories_min": 270,
+        "calories_max": 420,
+        "calories_range_label": "~270 – 420 kcal"
+      },
+      "disclaimer": "Lượng calo được AI ước chừng trong khoảng tham khảo từ hình ảnh (nước lọc đóng chai không đường ~0 kcal); bạn có thể kéo thanh trượt để chỉnh khẩu phần."
+    },
+    {
+      "image": "branded-beverages__0386d6db032e__00a1ef03c5.jpg",
+      "inference_time_ms": 77,
+      "model_version": "food_yolo_v1",
+      "detected_items": [
+        {
+          "class_code": "DRINK_SPORTS_ISOTONIC",
+          "name_vi": "Nước điện giải / Thể thao (Revive / Pocari)",
+          "confidence": 0.885,
+          "bbox_norm": [
+            0.2785,
+            0.1139,
+            0.7234,
+            0.9629
+          ],
+          "estimated_grams": 755.4,
+          "calories": 196.4,
+          "protein_g": 0.0,
+          "carbs_g": 49.1,
+          "fat_g": 0.0,
+          "calories_min": 150,
+          "calories_max": 240,
+          "calories_range_label": "~150 – 240 kcal"
+        }
+      ],
+      "total_nutrition": {
+        "calories": 196.4,
+        "protein_g": 0.0,
+        "carbs_g": 49.1,
+        "fat_g": 0.0,
+        "calories_min": 150,
+        "calories_max": 240,
+        "calories_range_label": "~150 – 240 kcal"
+      },
+      "disclaimer": "Lượng calo được AI ước chừng trong khoảng tham khảo từ hình ảnh (nước lọc đóng chai không đường ~0 kcal); bạn có thể kéo thanh trượt để chỉnh khẩu phần."
+    }
+  ]
+}

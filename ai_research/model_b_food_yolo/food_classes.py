@@ -1,5 +1,8 @@
-# [OWNER: M4] 58 lop mon an Viet, do Gym, nuoc uong nhan hieu & snack cho AI Model B v1.5 (T-M4-01, T-M4-09, T-M4-10)
-"""Danh sach 58 lop v1.5 + bang alias de gop nhan tu Roboflow / HuggingFace / COCO / OpenFoodFacts ve `class_code`.
+# [OWNER: M4] 69 lop mon an Viet, do Gym, nuoc uong nhan hieu & snack cho AI Model B v1.6 (T-M4-01, T-M4-09, T-M4-10)
+"""Danh sach 69 lop v1.6 + bang alias de gop nhan tu Roboflow / HuggingFace / COCO / OpenFoodFacts / Wikimedia ve `class_code`.
+
+11 lop mo rong v1.6 (58..68): AVOCADO, CUCUMBER, CHERRY_TOMATO, LEAN_PORK, ALMONDS, OATMEAL, GREEK_YOGURT,
+WHEY_SHAKE (co san dinh duong trong FOOD_CATALOG_SEED cua M3) + DRINK_COCONUT_WATER, DRINK_YOGURT_PROBIOTIC, DRINK_BEER.
 
 18 lop dau (0..17) giu nguyen thu tu v1.0/v1.1 khop `food_nutrition_catalog` (seed boi M3).
 12 lop mo rong v1.2 (18..29) bo sung nhom Nuoc uong & Banh snack / Do an nhanh.
@@ -141,7 +144,6 @@ CORE_CLASSES_V1: list[tuple[str, tuple[str, ...]]] = [
             "chips",
             "potato chips",
             "kacang-mete",
-            "almond",
             "cashew",
             "peanut",
             "snack",
@@ -279,6 +281,27 @@ CORE_CLASSES_V1: list[tuple[str, tuple[str, ...]]] = [
     (
         "DRINK_MINERAL_WATER",
         ("drink-mineral-water", "aquafina", "lavie", "evian", "nestle_pure_life", "perrier", "san_pellegrino", "water bottle", "mineral water", "nuoc suoi", "nuoc khoang"),
+    ),
+    # 11 lop bo sung cho v1.6 (58..68): mon Gym/healthy co san trong catalog M3 + 3 nhom do uong pho bien
+    ("AVOCADO", ("avocado", "quả bơ", "trái bơ", "sliced avocado")),
+    ("CUCUMBER", ("cucumber", "dưa leo", "dưa chuột")),
+    ("CHERRY_TOMATO", ("tomato", "cherry tomato", "cà chua", "cà chua bi")),
+    ("LEAN_PORK", ("pork", "lean pork", "thịt heo", "thịt lợn", "thịt heo luộc", "thịt heo nạc")),
+    ("ALMONDS", ("almond", "almonds", "hạnh nhân", "hạnh nhân rang")),
+    ("OATMEAL", ("oatmeal", "oats", "rolled oats", "porridge oats", "overnight oats", "yến mạch", "cháo yến mạch")),
+    ("GREEK_YOGURT", ("greek-yogurt", "greek yogurt", "yogurt", "yoghurt", "sữa chua", "sữa chua hy lạp")),
+    ("WHEY_SHAKE", ("whey-shake", "whey", "whey protein", "protein shake", "sữa whey")),
+    (
+        "DRINK_COCONUT_WATER",
+        ("drink-coconut-water", "coconut water", "young coconut", "nước dừa", "nước dừa tươi"),
+    ),
+    (
+        "DRINK_YOGURT_PROBIOTIC",
+        ("drink-yogurt-probiotic", "yakult", "probi", "betagen", "actimel", "calpis", "drinking yogurt", "sữa chua uống"),
+    ),
+    (
+        "DRINK_BEER",
+        ("drink-beer", "beer", "bia", "lager", "heineken", "tiger beer", "bia sài gòn", "bia lon"),
     ),
 ]
 

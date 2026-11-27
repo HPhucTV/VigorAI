@@ -448,6 +448,37 @@ EXTENDED_BEVERAGE_SNACK_CATALOG: list[dict[str, Any]] = [
         "default_serving_g": 500.0,
         "kcal_spread_ratio": 0.0,
     },
+    # 3 nhom do uong bo sung cho v1.6 (cac lop Gym/healthy con lai dung san FOOD_CATALOG_SEED cua M3)
+    {
+        "class_code": "DRINK_COCONUT_WATER",
+        "name_vi": "Nước dừa (tươi / đóng hộp)",
+        "kcal_per_100g": 19.0,
+        "protein_per_100g": 0.7,
+        "carbs_per_100g": 3.7,
+        "fat_per_100g": 0.2,
+        "default_serving_g": 330.0,
+        "kcal_spread_ratio": 0.25,
+    },
+    {
+        "class_code": "DRINK_YOGURT_PROBIOTIC",
+        "name_vi": "Sữa chua uống men sống (Yakult / Probi / Betagen)",
+        "kcal_per_100g": 68.0,
+        "protein_per_100g": 1.3,
+        "carbs_per_100g": 15.0,
+        "fat_per_100g": 0.1,
+        "default_serving_g": 130.0,
+        "kcal_spread_ratio": 0.30,
+    },
+    {
+        "class_code": "DRINK_BEER",
+        "name_vi": "Bia (Heineken / Tiger / Sài Gòn)",
+        "kcal_per_100g": 43.0,
+        "protein_per_100g": 0.5,
+        "carbs_per_100g": 3.6,
+        "fat_per_100g": 0.0,
+        "default_serving_g": 330.0,
+        "kcal_spread_ratio": 0.20,
+    },
 ]
 
 AI_MODELS_DIR = Path(__file__).resolve().parents[2] / "ai_models"
