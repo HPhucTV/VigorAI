@@ -1,10 +1,11 @@
-# [OWNER: M4] 50 lop mon an Viet, do Gym, nuoc uong & snack cho AI Model B v1.4 (T-M4-01, T-M4-09, T-M4-10)
-"""Danh sach 50 lop v1.4 + bang alias de gop nhan tu Roboflow / HuggingFace / COCO ve `class_code`.
+# [OWNER: M4] 58 lop mon an Viet, do Gym, nuoc uong nhan hieu & snack cho AI Model B v1.5 (T-M4-01, T-M4-09, T-M4-10)
+"""Danh sach 58 lop v1.5 + bang alias de gop nhan tu Roboflow / HuggingFace / COCO / OpenFoodFacts ve `class_code`.
 
 18 lop dau (0..17) giu nguyen thu tu v1.0/v1.1 khop `food_nutrition_catalog` (seed boi M3).
 12 lop mo rong v1.2 (18..29) bo sung nhom Nuoc uong & Banh snack / Do an nhanh.
 10 lop mo rong v1.3 (30..39) bat nhom Mon Viet tu `vn-streetfood` + `food-detection`.
 10 lop mo rong v1.4 (40..49) bo sung Mon an & Dac san Viet Nam pho bien tu `vn-food-combined`.
+8 lop mo rong v1.5 (50..57) tach chi tiet cac nhom Nuoc uong nhan hieu & bao bi (Coca/Pepsi, 7Up/Sprite, Sting/RedBull, Revive/Pocari, Tra dong chai, Ca phe chai/lon, Sua hop, Nuoc suoi).
 """
 from __future__ import annotations
 
@@ -66,13 +67,8 @@ CORE_CLASSES_V1: list[tuple[str, tuple[str, ...]]] = [
             "bottle",
             "bottled drink",
             "soda-bottles",
-            "coca-cola",
-            "fanta",
-            "sprite",
             "soda",
             "soft drink",
-            "water bottle",
-            "sports drink",
             "nuoc dong chai",
             "nuoc ngot",
             "nước đóng chai",
@@ -250,6 +246,39 @@ CORE_CLASSES_V1: list[tuple[str, tuple[str, ...]]] = [
     (
         "COM_GA_XOI_MO",
         ("com ga", "com ga xoi mo", "com-ga-xoi-mo", "cơm gà", "cơm gà xối mỡ", "ga-chien-nuoc-mam"),
+    ),
+    # 8 nhom Nuoc uong nhan hieu & bao bi bo sung cho v1.5 (50..57)
+    (
+        "DRINK_COLA",
+        ("drink-cola", "coca-cola", "coca cola", "pepsi", "cola", "coke", "nuoc ngot cola"),
+    ),
+    (
+        "DRINK_CITRUS_SODA",
+        ("drink-citrus-soda", "7up", "seven up", "sprite", "fanta", "mirinda", "mountain dew", "moutaindew", "nuoc ngot co gas"),
+    ),
+    (
+        "DRINK_ENERGY",
+        ("drink-energy", "sting", "red bull", "redbull", "monster", "monsters", "energy drink", "wake up 247", "number 1", "nuoc tang luc"),
+    ),
+    (
+        "DRINK_SPORTS_ISOTONIC",
+        ("drink-sports-isotonic", "revive", "pocari", "pocari sweat", "aquarius", "gatorade", "powerade", "sports drink", "isotonic", "nuoc dien giai"),
+    ),
+    (
+        "DRINK_BOTTLED_TEA",
+        ("drink-bottled-tea", "c2", "c2 tea", "tra xanh 0 do", "tea plus", "olong tea", "fuzetea", "liptonbrisk", "pureleaf", "nestea", "arizonateas", "tra dong chai"),
+    ),
+    (
+        "DRINK_BOTTLED_COFFEE",
+        ("drink-bottled-coffee", "kirin latte", "starbucks_bottled_frappuccino", "starbucks_doubleshot", "nescafe can", "bottled coffee", "canned coffee", "ca phe dong chai", "ca phe lon"),
+    ),
+    (
+        "DRINK_MILK_CARTON",
+        ("drink-milk-carton", "vinamilk", "th true milk", "milo", "milk carton", "milk box", "sua hop", "sua tuoi hop", "sua lua mach"),
+    ),
+    (
+        "DRINK_MINERAL_WATER",
+        ("drink-mineral-water", "aquafina", "lavie", "evian", "nestle_pure_life", "perrier", "san_pellegrino", "water bottle", "mineral water", "nuoc suoi", "nuoc khoang"),
     ),
 ]
 

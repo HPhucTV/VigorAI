@@ -41,7 +41,9 @@ class DetectedFoodItemModel {
   double get _ratio =>
       baseEstimatedGrams > 0 ? (adjustedGrams / baseEstimatedGrams) : 1.0;
 
-  bool get isBeverage => const {
+  bool get isBeverage =>
+      classCode.startsWith('DRINK_') ||
+      const {
         'BOTTLED_DRINK',
         'COFFEE_MILK_TEA',
         'FRUIT_JUICE_SMOOTHIE',

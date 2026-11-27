@@ -424,10 +424,14 @@ def fetch_soda_bottles(
     img_out.mkdir(parents=True, exist_ok=True)
     lbl_out.mkdir(parents=True, exist_ok=True)
 
+    # Giu nguyen 4 lop goc cua Francesco/soda-bottles: soda-bottles, coca-cola, fanta, sprite
+    names = ["soda-bottles", "coca-cola", "fanta", "sprite"]
+    per_cat_crops: Counter = Counter()
+    max_crops_per_cat = 140
     saved = 0
+    saved_crops = 0
+
     for split_tag, rel_path in SODA_BOTTLES_FILES:
-        if max_images > 0 and saved >= max_images:
-            break
         pq_path = download_file(
             f"{SODA_BOTTLES_BASE}/{rel_path}",
             cache_dir / "soda_bottles" / Path(rel_path).name,
@@ -435,8 +439,6 @@ def fetch_soda_bottles(
         pf = pq.ParquetFile(pq_path)
         for batch in pf.iter_batches(batch_size=128):
             for row in batch.to_pylist():
-                if max_images > 0 and saved >= max_images:
-                    break
                 try:
                     rgb = _open_hf_image(row["image"]).convert("RGB")
                     img_w, img_h = rgb.size
@@ -444,14 +446,22 @@ def fetch_soda_bottles(
                     h = float(row.get("height") or img_h)
                     objs = row.get("objects") or {}
                     bboxes = objs.get("bbox") or []
+                    cats = objs.get("category") or []
                 except Exception:
                     continue
                 if w <= 0 or h <= 0 or not bboxes:
                     continue
+                if not cats:
+                    cats = [0] * len(bboxes)
+
                 yolo_lines: list[str] = []
-                for box in bboxes:
+                single_candidates: list[tuple[int, float, float, float, float]] = []
+                for cat_raw, box in zip(cats, bboxes):
                     if len(box) < 4:
                         continue
+                    cat_idx = int(cat_raw)
+                    if not (0 <= cat_idx < len(names)):
+                        cat_idx = 0
                     # COCO format [x_min_px, y_min_px, bw_px, bh_px]
                     bx, by, bw_px, bh_px = (float(v) for v in box[:4])
                     x1 = max(0.0, min(1.0, bx / w))
@@ -462,16 +472,51 @@ def fetch_soda_bottles(
                     bh = y2 - y1
                     if bw < MIN_BOX_SIDE or bh < MIN_BOX_SIDE or (bw * bh) < MIN_BOX_AREA_RATIO:
                         continue
-                    yolo_lines.append(f"0 {(x1 + x2) / 2.0:.6f} {(y1 + y2) / 2.0:.6f} {bw:.6f} {bh:.6f}")
+                    yolo_lines.append(f"{cat_idx} {(x1 + x2) / 2.0:.6f} {(y1 + y2) / 2.0:.6f} {bw:.6f} {bh:.6f}")
+                    if cat_idx in (1, 2, 3) and bh_px >= 90 and bw_px >= 36:
+                        single_candidates.append((cat_idx, x1, y1, x2, y2))
+
                 if not yolo_lines:
                     continue
-                stem = f"sb_{split_tag}_{row.get('image_id', saved)}_{saved}"
-                rgb.save(img_out / f"{stem}.jpg", format="JPEG", quality=92)
-                (lbl_out / f"{stem}.txt").write_text("\n".join(yolo_lines) + "\n", encoding="utf-8")
-                saved += 1
 
-    _write_yolo_dataset_yaml(out_dir, ["soda-bottles"])
-    print(f"[OK] soda-bottles extract: {saved} anh")
+                # Uu tien anh it chai (<= 8 chai) de giam thien lech anh ke sieu thi chi chit
+                if (max_images <= 0 or saved < max_images) and len(yolo_lines) <= 8:
+                    stem = f"sb_{split_tag}_{row.get('image_id', saved)}_{saved}"
+                    rgb.save(img_out / f"{stem}.jpg", format="JPEG", quality=92)
+                    (lbl_out / f"{stem}.txt").write_text("\n".join(yolo_lines) + "\n", encoding="utf-8")
+                    saved += 1
+
+                # Trich crop don le tung chai coca-cola / fanta / sprite co vien boi canh thuc te
+                for c_idx, (cat_idx, x1, y1, x2, y2) in enumerate(single_candidates[:2]):
+                    if per_cat_crops[cat_idx] >= max_crops_per_cat:
+                        continue
+                    bw_n = x2 - x1
+                    bh_n = y2 - y1
+                    pad_x = max(bw_n * 0.45, 0.08)
+                    pad_y = max(bh_n * 0.16, 0.04)
+                    cx1 = max(0, int((x1 - pad_x) * img_w))
+                    cy1 = max(0, int((y1 - pad_y) * img_h))
+                    cx2 = min(img_w, int((x2 + pad_x) * img_w))
+                    cy2 = min(img_h, int((y2 + pad_y) * img_h))
+                    cw, ch = cx2 - cx1, cy2 - cy1
+                    if cw < 64 or ch < 96:
+                        continue
+                    crop = rgb.crop((cx1, cy1, cx2, cy2))
+                    bx1 = max(0.0, (x1 * img_w - cx1) / cw)
+                    by1 = max(0.0, (y1 * img_h - cy1) / ch)
+                    bx2 = min(1.0, (x2 * img_w - cx1) / cw)
+                    by2 = min(1.0, (y2 * img_h - cy1) / ch)
+                    c_stem = f"sbcrop_{split_tag}_{row.get('image_id', saved)}_{c_idx}_{saved_crops}"
+                    crop.save(img_out / f"{c_stem}.jpg", format="JPEG", quality=92)
+                    (lbl_out / f"{c_stem}.txt").write_text(
+                        f"{cat_idx} {(bx1 + bx2) / 2.0:.6f} {(by1 + by2) / 2.0:.6f} {bx2 - bx1:.6f} {by2 - by1:.6f}\n",
+                        encoding="utf-8",
+                    )
+                    per_cat_crops[cat_idx] += 1
+                    saved_crops += 1
+
+    _write_yolo_dataset_yaml(out_dir, names)
+    print(f"[OK] soda-bottles extract: {saved} anh goc (<=8 chai) + {saved_crops} crop don le {dict(per_cat_crops)}")
     return out_dir
 
 
@@ -784,13 +829,492 @@ def fetch_vn_food_combined(
     return out_dir
 
 
+STPEREZ_TREE_URL = "https://huggingface.co/api/datasets/stperez/beverages"
+STPEREZ_RAW_BASE = "https://huggingface.co/datasets/stperez/beverages/resolve/main"
+STPEREZ_FOLDER_MAP: dict[str, tuple[str, int]] = {
+    "caffeinated_beverages/The Coca-Cola Company/coca-cola": ("drink-cola", 130),
+    "caffeinated_beverages/PepsiCo/pepsi": ("drink-cola", 130),
+    "caffeinated_beverages/The Coca-Cola Company/sprite": ("drink-citrus-soda", 95),
+    "caffeinated_beverages/The Coca-Cola Company/fanta": ("drink-citrus-soda", 95),
+    "caffeinated_beverages/PepsiCo/moutaindew": ("drink-citrus-soda", 95),
+    "caffeinated_beverages/MonsterBeverageCorporation/monsters": ("drink-energy", 125),
+    "caffeinated_beverages/PepsiCo/gatorade": ("drink-sports-isotonic", 120),
+    "caffeinated_beverages/The Coca-Cola Company/powerade": ("drink-sports-isotonic", 120),
+    "caffeinated_beverages/The Coca-Cola Company/fuzetea": ("drink-bottled-tea", 60),
+    "caffeinated_beverages/PepsiCo/liptonbrisk": ("drink-bottled-tea", 60),
+    "caffeinated_beverages/PepsiCo/pureleaf": ("drink-bottled-tea", 60),
+    "Water/Nestle/Nestea": ("drink-bottled-tea", 60),
+    "caffeinated_beverages/Arizona Beverage Company/arizonaTeas": ("drink-bottled-tea", 60),
+    "caffeinated_beverages/Starbucks Corporation/Starbucks_Bottled_Frappuccino": ("drink-bottled-coffee", 50),
+    "caffeinated_beverages/Starbucks Corporation/Starbucks_Doubleshot": ("drink-bottled-coffee", 50),
+    "Water/Nestle/Nestle_Pure_Life": ("drink-mineral-water", 80),
+    "Water/ Danone Group/evian": ("drink-mineral-water", 80),
+    "Water/Nestle/Perrier": ("drink-mineral-water", 75),
+    "Water/Nestle/San_Pellegrino": ("drink-mineral-water", 75),
+    "caffeinated_beverages/The Coca-Cola Company/minutemaid": ("juice", 65),
+    "caffeinated_beverages/PepsiCo/tropicana": ("juice", 65),
+}
+
+OFF_SEARCH_BASE = "https://search.openfoodfacts.org/search"
+OFF_QUERIES: dict[str, list[tuple[str, int]]] = {
+    "drink-cola": [
+        ("coca cola", 45),
+        ("pepsi", 45),
+        ("coca cola zero", 25),
+        ("pepsi black", 25),
+    ],
+    "drink-citrus-soda": [
+        ("7up", 55),
+        ("sprite", 45),
+        ("fanta orange", 40),
+        ("mirinda", 45),
+        ("mountain dew", 35),
+        ("schweppes", 25),
+    ],
+    "drink-energy": [
+        ("sting", 60),
+        ("red bull", 70),
+        ("monster energy", 50),
+        ("rockstar energy", 30),
+        ("lipovitan", 25),
+        ("wake up 247", 15),
+    ],
+    "drink-sports-isotonic": [
+        ("revive", 55),
+        ("pocari sweat", 50),
+        ("aquarius", 45),
+        ("100plus", 40),
+        ("gatorade", 35),
+    ],
+    "drink-bottled-tea": [
+        ("c2", 35),
+        ("tea plus", 30),
+        ("olong tea", 25),
+        ("pokka tea", 35),
+        ("ito en tea", 35),
+        ("fuze tea", 35),
+        ("lipton ice tea", 40),
+    ],
+    "drink-bottled-coffee": [
+        ("kirin milk tea", 25),
+        ("kirin fire", 25),
+        ("craft boss", 20),
+        ("boss coffee", 45),
+        ("nescafe ready to drink", 35),
+        ("iced latte", 55),
+        ("coffee drink", 55),
+        ("mocha drink", 40),
+        ("cafe au lait", 35),
+        ("milk tea", 55),
+        ("royal milk tea", 30),
+        ("assam milk tea", 25),
+        ("pokka milk coffee", 15),
+        ("mr brown coffee", 35),
+    ],
+    "drink-milk-carton": [
+        ("vinamilk", 40),
+        ("th true milk", 30),
+        ("milo milk", 45),
+        ("milo ready", 30),
+        ("ovaltine drink", 35),
+        ("dutch lady", 35),
+        ("yomost", 25),
+        ("soy milk", 45),
+        ("strawberry milk", 45),
+        ("vitasoy", 30),
+        ("meiji milk", 25),
+    ],
+    "drink-mineral-water": [
+        ("aquafina", 50),
+        ("lavie water", 25),
+        ("dasani", 45),
+        ("evian", 50),
+        ("volvic", 45),
+        ("vittel", 35),
+    ],
+}
+
+OFF_EXCLUDE_WORDS = (
+    "beer", "bier", "lager", "stout", "ale", "ichiban", "pilsner", "wine", "vodka", "whisky",
+    "powder", "sachet", "sticks", "3in1", "3 in 1", "capsule", "pods", "beans", "ground",
+    "biscuit", "cookie", "cracker", "chocolate bar", "cereal", "ice cream", "yogurt cup",
+    "kisses", "candy", "pieces", "syrup", "creamer", "drink mix", "tea bag", "teabag", "leaves",
+)
+
+
+def _is_valid_off_rtd_hit(hit: dict) -> bool:
+    """Loc bo bia, bot hoa tan, goi 3in1, hop banh de giu lai dung chai/lon/hop nuoc uong."""
+    text = f"{hit.get('product_name') or ''} {hit.get('brands') or ''}".lower()
+    if any(bad in text for bad in OFF_EXCLUDE_WORDS):
+        return False
+    qty = str(hit.get("quantity") or "").lower().strip()
+    if qty and any(u in qty for u in ("g", "kg")) and not any(v in qty for v in ("ml", "cl", "l")):
+        # Cho phep bo qua neu chi la trong luong kho (bot milo 400g, ca phe 3in1 500g)
+        if not any(w in text for w in ("drink", "milk", "latte", "tea", "water", "soda")):
+            return False
+    return True
+
+
+def estimate_beverage_bbox(im: Image.Image, bg_idx: int = 0) -> tuple[Image.Image, tuple[float, float, float, float]]:
+    """Tach nen & uoc luong bbox gon cho chai/lon/hop nuoc (ke ca chai cao, thon, nen trang)."""
+    has_alpha = im.mode in ("RGBA", "LA") or ("transparency" in im.info)
+    if has_alpha:
+        rgba = im.convert("RGBA")
+        alpha = np.asarray(rgba.getchannel("A"))
+        fg_mask = alpha > 20
+        fg_ratio = float(fg_mask.mean())
+        if 0.04 <= fg_ratio <= 0.94:
+            ys, xs = np.where(fg_mask)
+            ah, aw = alpha.shape
+            x1 = max(0.0, float(xs.min()) / aw - 0.015)
+            y1 = max(0.0, float(ys.min()) / ah - 0.015)
+            x2 = min(1.0, float(xs.max() + 1) / aw + 0.015)
+            y2 = min(1.0, float(ys.max() + 1) / ah + 0.015)
+            palette = [
+                (255, 255, 255),
+                (255, 255, 255),
+                (238, 242, 246),
+                (212, 206, 198),
+            ]
+            bg = Image.new("RGBA", rgba.size, (*palette[bg_idx % len(palette)], 255))
+            rgb = Image.alpha_composite(bg, rgba).convert("RGB")
+            return rgb, ((x1 + x2) / 2.0, (y1 + y2) / 2.0, x2 - x1, y2 - y1)
+
+    rgb = im.convert("RGB")
+    small = rgb.resize((128, 128), Image.Resampling.BILINEAR)
+    arr = np.asarray(small, dtype=np.float32) / 255.0
+    gray = 0.299 * arr[:, :, 0] + 0.587 * arr[:, :, 1] + 0.114 * arr[:, :, 2]
+
+    pad = 6
+    border = np.concatenate(
+        [
+            arr[:pad, :, :].reshape(-1, 3),
+            arr[-pad:, :, :].reshape(-1, 3),
+            arr[:, :pad, :].reshape(-1, 3),
+            arr[:, -pad:, :].reshape(-1, 3),
+        ],
+        axis=0,
+    )
+    bg_color = np.median(border, axis=0)
+    border_std = float(np.std(border))
+    color_diff = np.linalg.norm(arr - bg_color, axis=2)
+
+    gx = ndimage.sobel(gray, axis=1)
+    gy = ndimage.sobel(gray, axis=0)
+    grad = np.hypot(gx, gy)
+    grad_norm = grad / (float(np.percentile(grad, 95)) + 1e-5)
+
+    if border_std < 0.095:
+        # Nen dong nhat (nen trang/xam thuong mai dien tu): nhay hon de bat ca nap & co chai trong suot
+        mask = (color_diff > 0.042) | ((color_diff > 0.025) & (grad_norm > 0.22))
+        mask = ndimage.binary_closing(mask, structure=np.ones((11, 5)))
+        mask = ndimage.binary_opening(mask, structure=np.ones((3, 3)))
+    else:
+        yy, xx = np.mgrid[0:128, 0:128]
+        dist_center = np.hypot((xx - 63.5) / 64.0, (yy - 63.5) / 64.0)
+        center_w = np.clip(1.18 - 0.58 * dist_center, 0.32, 1.0)
+        sal = (0.60 * (color_diff / (float(color_diff.max()) + 1e-5)) + 0.40 * np.clip(grad_norm, 0.0, 1.0)) * center_w
+        thresh = max(float(np.percentile(sal, 46)), float(sal.mean()) * 0.90)
+        mask = ndimage.binary_closing(sal >= thresh, structure=np.ones((9, 5)))
+        mask = ndimage.binary_opening(mask, structure=np.ones((3, 3)))
+
+    labeled, n_feat = ndimage.label(mask)
+    if n_feat > 0:
+        sizes = ndimage.sum(mask, labeled, range(1, n_feat + 1))
+        # Uu tien thanh phan lon gan trung tam anh
+        best_id = int(np.argmax(sizes)) + 1
+        ys, xs = np.where(labeled == best_id)
+        if xs.size > 0:
+            x1 = max(0.0, float(xs.min()) / 128.0 - 0.025)
+            y1 = max(0.0, float(ys.min()) / 128.0 - 0.025)
+            x2 = min(1.0, float(xs.max() + 1) / 128.0 + 0.025)
+            y2 = min(1.0, float(ys.max() + 1) / 128.0 + 0.025)
+            bw, bh = x2 - x1, y2 - y1
+            area = bw * bh
+            if bw >= 0.12 and bh >= 0.25 and 0.05 <= area <= 0.96:
+                return rgb, ((x1 + x2) / 2.0, (y1 + y2) / 2.0, bw, bh)
+    return rgb, (0.5, 0.5, 0.86, 0.90)
+
+
+def _off_front_url(hit: dict) -> str | None:
+    if hit.get("image_front_url"):
+        return str(hit["image_front_url"])
+    code = str(hit.get("code") or "").strip()
+    if not code:
+        return None
+    folder = f"{code.zfill(13)[0:3]}/{code.zfill(13)[3:6]}/{code.zfill(13)[6:9]}/{code.zfill(13)[9:]}" if len(code) > 8 else code
+    sel = ((hit.get("selected_images") or {}).get("front") or {})
+    if isinstance(sel, dict):
+        disp = sel.get("display") or {}
+        if isinstance(disp, dict) and disp:
+            return str(next(iter(disp.values())))
+    if isinstance(sel, list) and sel:
+        s0 = sel[0]
+        lang = s0.get("lang") or "en"
+        rev = s0.get("rev")
+        if rev:
+            return f"https://images.openfoodfacts.org/images/products/{folder}/front_{lang}.{rev}.400.jpg"
+    imgs = (hit.get("images") or {}).get("uploaded") or {}
+    if isinstance(imgs, dict) and "1" in imgs:
+        return f"https://images.openfoodfacts.org/images/products/{folder}/1.400.jpg"
+    return None
+
+
+def _is_clean_beverage_image(rgb: Image.Image) -> bool:
+    """Loai anh qua nho, logo vector phang hoac don sac loi."""
+    w, h = rgb.size
+    if min(w, h) < 90:
+        return False
+    ratio = w / float(max(h, 1))
+    if ratio < 0.20 or ratio > 2.40:
+        return False
+    arr = np.asarray(rgb.resize((64, 64), Image.Resampling.BILINEAR), dtype=np.float32) / 255.0
+    if float(arr.std()) < 0.06:
+        return False
+    # Phat hien logo vector phang (it mau doc lap hoac it chuyen sac giua cac pixel)
+    quant = (arr * 7.0).astype(np.int32)
+    packed = quant[:, :, 0] * 64 + quant[:, :, 1] * 8 + quant[:, :, 2]
+    _, counts = np.unique(packed, return_counts=True)
+    significant_colors = int((counts >= 12).sum())
+    if significant_colors < 8:
+        return False
+    return True
+
+
+def _save_with_optional_white_studio(
+    rgb: Image.Image,
+    bbox: tuple[float, float, float, float],
+    cls_idx: int,
+    stem: str,
+    img_out: Path,
+    lbl_out: Path,
+    bg_seed: int,
+    indoor_bg: bool = False,
+) -> int:
+    """Luu anh goc + bien the nen trang TMĐT + bien the nen toi trong nha (chung group .rf.)."""
+    xc, yc, bw, bh = bbox
+    rgb.save(img_out / f"{stem}.jpg", format="JPEG", quality=90)
+    (lbl_out / f"{stem}.txt").write_text(
+        f"{cls_idx} {xc:.6f} {yc:.6f} {bw:.6f} {bh:.6f}\n",
+        encoding="utf-8",
+    )
+    saved = 1
+    w, h = rgb.size
+    # Neu anh doc hep hoac chai chiem khung chat, tao them ban nen trang ty le ~4:5 giong anh chup man hinh / TMĐT
+    if (w / float(max(h, 1)) < 0.72 or bw > 0.72) and bg_seed % 2 == 0:
+        canvas_w = max(w + 24, int(round(h * 0.85)))
+        canvas_h = max(h + 24, int(round(canvas_w * 1.15)))
+        bg_tone = (255, 255, 255) if (bg_seed % 4 == 0) else (240, 244, 248)
+        canvas = Image.new("RGB", (canvas_w, canvas_h), bg_tone)
+        ox = (canvas_w - w) // 2
+        oy = (canvas_h - h) // 2
+        canvas.paste(rgb, (ox, oy))
+        if max(canvas_w, canvas_h) > 720:
+            canvas.thumbnail((720, 720), Image.Resampling.LANCZOS)
+        nx1 = max(0.0, (ox + (xc - bw / 2.0) * w) / canvas_w)
+        ny1 = max(0.0, (oy + (yc - bh / 2.0) * h) / canvas_h)
+        nx2 = min(1.0, (ox + (xc + bw / 2.0) * w) / canvas_w)
+        ny2 = min(1.0, (oy + (yc + bh / 2.0) * h) / canvas_h)
+        # Cung prefix truoc `.rf.` de prepare_dataset.py giu ca 2 vao cung tap train/val/test (0 leakage)
+        w_stem = f"{stem}_jpg.rf.wbg"
+        canvas.save(img_out / f"{w_stem}.jpg", format="JPEG", quality=90)
+        (lbl_out / f"{w_stem}.txt").write_text(
+            f"{cls_idx} {(nx1 + nx2) / 2.0:.6f} {(ny1 + ny2) / 2.0:.6f} {nx2 - nx1:.6f} {ny2 - ny1:.6f}\n",
+            encoding="utf-8",
+        )
+        saved += 1
+    if indoor_bg and (bg_seed % 2 == 0):
+        # Tao bien the chai thieu sang trong nha (mo phong cam tay chup phong toi)
+        arr = np.asarray(rgb, dtype=np.float32)
+        bg_med = np.median(
+            np.concatenate([arr[:6, :, :].reshape(-1, 3), arr[-6:, :, :].reshape(-1, 3)], axis=0),
+            axis=0,
+        )
+        fg_mask = np.linalg.norm(arr - bg_med, axis=2) > 18.0 if float(np.std(arr[:6])) < 24.0 else np.ones((h, w), dtype=bool)
+        if float(fg_mask.mean()) >= 0.08:
+            dark_fg = np.clip(arr * (0.80 + 0.04 * (bg_seed % 4)), 0, 255).astype(np.uint8)
+            cw = max(w + 48, int(round(h * 0.92)))
+            ch = max(h + 48, int(round(cw * 1.15)))
+            base = 82 + (bg_seed % 45)
+            indoor = Image.new("RGB", (cw, ch), (base, base + 4, base + 2))
+            ox = (cw - w) // 2
+            oy = (ch - h) // 2
+            mask_img = Image.fromarray((fg_mask.astype(np.uint8) * 255), mode="L")
+            indoor.paste(Image.fromarray(dark_fg), (ox, oy), mask_img)
+            if max(cw, ch) > 720:
+                indoor.thumbnail((720, 720), Image.Resampling.LANCZOS)
+            nx1 = max(0.0, (ox + (xc - bw / 2.0) * w) / cw)
+            ny1 = max(0.0, (oy + (yc - bh / 2.0) * h) / ch)
+            nx2 = min(1.0, (ox + (xc + bw / 2.0) * w) / cw)
+            ny2 = min(1.0, (oy + (yc + bh / 2.0) * h) / ch)
+            i_stem = f"{stem}_jpg.rf.indoor"
+            indoor.save(img_out / f"{i_stem}.jpg", format="JPEG", quality=90)
+            (lbl_out / f"{i_stem}.txt").write_text(
+                f"{cls_idx} {(nx1 + nx2) / 2.0:.6f} {(ny1 + ny2) / 2.0:.6f} {nx2 - nx1:.6f} {ny2 - ny1:.6f}\n",
+                encoding="utf-8",
+            )
+            saved += 1
+    return saved
+
+
+def fetch_branded_beverages(
+    raw_dir: Path,
+    cache_dir: Path,
+    force: bool = False,
+) -> Path:
+    """Tai du lieu do uong co nhan hieu tu `stperez/beverages` (MIT) & Open Food Facts (CC-BY-SA-3.0)."""
+    import urllib.parse
+    from concurrent.futures import ThreadPoolExecutor, as_completed
+
+    out_dir = raw_dir / "branded-beverages"
+    if (out_dir / "data.yaml").is_file() and not force:
+        print(f"[SKIP] Da tao san: {out_dir}")
+        return out_dir
+    if out_dir.exists():
+        shutil.rmtree(out_dir)
+
+    names = [
+        "drink-cola",
+        "drink-citrus-soda",
+        "drink-energy",
+        "drink-sports-isotonic",
+        "drink-bottled-tea",
+        "drink-bottled-coffee",
+        "drink-milk-carton",
+        "drink-mineral-water",
+        "juice",
+    ]
+    name_to_idx = {n: i for i, n in enumerate(names)}
+    img_out = out_dir / "images"
+    lbl_out = out_dir / "labels"
+    img_out.mkdir(parents=True, exist_ok=True)
+    lbl_out.mkdir(parents=True, exist_ok=True)
+
+    tasks: list[tuple[str, str, str]] = []  # (stem_prefix, target_cls, url)
+
+    # 1. Thu thap danh sach file tu stperez/beverages (MIT)
+    try:
+        req = urllib.request.Request(STPEREZ_TREE_URL, headers={"User-Agent": "VigorAI-DatasetFetcher/1.5"})
+        tree = json.loads(urllib.request.urlopen(req, timeout=20).read().decode("utf-8"))
+        by_folder: dict[str, list[str]] = {}
+        for sib in tree.get("siblings", []):
+            rf = sib.get("rfilename", "")
+            if not rf.lower().endswith((".jpg", ".jpeg", ".png", ".webp")):
+                continue
+            for folder in STPEREZ_FOLDER_MAP:
+                if rf.startswith(folder + "/"):
+                    by_folder.setdefault(folder, []).append(rf)
+                    break
+        for folder, (target_cls, cap) in STPEREZ_FOLDER_MAP.items():
+            files = sorted(by_folder.get(folder, []))[:cap]
+            for idx, rf in enumerate(files):
+                quoted = "/".join(urllib.parse.quote(seg) for seg in rf.split("/"))
+                tag = folder.rsplit("/", 1)[-1].lower().replace(" ", "_")
+                tasks.append((f"stpz_{tag}_{idx}", target_cls, f"{STPEREZ_RAW_BASE}/{quoted}"))
+        print(f"[stperez/beverages] Da lap danh sach {len(tasks)} anh thuong hieu.")
+    except Exception as exc:
+        print(f"[CANH BAO] Loi doc tree stperez/beverages: {exc}")
+
+    # 2. Thu thap anh san pham Open Food Facts (7Up, Sting, Kirin, Revive, Pocari, Aquafina, C2, Tea+, Milo, Vinamilk...)
+    seen_codes: set[str] = set()
+    off_count = 0
+    for target_cls, q_list in OFF_QUERIES.items():
+        for q, cap in q_list:
+            try:
+                u = f"{OFF_SEARCH_BASE}?q={urllib.parse.quote(q)}&page_size={min(100, cap * 2)}"
+                req = urllib.request.Request(
+                    u,
+                    headers={"User-Agent": "VigorAI-Research/1.5 (https://github.com/HPhucTV/VigorAI)"},
+                )
+                res = json.loads(urllib.request.urlopen(req, timeout=15).read().decode("utf-8", errors="replace"))
+                added = 0
+                for hit in res.get("hits", []):
+                    if added >= cap:
+                        break
+                    if not _is_valid_off_rtd_hit(hit):
+                        continue
+                    code = str(hit.get("code") or "").strip()
+                    if not code or code in seen_codes:
+                        continue
+                    img_url = _off_front_url(hit)
+                    if not img_url:
+                        continue
+                    seen_codes.add(code)
+                    q_tag = "".join(ch for ch in q if ch.isalnum())[:12]
+                    tasks.append((f"off_{q_tag}_{code}", target_cls, img_url))
+                    added += 1
+                    off_count += 1
+            except Exception as exc:
+                print(f"  [OFF warn] query={q}: {exc}")
+    print(f"[OpenFoodFacts] Da lap them {off_count} anh san pham (tong nhiem vu tai={len(tasks)}).")
+
+    def _download_one(item: tuple[int, str, str, str]) -> tuple[str, str, bytes | None]:
+        _i, stem, target_cls, url = item
+        try:
+            req = urllib.request.Request(
+                url,
+                headers={"User-Agent": "VigorAI-Research/1.5 (https://github.com/HPhucTV/VigorAI)"},
+            )
+            data = urllib.request.urlopen(req, timeout=15).read()
+            return stem, target_cls, data
+        except Exception:
+            return stem, target_cls, None
+
+    per_class_files: Counter = Counter()
+    errors = 0
+    with ThreadPoolExecutor(max_workers=16) as pool:
+        futs = [pool.submit(_download_one, (idx, st, cls, u)) for idx, (st, cls, u) in enumerate(tasks)]
+        for idx, fut in enumerate(as_completed(futs), 1):
+            stem, target_cls, raw_bytes = fut.result()
+            if not raw_bytes:
+                errors += 1
+                continue
+            try:
+                with Image.open(io.BytesIO(raw_bytes)) as im:
+                    rgb, bbox = estimate_beverage_bbox(im, bg_idx=idx)
+            except Exception:
+                errors += 1
+                continue
+            if not _is_clean_beverage_image(rgb):
+                continue
+            if max(rgb.size) > 720:
+                rgb.thumbnail((720, 720), Image.Resampling.LANCZOS)
+            n_saved = _save_with_optional_white_studio(
+                rgb=rgb,
+                bbox=bbox,
+                cls_idx=name_to_idx[target_cls],
+                stem=stem,
+                img_out=img_out,
+                lbl_out=lbl_out,
+                bg_seed=idx,
+                indoor_bg=(target_cls in ("drink-bottled-coffee", "drink-energy", "drink-cola", "drink-citrus-soda")),
+            )
+            per_class_files[target_cls] += n_saved
+            if idx % 250 == 0:
+                print(f"  ... da xu ly {idx}/{len(tasks)} URLs | da luu={sum(per_class_files.values())}", flush=True)
+
+    _write_yolo_dataset_yaml(out_dir, names)
+    summary = {
+        "sources": ["stperez/beverages (MIT)", "Open Food Facts Search API (CC-BY-SA-3.0)"],
+        "urls_attempted": len(tasks),
+        "download_or_decode_errors": errors,
+        "images_saved_incl_white_studio": sum(per_class_files.values()),
+        "per_class_images": dict(per_class_files),
+    }
+    (out_dir / "extract_summary.json").write_text(
+        json.dumps(summary, indent=2, ensure_ascii=False), encoding="utf-8"
+    )
+    print("[OK] branded-beverages extract:", json.dumps(summary, ensure_ascii=False))
+    return out_dir
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Tai dataset mo cho AI Model B (T-M4-01, T-M4-09)")
     parser.add_argument("--raw-dir", type=Path, default=RAW_DIR)
     parser.add_argument("--cache-dir", type=Path, default=CACHE_DIR)
     parser.add_argument(
         "--only",
-        choices=("all", "vn-streetfood", "foodseg103", "drinks-snacks", "soda-bottles", "coco-val", "matthijs-snacks", "vn-food-combined"),
+        choices=("all", "vn-streetfood", "foodseg103", "drinks-snacks", "soda-bottles", "coco-val", "matthijs-snacks", "vn-food-combined", "branded-beverages"),
         default="all",
     )
     parser.add_argument("--max-per-class", type=int, default=260)
@@ -809,6 +1333,8 @@ def main(argv: list[str] | None = None) -> int:
         fetch_matthijs_snacks(args.raw_dir, args.cache_dir, max_per_class=args.max_per_class, force=args.force)
     if args.only in ("all", "vn-food-combined"):
         fetch_vn_food_combined(args.raw_dir, args.cache_dir, max_per_class=min(180, args.max_per_class), force=args.force)
+    if args.only in ("all", "drinks-snacks", "branded-beverages"):
+        fetch_branded_beverages(args.raw_dir, args.cache_dir, force=args.force)
     return 0
 
 

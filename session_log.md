@@ -17,6 +17,26 @@
 
 ---
 
+## Phiên 46 — 2026-11-27 15:35 | Thành viên: M4 (Pure AI Engineer) | Task: `T-M4-10` (`[x]`)
+- **Mục tiêu phiên:** Xử lý triệt để hiện tượng bỏ sót chai nước đơn trên nền trắng thương mại điện tử (Coca-Cola `0 kcal`) và nhận nhầm nước đóng chai/lon (Sting đỏ, Kirin Latte) thành `Sô-cô-la / Kẹo ngọt` (`CHOCOLATE_CANDY`) từ 5 ảnh test thực tế của người dùng; nâng cấp AI Model B lên **`yolov8s-gymfood-v1.5` (`58` lớp / `56` lớp hoạt động)** đạt toàn bộ **6/6 KPI**, deploy nóng lên Railway Production và build lại `VigorAI-test-ai.apk`.
+- **Những file đã tạo / chỉnh sửa (`0` file `[LOCKED STUB]` và `0` file `M3` bị chạm):**
+  - `ai_research/model_b_food_yolo/{food_classes.py,fetch_open_datasets.py,prepare_dataset.py}`, `ai_research/SOURCES.md`:
+    - Mở rộng `CORE_CLASSES_V1` lên **58 lớp** (`50..57`: `DRINK_COLA`, `DRINK_CITRUS_SODA`, `DRINK_ENERGY`, `DRINK_SPORTS_ISOTONIC`, `DRINK_BOTTLED_TEA`, `DRINK_BOTTLED_COFFEE`, `DRINK_MILK_CARTON`, `DRINK_MINERAL_WATER`), tăng `MAX_CLASSES = 70` trong `prepare_dataset.py`, giữ nguyên alias `"tea"` ở `COFFEE_MILK_TEA` để không lẫn ly trà nóng với trà đóng chai.
+    - Nâng cấp `fetch_soda_bottles` giữ nguyên 4 nhãn gốc (`soda-bottles`, `coca-cola`, `fanta`, `sprite`) + trích `420` crop chai đơn góc thực tế; bổ sung `estimate_beverage_bbox()` + `fetch_branded_beverages` (`stperez/beverages` MIT + Open Food Facts Search v3 CC-BY-SA-3.0 kèm biến thể nền trắng TMĐT & nền phòng thiếu sáng); dựng `model_b_v7` (**11.919 ảnh**: `9.034 train / 1.926 val / 959 test`, `56/58` lớp hoạt động, `0` lỗi bbox, `0` rò rỉ augment).
+  - `backend/app/services/ai_food_yolo.py`: Bổ sung `8` mục đồ uống nhãn hiệu vào `EXTENDED_BEVERAGE_SNACK_CATALOG` (trong đó `DRINK_MINERAL_WATER` trả `0 kcal`), nâng tổng catalog lên **74 mục**.
+  - `mobile/lib/features/health/food_scan/{data/food_scan_repository.dart,presentation/food_scan_screen.dart}`: Cập nhật `isBeverage` nhận mọi mã `DRINK_*` và sửa tiêu đề bữa lưu dùng `${e.unitLabel}` (`ml` cho đồ uống thay vì `g`).
+  - `backend/ai_models/model_b_manifest.json`, `backend/tests/test_ai_api.py`, `ai_research/evaluation_reports/{model_b_v7_dataset_report.json,model_b_v1_5_56classes/}`: Huấn luyện 2 nhịp trên Colab T4 (`v1_4_best.pt` 30 epochs → `mAP@0.5 = 0.8517`; boost dữ liệu cà phê chai/sữa hộp + fine-tune ấm 12 epochs → `v1.5_r2`), tích hợp `best.onnx` (`44,835,874 B`, `sha256: 9915ca567fceb166d7ea6952b8a6d45a8db21bcfd1c003da2402b8d156a48a4b`, shape `[1, 62, 8400]`) & `best.pt`.
+  - `docs/taskboard.md`, `session_log.md`: Đóng **`[x]` `T-M4-10`** (`M4: 7 / 14 Done (50.0%)`, `Tổng: 38 / 63 Done (60.3%)`).
+- **Kiểm tra / Kết quả chạy thử:**
+  - **Colab T4 (`v1.5_r2`):** **`mAP@0.5 = 0.9025`**, **`mAP@0.5:0.95 = 0.7435`**, **`Precision = 0.8912`**, **`Recall = 0.8553`**, **`F1 = 0.8729`**, `T4 infer = 8.46 ms`.
+  - **`evaluate_model.py` (`food_yolo_v1.onnx` CPU trên `959` ảnh `test`, `conf=0.30`):** Đạt **6/6 KPI** (`mAP@0.5 = 0.9023 >= 0.80`, `Precision = 0.8342 >= 0.82`, `Recall = 0.8348 >= 0.78`, `F1 = 0.8345 >= 0.80`, `infer mean = 93.83 ms < 150 ms`, `p95 = 102.0 ms`, `e2e mean = 98.73 ms`).
+  - **Kiểm thử trên 5 ảnh thực tế & TMĐT của người dùng + Revive (`verify_user_beverages_v15.py`):** Pass 100% (`0` `CHOCOLATE_CANDY` / `BANANA`, `0` ca `0 kcal`): `Coca-Cola` nền trắng `DRINK_COLA 84.0%`, `Sting` nền trắng `DRINK_ENERGY 86.1%`, `Kirin Latte` cầm tay `DRINK_BOTTLED_COFFEE 66.9%`, `Kirin Latte` nền sáng `44%–53%`, `7Up` lon xanh `65%–68%`, `Revive` `DRINK_SPORTS_ISOTONIC 64.4%`.
+  - `pytest backend/tests/test_ai_api.py -v`: **35 / 35 PASS** (thêm test `test_branded_beverages_and_zero_calorie_mineral_water`).
+- **Việc cần làm ở phiên kế tiếp:**
+  - Bổ sung ảnh thực tế cho 2 lớp còn thiếu (`BROWN_RICE`, `SWEET_POTATO`) và tiếp tục **AI Model C** (`T-M4-05`, `T-M4-07`, `T-M4-08`).
+
+---
+
 ## Phiên 45 — 2026-11-26 21:55 | Thành viên: M3 + M4 | Task: Xử lý Xung đột PR #21 (`vu` $\rightarrow$ `main`), Merge AI Model B v1.4 (50 lớp / 66 món) & Redeploy Railway
 - **Mục tiêu phiên:** Xử lý xung đột `session_log.md` trên PR #21 (`vu:abc20b3` $\rightarrow$ `main:16934b1`), hợp nhất bản nâng cấp **AI Model B `yolov8s-gymfood-v1.4` (`50` lớp / `66` món)** mà vẫn bảo toàn bản vá `numpy`/ONNX + **39/39 mô hình 3D chuyển động** trên `main`, rồi kích hoạt redeploy lại lên Railway Production.
 - **Những file đã xử lý (`0` file `[LOCKED STUB]` bị chạm):**
