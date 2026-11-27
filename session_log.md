@@ -17,6 +17,21 @@
 
 ---
 
+## Phiên 47 — 2026-11-27 18:00 | Thành viên: M1 + M2 + M3 (Kiểm toán toàn Repo) | Task: Rà soát toàn bộ Codebase sau PR #22 (`d237645`) & Đồng bộ `docs/taskboard.md`
+- **Mục tiêu phiên:** Đọc rà soát toàn bộ codebase 4 phân hệ (`mobile/`, `backend/`, `assets_3d/`, `ai_research/`, `docs/`) trên bản mới nhất `d237645` (sau khi pull PR #22 — AI Model B `v1.5`), đối chiếu từng task trên `docs/taskboard.md` với Definition of Done thực tế và push lên GitHub (`HPhucTV`).
+- **Những file đã cập nhật (`0` file `[LOCKED STUB]` bị chạm):**
+  - `docs/taskboard.md`: Đồng bộ dashboard (`38 / 63 Done (60.3%)`, `9 [~]`, `16 [ ]`), cập nhật số liệu mới nhất (`targetSdk 36`, `39/39` bài 3D, `8` Avatar Nam/Nữ, `36` món + `39` bài + `4` giáo án DB seed, `T-M1-10` đang chờ đồng bộ env AI sang `vigorai-production.up.railway.app`, đánh dấu `[~]` thực chất cho `T-M3-12`, `T-M4-12`, `T-M4-13`, `T-M1-16`, `T-M2-16`, `T-M3-14`).
+  - `session_log.md`: Ghi nhật ký Phiên 47.
+- **Kiểm tra / Kết quả chạy thử:**
+  - `flutter test --no-pub test/health/` (`27/27 PASS`) & `flutter test --no-pub test/workout/` (`22/22 PASS`, tổng `49/49 PASS`).
+  - `python -m pytest backend/tests/test_ai_api.py -rs -q`: `24 passed, 11 skipped` (35 tests collected; skip do môi trường Windows local thiếu `sqlalchemy`/`onnxruntime`).
+  - Live Railway verification: `vigorai-production.up.railway.app` (`/healthz` `200`, `/delete-account` `200`, `/api/v1/ai/food-model/info` hiện trả `stub` vì chưa đồng bộ biến S3/ONNX); `vigorai-api-production.up.railway.app/api/v1/ai/food-model/info` đang chạy `yolov8s-gymfood-v1.5` (`onnxruntime`, `catalog_size: 74`).
+- **Việc cần làm ở phiên kế tiếp:**
+  - Đồng bộ biến môi trường `VIGOR_FOOD_MODEL_URL` / `S3_ADDRESSING_STYLE=virtual` / `VIGOR_FOOD_ALLOW_STUB=0` sang backend chính `vigorai-production.up.railway.app` để đóng `[x]` `T-M1-10`.
+  - Theo dõi duyệt Closed Testing (`T-M2-06`) đủ 14 ngày (`T-M1-12`) để phát hành Production `v1.1.0` (`T-M2-12`), và hoàn thiện **AI Model C** (`T-M4-05`, `T-M4-07`, `T-M4-08`).
+
+---
+
 ## Phiên 46 — 2026-11-27 15:35 | Thành viên: M4 (Pure AI Engineer) | Task: `T-M4-10` (`[x]`)
 - **Mục tiêu phiên:** Xử lý triệt để hiện tượng bỏ sót chai nước đơn trên nền trắng thương mại điện tử (Coca-Cola `0 kcal`) và nhận nhầm nước đóng chai/lon (Sting đỏ, Kirin Latte) thành `Sô-cô-la / Kẹo ngọt` (`CHOCOLATE_CANDY`) từ 5 ảnh test thực tế của người dùng; nâng cấp AI Model B lên **`yolov8s-gymfood-v1.5` (`58` lớp / `56` lớp hoạt động)** đạt toàn bộ **6/6 KPI**, deploy nóng lên Railway Production và build lại `VigorAI-test-ai.apk`.
 - **Những file đã tạo / chỉnh sửa (`0` file `[LOCKED STUB]` và `0` file `M3` bị chạm):**
