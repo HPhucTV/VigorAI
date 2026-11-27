@@ -84,7 +84,7 @@ class _FoodScanScreenState extends ConsumerState<FoodScanScreen> {
         persistedImagePath = savedFile.path;
       }
       final title = res.detectedItems
-          .map((e) => '${e.nameVi} (${e.adjustedGrams.round()}g)')
+          .map((e) => '${e.nameVi} (${e.adjustedGrams.round()}${e.unitLabel})')
           .join(' + ');
       await ref.read(healthDashboardProvider.notifier).addMeal(
             mealType: _mealType,
