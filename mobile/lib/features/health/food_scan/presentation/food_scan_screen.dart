@@ -414,17 +414,22 @@ class _FoodBboxPainter extends CustomPainter {
             fontWeight: FontWeight.bold,
           ),
         ),
+        maxLines: 1,
+        ellipsis: '…',
         textDirection: TextDirection.ltr,
-      )..layout();
+      )..layout(maxWidth: (size.width - 8).clamp(60.0, size.width));
 
+      final boxW = (textPainter.width + 4).clamp(0.0, size.width);
+      final boxLeft =
+          rect.left.clamp(0.0, (size.width - boxW).clamp(0.0, size.width));
       final labelBg = Rect.fromLTWH(
-        rect.left,
+        boxLeft,
         (rect.top - 18).clamp(0.0, size.height - 18),
-        textPainter.width,
+        boxW,
         18,
       );
       canvas.drawRect(labelBg, Paint()..color = color);
-      textPainter.paint(canvas, Offset(labelBg.left, labelBg.top + 2));
+      textPainter.paint(canvas, Offset(labelBg.left + 2, labelBg.top + 2));
     }
   }
 

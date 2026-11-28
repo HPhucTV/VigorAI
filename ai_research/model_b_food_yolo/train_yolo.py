@@ -38,6 +38,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     p.add_argument("--epochs", type=int, default=100)
     p.add_argument("--imgsz", type=int, default=640)
     p.add_argument("--batch", type=int, default=16, help="-1 de tu chon theo VRAM")
+    p.add_argument("--close-mosaic", type=int, default=10, help="so epoch cuoi tat mosaic augmentation")
     p.add_argument("--device", default="auto", help="auto | cpu | 0 (GPU dau tien)")
     p.add_argument("--patience", type=int, default=30, help="dung som neu khong cai thien")
     p.add_argument("--seed", type=int, default=42)
@@ -156,6 +157,7 @@ def main(argv: list[str] | None = None) -> int:
         degrees=10.0,
         fliplr=0.5,
         mosaic=1.0,
+        close_mosaic=args.close_mosaic,
     )
 
     best = Path(model.trainer.best)

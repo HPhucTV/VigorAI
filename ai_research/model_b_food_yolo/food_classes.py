@@ -1,5 +1,8 @@
-# [OWNER: M4] 58 lop mon an Viet, do Gym, nuoc uong nhan hieu & snack cho AI Model B v1.5 (T-M4-01, T-M4-09, T-M4-10)
-"""Danh sach 58 lop v1.5 + bang alias de gop nhan tu Roboflow / HuggingFace / COCO / OpenFoodFacts ve `class_code`.
+# [OWNER: M4] 69 lop mon an Viet, do Gym, nuoc uong nhan hieu & snack cho AI Model B v1.6 (T-M4-01, T-M4-09, T-M4-10)
+"""Danh sach 69 lop v1.6 + bang alias de gop nhan tu Roboflow / HuggingFace / COCO / OpenFoodFacts / Wikimedia ve `class_code`.
+
+11 lop mo rong v1.6 (58..68): AVOCADO, CUCUMBER, CHERRY_TOMATO, LEAN_PORK, ALMONDS, OATMEAL, GREEK_YOGURT,
+WHEY_SHAKE (co san dinh duong trong FOOD_CATALOG_SEED cua M3) + DRINK_COCONUT_WATER, DRINK_YOGURT_PROBIOTIC, DRINK_BEER.
 
 18 lop dau (0..17) giu nguyen thu tu v1.0/v1.1 khop `food_nutrition_catalog` (seed boi M3).
 12 lop mo rong v1.2 (18..29) bo sung nhom Nuoc uong & Banh snack / Do an nhanh.
@@ -33,11 +36,11 @@ CORE_CLASSES_V1: list[tuple[str, tuple[str, ...]]] = [
         ("chicken breast", "grilled chicken", "grilled chicken breast", "ức gà"),
     ),
     ("BOILED_EGG", ("boiled egg", "hard boiled egg", "boiled eggs", "trứng luộc", "trứng gà luộc")),
-    ("FRIED_EGG", ("fried egg", "fried eggs", "sunny side up", "telur-dadar", "omelette", "trứng ốp la", "trứng chiên", "trứng tráng")),
+    ("FRIED_EGG", ("fried egg", "fried eggs", "sunny side up", "telur-dadar", "telur-mata-sapi", "omelette", "trứng ốp la", "trứng chiên", "trứng tráng")),
     ("BEEF_STEAK", ("beef steak", "steak", "beef", "bò bít tết", "bít tết")),
     ("SALMON_FILLET", ("salmon", "salmon fillet", "grilled salmon", "cá hồi")),
     ("STEAMED_SHRIMP", ("shrimp", "steamed shrimp", "boiled shrimp", "prawn", "tôm", "tôm hấp")),
-    ("TOFU", ("tofu", "bean curd", "đậu hũ", "đậu phụ")),
+    ("TOFU", ("tofu", "bean curd", "tau-hu-non", "tau-hu-nhoi-thit", "đậu hũ", "đậu phụ")),
     ("SWEET_POTATO", ("sweet potato", "boiled sweet potato", "khoai lang")),
     ("BROCCOLI", ("broccoli", "bông cải xanh", "súp lơ xanh")),
     ("GREEN_SALAD", ("salad", "green salad", "lettuce", "xà lách")),
@@ -141,7 +144,6 @@ CORE_CLASSES_V1: list[tuple[str, tuple[str, ...]]] = [
             "chips",
             "potato chips",
             "kacang-mete",
-            "almond",
             "cashew",
             "peanut",
             "snack",
@@ -180,7 +182,7 @@ CORE_CLASSES_V1: list[tuple[str, tuple[str, ...]]] = [
     ),
     (
         "XOI_MAN",
-        ("xoi", "xoi man", "xoi-xeo", "xoi-gac", "xôi", "xôi mặn", "xôi xéo", "xôi gấc", "sticky rice"),
+        ("xoi", "xoi man", "xoi-xeo", "xoi xeo", "xoi-gac", "xoi-nep-than", "xôi", "xôi mặn", "xôi xéo", "xôi gấc", "sticky rice"),
     ),
     (
         "GOI_CUON_NEM",
@@ -188,11 +190,11 @@ CORE_CLASSES_V1: list[tuple[str, tuple[str, ...]]] = [
     ),
     (
         "BUN_DAU",
-        ("bun dau", "bun dau mam tom", "bún đậu", "bún đậu mắm tôm", "vermicelli with tofu"),
+        ("bun dau", "bun-dau-mam-tom", "bun dau mam tom", "bún đậu", "bún đậu mắm tôm", "vermicelli with tofu"),
     ),
     (
         "CHAO_THIT",
-        ("chao", "chao long", "chao thit", "chao-vit", "cháo", "cháo lòng", "cháo thịt", "porridge", "pork offal porridge", "bubur"),
+        ("chao", "chao-long", "chao long", "chao thit", "chao-vit", "cháo", "cháo lòng", "cháo thịt", "porridge", "pork offal porridge", "bubur"),
     ),
     (
         "BANH_CUON",
@@ -204,7 +206,7 @@ CORE_CLASSES_V1: list[tuple[str, tuple[str, ...]]] = [
     ),
     (
         "COM_XANH",
-        ("com xanh", "banh com", "cốm", "bánh cốm", "flattened green rice"),
+        ("com xanh", "banh com", "cha-com", "cốm", "bánh cốm", "flattened green rice"),
     ),
     # 10 mon an & dac san Viet Nam bo sung cho v1.4 (40..49)
     (
@@ -280,6 +282,59 @@ CORE_CLASSES_V1: list[tuple[str, tuple[str, ...]]] = [
         "DRINK_MINERAL_WATER",
         ("drink-mineral-water", "aquafina", "lavie", "evian", "nestle_pure_life", "perrier", "san_pellegrino", "water bottle", "mineral water", "nuoc suoi", "nuoc khoang"),
     ),
+    # 11 lop bo sung cho v1.6 (58..68): mon Gym/healthy co san trong catalog M3 + 3 nhom do uong pho bien
+    ("AVOCADO", ("avocado", "quả bơ", "trái bơ", "sliced avocado")),
+    ("CUCUMBER", ("cucumber", "dưa leo", "dưa chuột")),
+    ("CHERRY_TOMATO", ("tomato", "cherry tomato", "cà chua", "cà chua bi")),
+    ("LEAN_PORK", ("pork", "lean pork", "thịt heo", "thịt lợn", "thịt heo luộc", "thịt heo nạc")),
+    ("ALMONDS", ("almond", "almonds", "hạnh nhân", "hạnh nhân rang")),
+    ("OATMEAL", ("oatmeal", "oats", "rolled oats", "porridge oats", "overnight oats", "yến mạch", "cháo yến mạch")),
+    ("GREEK_YOGURT", ("greek-yogurt", "greek yogurt", "yogurt", "yoghurt", "sữa chua", "sữa chua hy lạp")),
+    ("WHEY_SHAKE", ("whey-shake", "whey", "whey protein", "protein shake", "sữa whey")),
+    (
+        "DRINK_COCONUT_WATER",
+        ("drink-coconut-water", "coconut water", "young coconut", "nước dừa", "nước dừa tươi"),
+    ),
+    (
+        "DRINK_YOGURT_PROBIOTIC",
+        ("drink-yogurt-probiotic", "yakult", "probi", "betagen", "actimel", "calpis", "drinking yogurt", "sữa chua uống"),
+    ),
+    (
+        "DRINK_BEER",
+        ("drink-beer", "beer", "bia", "lager", "heineken", "tiger beer", "bia sài gòn", "bia lon"),
+    ),
+    # 31 lop bo sung cho v1.7 (69..99): mon Viet dac san, mon Gym con thieu, trai cay/rau cu & 3 nhom do uong moi
+    ("STIR_FRIED_BEEF", ("stir-fried-beef", "stir fried beef", "bo-luc-lac", "bo luc lac", "bo-ne", "bo ne", "thịt bò xào", "bò lúc lắc")),
+    ("BOILED_CHICKEN_BREAST", ("boiled-chicken-breast", "boiled chicken", "ga-hap-la-chanh", "ga hap la chanh", "ga luoc", "ức gà luộc", "gà luộc")),
+    ("TUNA_CANNED", ("tuna-canned", "canned tuna", "tuna in water", "cá ngừ ngâm nước", "cá ngừ đóng hộp")),
+    ("PEANUT_BUTTER", ("peanut-butter", "peanut butter", "bơ đậu phộng")),
+    ("WHOLE_WHEAT_BREAD", ("whole-wheat-bread", "whole wheat bread", "wholemeal bread", "bánh mì nguyên cám")),
+    ("BANH_BEO_BOT_LOC", ("banh-beo-bot-loc", "banh-beo", "banh beo", "banh-bot-loc", "banh bot loc", "banh-duc", "banh duc", "bánh bèo", "bánh bột lọc")),
+    ("BANH_TRANG_NUONG", ("banh-trang-nuong", "banh trang nuong", "bánh tráng nướng")),
+    ("BO_KHO", ("bo-kho", "bo kho", "ca-ri-ga", "ca ri ga", "bò kho", "cà ri gà")),
+    ("BUN_MAM", ("bun-mam", "bun mam", "bun-cha-ca", "banh-da-cua", "bún mắm", "bún chả cá", "bánh đa cua")),
+    ("NEM_CHUA_NUONG", ("nem-chua-nuong", "nem-chua", "nem chua", "nem-nuong-nha-trang", "bo-la-lot", "sate", "nem nướng", "bò lá lốt")),
+    ("SUP_CUA", ("sup-cua", "sup cua", "súp cua")),
+    ("CA_CHIEN_NUONG", ("ca-chien-nuong", "ikan-goreng", "ca-loc-nuong", "ca-sot-ca-chua", "cha-ca-la-vong", "cá chiên", "cá nướng")),
+    ("TRUNG_VIT_LON", ("trung-vit-lon", "cut-lon-xao-me", "trứng vịt lộn", "cút lộn xào me")),
+    ("OC_HAI_SAN", ("oc-hai-san", "seafood", "oc-buou-hap", "oc-huong-xao", "oc-len-xao-dua", "cua-hap-bia", "ốc hấp", "hải sản")),
+    ("BANH_PIA_TRUNG_THU", ("banh-pia-trung-thu", "banh-pia", "banh pia", "banh-trung-thu", "bánh pía", "bánh trung thu")),
+    ("CHE_TROINUOC", ("che-troinuoc", "banh-troi-nuoc", "banh-da-lon", "banh-bo", "chè trôi nước", "bánh da lợn")),
+    ("SUSHI_ROLL", ("sushi-roll", "sushi", "sushi-nigiri", "sushi-makizushi", "cơm cuộn")),
+    ("SPAGHETTI_PASTA", ("spaghetti-pasta", "spaghetti-bolognese", "macaroni-cheese", "nui-xao", "mì ý", "nui xào")),
+    ("WATERMELON", ("watermelon", "semangka", "dưa hấu")),
+    ("ORANGE_CITRUS", ("orange-citrus", "orange", "mandarin", "clementine", "cam", "quýt")),
+    ("MANGO", ("mango", "xoài", "xoài chín")),
+    ("PINEAPPLE", ("pineapple", "dứa", "thơm")),
+    ("GRAPES", ("grapes", "grape", "nho", "nho tươi")),
+    ("DRAGON_FRUIT", ("dragon-fruit", "dragon_fruit", "dragon fruit", "thanh long")),
+    ("STRAWBERRY_BERRY", ("strawberry-berry", "strawberry", "blueberry", "dâu tây", "việt quất")),
+    ("CORN_BOILED", ("corn-boiled", "corn", "sweetcorn", "sweet corn", "bắp luộc", "ngô luộc")),
+    ("CARROT_VEG", ("carrot-veg", "carrot", "cà rốt")),
+    ("CABBAGE_SPINACH", ("cabbage-spinach", "cabbage", "spinach", "bắp cải", "rau bina")),
+    ("DRINK_SOY_NUT_MILK", ("drink-soy-nut-milk", "soy milk", "soymilk", "vinasoy", "fami", "almond milk", "oat milk", "sữa đậu nành", "sữa hạt")),
+    ("DRINK_KOMBUCHA_HERBAL", ("drink-kombucha-herbal", "kombucha", "herbal tea can", "trà kombucha", "trà thảo mộc")),
+    ("DRINK_WINE_CIDER", ("drink-wine-cider", "wine bottle", "cider", "rượu vang", "nước táo lên men")),
 ]
 
 CLASS_CODES: list[str] = [code for code, _ in CORE_CLASSES_V1]

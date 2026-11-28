@@ -19,6 +19,7 @@ import argparse
 import io
 import json
 import shutil
+import subprocess
 import sys
 import urllib.request
 import zipfile
@@ -1308,13 +1309,933 @@ def fetch_branded_beverages(
     return out_dir
 
 
+V16_BEER_FOLDERS: dict[str, int] = {
+    "Beer/Anheuser-Busch InBev/corona": 50,
+    "Beer/Anheuser-Busch InBev/budweiser": 50,
+    "Beer/Anheuser-Busch InBev/stella_artois": 50,
+    "Beer/Anheuser-Busch InBev/modelo_especial": 50,
+    "Beer/Anheuser-Busch InBev/michelob_ultra": 45,
+    "Beer/Anheuser-Busch InBev/castle_lite": 45,
+}
+
+V16_OFF_QUERIES: dict[str, list[tuple[str, int]]] = {
+    "oatmeal": [("overnight oats", 35), ("oatmeal cup", 35)],
+    "greek-yogurt": [("greek yogurt", 65), ("oikos yogurt", 45), ("chobani yogurt", 45), ("fage yogurt", 35), ("plain yogurt", 45)],
+    "whey-shake": [("whey protein", 65), ("isolate protein", 45), ("premier protein", 50), ("muscle milk", 45), ("protein shake", 55)],
+    "drink-coconut-water": [("coconut water", 80), ("vita coco", 45), ("harmless harvest", 30), ("ufc coconut", 30), ("coco water", 40)],
+    "drink-yogurt-probiotic": [("yakult", 55), ("actimel", 65), ("calpis", 30), ("probi", 15), ("betagen", 15), ("probiotic yogurt drink", 50), ("danactive", 30)],
+    "drink-beer": [("heineken", 55), ("tiger beer", 20), ("sapporo beer", 20), ("asahi beer", 35), ("strongbow", 35)],
+    "drink-citrus-soda": [("7up", 60), ("7up zero", 35), ("sprite can", 35), ("mountain dew can", 30)],
+    "drink-bottled-coffee": [("kirin latte", 25), ("bottled iced coffee", 25), ("boss coffee", 25)],
+    "drink-sports-isotonic": [("revive drink", 25), ("pocari sweat", 30), ("aquarius drink", 25)],
+}
+
+V16_N5K_QUERIES: list[tuple[str, str, int]] = [
+    ("brown rice", "brown rice", 220),
+    ("oatmeal", "oatmeal", 60),
+    ("sweet potato", "sweet potato", 100),
+    ("avocado", "avocado", 55),
+    ("cucumber", "cucumber", 70),
+    ("cherry-tomato", "cherry tomato", 80),
+    ("lean-pork", "pork", 30),
+]
+
+V16_LVIS_CLASS_MAP: dict[int, str] = {
+    0: "almonds",
+    5: "avocado",
+    24: "cucumber",
+    35: "cherry-tomato",
+    58: "sweet potato",
+    59: "cherry-tomato",
+}
+
+
+def _is_valid_v16_off_hit(hit: dict, target_cls: str) -> bool:
+    text = f"{hit.get('product_name') or ''} {hit.get('brands') or ''}".lower()
+    if target_cls in ("sweet potato", "brown rice") and any(w in text for w in ("crisps", "chips", "baby food", "puree", "cracker")):
+        return False
+    if target_cls == "greek-yogurt" and any(w in text for w in ("yakult", "actimel", "probiotic drink")):
+        return False
+    if target_cls.startswith("drink-") and target_cls != "drink-beer":
+        return _is_valid_off_rtd_hit(hit)
+    if target_cls == "oatmeal" and any(w in text for w in ("cookie", "biscuit", "quaker", "canister")):
+        return False
+    return True
+
+
+def _collect_n5k_tasks(tasks: list[tuple[str, str, str, str]]) -> Counter:
+    import urllib.parse
+
+    added = Counter()
+    seen_urls: set[str] = set()
+    for target_cls, query, cap in V16_N5K_QUERIES:
+        count = 0
+        req_sub = query.lower()
+        for off in (0, 100, 200):
+            if count >= cap:
+                break
+            u = (
+                "https://datasets-server.huggingface.co/search"
+                f"?dataset=TeeA/nutrition5k-food-name-gemini&config=default&split=train"
+                f"&query={urllib.parse.quote(query)}&offset={off}&length=100"
+            )
+            try:
+                res = json.loads(urllib.request.urlopen(urllib.request.Request(u, headers={"User-Agent": "VigorAI-Research/1.6"}), timeout=25).read().decode("utf-8", errors="replace"))
+            except Exception as exc:
+                print(f"  [N5K warn] {query}@{off}: {exc}")
+                break
+            rows = res.get("rows", [])
+            if not rows:
+                break
+            for item in rows:
+                if count >= cap:
+                    break
+                row = item.get("row") or {}
+                fname = str(row.get("food_name") or "").strip()
+                if len(fname) > 55 or req_sub not in fname.lower():
+                    continue
+                if target_cls == "cherry-tomato" and "tomato" not in fname.lower():
+                    continue
+                img_url = (row.get("dish_image") or {}).get("src")
+                if not img_url or img_url in seen_urls:
+                    continue
+                seen_urls.add(img_url)
+                did = str(row.get("dish_id") or count)
+                tasks.append((f"n5k_{target_cls.replace(' ', '')}_{did}_{count}", target_cls, img_url, "dish"))
+                count += 1
+                added[target_cls] += 1
+    print(f"[Nutrition5k] Da lap {sum(added.values())} anh: {dict(added)}")
+    return added
+
+
+def _collect_lvis_yolo_items(
+    cache_dir: Path,
+    name_to_idx: dict[str, int],
+    class_map: dict[int, str] = V16_LVIS_CLASS_MAP,
+    min_area: float = 0.04,
+    per_class_cap: int | dict[str, int] = 140,
+    stem_prefix: str = "lvis",
+    max_boxes_per_image: int = 2,
+) -> list[tuple[str, str, list[str], str]]:
+    """Tai nhan .7z tu Siddhanxt & tra ve danh sach (stem, img_url, yolo_lines, primary_cls)."""
+    import urllib.parse
+
+    lvis_cache = cache_dir / "lvis_labels"
+    lvis_cache.mkdir(parents=True, exist_ok=True)
+    base_sid = "https://huggingface.co/datasets/Siddhanxt/Fruits-And-Vegetables-Detection-Dataset/resolve/main"
+    base_lvis = "https://huggingface.co/datasets/henningheyen/LVIS_Fruits_And_Vegetables/resolve/main/images"
+
+    for split in ("train", "val"):
+        split_dir = lvis_cache / split
+        if not split_dir.is_dir() or not any(split_dir.glob("*.txt")):
+            arc = lvis_cache / f"{split}_labels.7z"
+            if not arc.is_file():
+                print(f"[LVIS] Dang tai {split}_labels.7z ...")
+                urllib.request.urlretrieve(f"{base_sid}/{split}_labels.7z", arc)
+            subprocess.run(["tar", "-xf", str(arc), "-C", str(lvis_cache)], check=True)
+
+    counts = Counter()
+    items: list[tuple[str, str, list[str], str]] = []
+    for split in ("train", "val"):
+        for txt_path in sorted((lvis_cache / split).glob("*.txt")):
+            stem = txt_path.stem.strip()
+            if not stem:
+                continue
+            kept_lines: list[str] = []
+            cls_hits: list[str] = []
+            for ln in txt_path.read_text(encoding="utf-8", errors="ignore").splitlines():
+                parts = ln.split()
+                if len(parts) != 5:
+                    continue
+                try:
+                    cid = int(parts[0])
+                    xc, yc, bw, bh = (float(x) for x in parts[1:])
+                except ValueError:
+                    continue
+                target_cls = class_map.get(cid)
+                if not target_cls or bw * bh < min_area:
+                    continue
+                kept_lines.append(f"{name_to_idx[target_cls]} {xc:.6f} {yc:.6f} {bw:.6f} {bh:.6f}")
+                cls_hits.append(target_cls)
+            if not kept_lines or (max_boxes_per_image > 0 and len(kept_lines) > max_boxes_per_image):
+                continue
+            eligible = [
+                c for c in set(cls_hits)
+                if counts[c] < (per_class_cap.get(c, 140) if isinstance(per_class_cap, dict) else per_class_cap)
+            ]
+            if not eligible:
+                continue
+            primary = min(eligible, key=lambda c: counts[c])
+            counts[primary] += 1
+            img_url = f"{base_lvis}/{split}/{urllib.parse.quote(txt_path.stem)}.jpg"
+            items.append((f"{stem_prefix}_{split}_{len(items):04d}", img_url, kept_lines, primary))
+    print(f"[LVIS_Fruits_And_Vegetables] Da chon {len(items)} anh co bbox chuan: {dict(counts)}", flush=True)
+    return items
+
+
+def _collect_food_ingredients_tasks(tasks: list[tuple[str, str, str, str]]) -> Counter:
+    import urllib.parse
+
+    folder_map = {
+        "Cucumber": ("cucumber", 85),
+        "Sweetpotato": ("sweet potato", 79),
+        "Tomato": ("cherry-tomato", 85),
+    }
+    added = Counter()
+    try:
+        info = json.loads(urllib.request.urlopen("https://huggingface.co/api/datasets/SunnyAgarwal4274/Food_Ingredients", timeout=20).read().decode("utf-8"))
+        for sib in info.get("siblings", []):
+            rf = sib.get("rfilename", "")
+            if not rf.lower().endswith((".jpg", ".jpeg", ".png")):
+                continue
+            parts = rf.split("/")
+            if len(parts) < 3 or parts[0] not in ("Train", "Test"):
+                continue
+            spec = folder_map.get(parts[1])
+            if not spec:
+                continue
+            target_cls, cap = spec
+            if added[target_cls] >= cap:
+                continue
+            quoted = "/".join(urllib.parse.quote(seg) for seg in rf.split("/"))
+            url = f"https://huggingface.co/datasets/SunnyAgarwal4274/Food_Ingredients/resolve/main/{quoted}"
+            tasks.append((f"fi_{target_cls.replace(' ', '')}_{added[target_cls]:03d}", target_cls, url, "dish"))
+            added[target_cls] += 1
+    except Exception as exc:
+        print(f"[Food_Ingredients warn] {exc}")
+    print(f"[Food_Ingredients] Da lap {sum(added.values())} anh: {dict(added)}")
+    return added
+
+
+def _collect_food101_pork_tasks(tasks: list[tuple[str, str, str, str]]) -> int:
+    count = 0
+    for off, length in ((1500, 100), (1600, 100), (1700, 50)):
+        if count >= 200:
+            break
+        u = f"https://datasets-server.huggingface.co/rows?dataset=ethz/food101&config=default&split=validation&offset={off}&length={length}"
+        try:
+            res = json.loads(urllib.request.urlopen(urllib.request.Request(u, headers={"User-Agent": "VigorAI-Research/1.6"}), timeout=25).read().decode("utf-8"))
+            for item in res.get("rows", []):
+                if count >= 200:
+                    break
+                row = item.get("row") or {}
+                if row.get("label") != 77:
+                    continue
+                img_url = (row.get("image") or {}).get("src")
+                if not img_url:
+                    continue
+                tasks.append((f"f101_porkchop_{count:03d}", "lean-pork", img_url, "dish"))
+                count += 1
+        except Exception as exc:
+            print(f"  [Food101 pork warn] @{off}: {exc}")
+    print(f"[Food101 pork_chop] Da lap {count} anh.")
+    return count
+
+
+def _collect_hass_avocado_tasks(tasks: list[tuple[str, str, str, str]]) -> int:
+    import urllib.parse
+
+    try:
+        info = json.loads(urllib.request.urlopen("https://huggingface.co/api/datasets/c2p-cmd/hass_avocado", timeout=20).read().decode("utf-8"))
+        files = sorted(
+            s["rfilename"]
+            for s in info.get("siblings", [])
+            if s["rfilename"].startswith("Avocado Ripening Dataset/") and s["rfilename"].lower().endswith(".jpg")
+        )
+        if not files:
+            return 0
+        step = max(1, len(files) // 60)
+        picked = files[::step][:60]
+        for idx, rf in enumerate(picked):
+            quoted = "/".join(urllib.parse.quote(seg) for seg in rf.split("/"))
+            url = f"https://huggingface.co/datasets/c2p-cmd/hass_avocado/resolve/main/{quoted}"
+            tasks.append((f"hass_avo_{idx:03d}", "avocado", url, "dish"))
+        print(f"[c2p-cmd/hass_avocado] Da lap {len(picked)} anh.")
+        return len(picked)
+    except Exception as exc:
+        print(f"[hass_avocado warn] {exc}")
+        return 0
+
+
+def _fetch_wikimedia_category_oatmeal(
+    img_out: Path,
+    lbl_out: Path,
+    cls_idx: int,
+    limit: int = 35,
+) -> int:
+    import time
+    import urllib.parse
+
+    skip = ("box", "package", "diagram", "logo", "label", "coat", "flag")
+    u = "https://commons.wikimedia.org/w/api.php?action=query&list=categorymembers&cmtitle=Category:Oatmeal&cmtype=file&cmlimit=50&format=json"
+    saved = 0
+    try:
+        res = json.loads(urllib.request.urlopen(urllib.request.Request(u, headers={"User-Agent": "VigorAI-Research/1.6"}), timeout=15).read().decode("utf-8"))
+        titles = [
+            m["title"] for m in (res.get("query") or {}).get("categorymembers", [])
+            if m.get("title", "").lower().endswith((".jpg", ".jpeg", ".png"))
+            and not any(w in m.get("title", "").lower() for w in skip)
+        ][:limit]
+        for idx, title in enumerate(titles):
+            time.sleep(0.3)
+            iu = f"https://commons.wikimedia.org/w/api.php?action=query&titles={urllib.parse.quote(title)}&prop=imageinfo&iiprop=url&iiurlwidth=640&format=json"
+            ires = json.loads(urllib.request.urlopen(urllib.request.Request(iu, headers={"User-Agent": "VigorAI-Research/1.6"}), timeout=15).read().decode("utf-8"))
+            page = next(iter((ires.get("query") or {}).get("pages", {}).values()), {})
+            img_url = ((page.get("imageinfo") or [{}])[0]).get("thumburl") or ((page.get("imageinfo") or [{}])[0]).get("url")
+            if not img_url:
+                continue
+            time.sleep(0.3)
+            raw = urllib.request.urlopen(urllib.request.Request(img_url, headers={"User-Agent": "VigorAI-Research/1.6"}), timeout=15).read()
+            with Image.open(io.BytesIO(raw)) as im:
+                rgb = im.convert("RGB")
+                if not _is_clean_beverage_image(rgb):
+                    continue
+                if max(rgb.size) > 720:
+                    rgb.thumbnail((720, 720), Image.Resampling.LANCZOS)
+                xc, yc, bw, bh = estimate_dish_bbox(rgb)
+                stem = f"wikicat_oatmeal_{idx:03d}"
+                rgb.save(img_out / f"{stem}.jpg", format="JPEG", quality=90)
+                (lbl_out / f"{stem}.txt").write_text(f"{cls_idx} {xc:.6f} {yc:.6f} {bw:.6f} {bh:.6f}\n", encoding="utf-8")
+                saved += 1
+    except Exception as exc:
+        print(f"[Wiki Category:Oatmeal warn] {exc}")
+    print(f"[Wikimedia Category:Oatmeal] Da luu bo sung {saved} anh.")
+    return saved
+
+
+def fetch_v16_missing_foods_drinks(
+    raw_dir: Path,
+    cache_dir: Path,
+    force: bool = False,
+) -> Path:
+    """Tai du lieu sach tu HF curated datasets + stperez + OFF cho 16 lop v1.6."""
+    import urllib.parse
+    from concurrent.futures import ThreadPoolExecutor, as_completed
+
+    out_dir = raw_dir / "v16-foods-drinks"
+    if (out_dir / "data.yaml").is_file() and not force:
+        print(f"[SKIP] Da tao san: {out_dir}")
+        return out_dir
+    if out_dir.exists():
+        shutil.rmtree(out_dir)
+
+    names = [
+        "brown rice",
+        "sweet potato",
+        "avocado",
+        "cucumber",
+        "cherry-tomato",
+        "lean-pork",
+        "almonds",
+        "oatmeal",
+        "greek-yogurt",
+        "whey-shake",
+        "drink-coconut-water",
+        "drink-yogurt-probiotic",
+        "drink-beer",
+        "drink-citrus-soda",
+        "drink-bottled-coffee",
+        "drink-sports-isotonic",
+    ]
+    name_to_idx = {n: i for i, n in enumerate(names)}
+    img_out = out_dir / "images"
+    lbl_out = out_dir / "labels"
+    img_out.mkdir(parents=True, exist_ok=True)
+    lbl_out.mkdir(parents=True, exist_ok=True)
+
+    per_class_files: Counter = Counter()
+
+    # (stem, target_cls, url, mode: 'dish' | 'pkg')
+    tasks: list[tuple[str, str, str, str]] = []
+
+    # 1. stperez/beverages Beer folders (MIT)
+    try:
+        req = urllib.request.Request(STPEREZ_TREE_URL, headers={"User-Agent": "VigorAI-DatasetFetcher/1.6"})
+        tree = json.loads(urllib.request.urlopen(req, timeout=20).read().decode("utf-8"))
+        by_folder: dict[str, list[str]] = {}
+        for sib in tree.get("siblings", []):
+            rf = sib.get("rfilename", "")
+            if not rf.lower().endswith((".jpg", ".jpeg", ".png", ".webp")):
+                continue
+            for folder in V16_BEER_FOLDERS:
+                if rf.startswith(folder + "/"):
+                    by_folder.setdefault(folder, []).append(rf)
+                    break
+        for folder, cap in V16_BEER_FOLDERS.items():
+            files = sorted(by_folder.get(folder, []))[:cap]
+            tag = folder.rsplit("/", 1)[-1].lower()
+            for idx, rf in enumerate(files):
+                quoted = "/".join(urllib.parse.quote(seg) for seg in rf.split("/"))
+                tasks.append((f"stpz_{tag}_{idx}", "drink-beer", f"{STPEREZ_RAW_BASE}/{quoted}", "pkg"))
+        print(f"[stperez/beverages Beer] Da lap {sum(1 for t in tasks if t[1] == 'drink-beer')} anh.")
+    except Exception as exc:
+        print(f"[stperez Beer warn] {exc}")
+
+    # 2. Curated HuggingFace datasets (Nutrition5k, Food_Ingredients, Food101 pork_chop, Hass Avocado, LVIS)
+    n5k_added = _collect_n5k_tasks(tasks)
+    _collect_food_ingredients_tasks(tasks)
+    _collect_food101_pork_tasks(tasks)
+    _collect_hass_avocado_tasks(tasks)
+    lvis_items = _collect_lvis_yolo_items(cache_dir, name_to_idx)
+
+    # 3. Open Food Facts Search v3 (chay song song 8 luong, timeout=10s de tranh nghen)
+    seen_off: set[str] = set()
+    off_added = 0
+    off_oatmeal = 0
+    off_jobs = [(target_cls, q, cap) for target_cls, q_list in V16_OFF_QUERIES.items() for q, cap in q_list]
+
+    def _fetch_off_q(job: tuple[str, str, int]) -> tuple[str, str, int, list[dict]]:
+        tcls, q, cap = job
+        try:
+            u = f"{OFF_SEARCH_BASE}?q={urllib.parse.quote(q)}&page_size={min(100, cap * 2)}"
+            req = urllib.request.Request(u, headers={"User-Agent": "VigorAI-Research/1.6 (https://github.com/HPhucTV/VigorAI)"})
+            res = json.loads(urllib.request.urlopen(req, timeout=10).read().decode("utf-8", errors="replace"))
+            return tcls, q, cap, res.get("hits", [])
+        except Exception as exc:
+            print(f"  [OFF warn] {q}: {exc}", flush=True)
+            return tcls, q, cap, []
+
+    with ThreadPoolExecutor(max_workers=8) as off_pool:
+        for target_cls, q, cap, hits in off_pool.map(_fetch_off_q, off_jobs):
+            added = 0
+            for hit in hits:
+                if added >= cap:
+                    break
+                if not _is_valid_v16_off_hit(hit, target_cls):
+                    continue
+                code = str(hit.get("code") or "").strip()
+                if not code or code in seen_off:
+                    continue
+                img_url = _off_front_url(hit)
+                if not img_url:
+                    continue
+                seen_off.add(code)
+                q_tag = "".join(ch for ch in q if ch.isalnum())[:12]
+                tasks.append((f"off16_{q_tag}_{code}", target_cls, img_url, "pkg"))
+                added += 1
+                off_added += 1
+                if target_cls == "oatmeal":
+                    off_oatmeal += 1
+    print(f"[OpenFoodFacts v1.6] Da lap {off_added} anh (tong URL HF+OFF={len(tasks)} + LVIS={len(lvis_items)}).", flush=True)
+
+    def _dl(item: tuple[int, str, str, str, str]) -> tuple[int, str, str, str, bytes | None]:
+        idx, stem, target_cls, url, mode = item
+        try:
+            req = urllib.request.Request(url, headers={"User-Agent": "VigorAI-Research/1.6 (https://github.com/HPhucTV/VigorAI)"})
+            return idx, stem, target_cls, mode, urllib.request.urlopen(req, timeout=18).read()
+        except Exception:
+            return idx, stem, target_cls, mode, None
+
+    errors = 0
+    with ThreadPoolExecutor(max_workers=16) as pool:
+        futs = [pool.submit(_dl, (i, st, cls, u, m)) for i, (st, cls, u, m) in enumerate(tasks)]
+        for idx, fut in enumerate(as_completed(futs), 1):
+            _i, stem, target_cls, mode, raw_bytes = fut.result()
+            if not raw_bytes:
+                errors += 1
+                continue
+            try:
+                with Image.open(io.BytesIO(raw_bytes)) as im:
+                    if mode == "pkg":
+                        rgb, bbox = estimate_beverage_bbox(im, bg_idx=idx)
+                    else:
+                        rgb = im.convert("RGB")
+                        bbox = estimate_dish_bbox(rgb)
+            except Exception:
+                errors += 1
+                continue
+            if not _is_clean_beverage_image(rgb):
+                continue
+            if max(rgb.size) > 720:
+                rgb.thumbnail((720, 720), Image.Resampling.LANCZOS)
+            if mode == "pkg":
+                n_saved = _save_with_optional_white_studio(
+                    rgb=rgb,
+                    bbox=bbox,
+                    cls_idx=name_to_idx[target_cls],
+                    stem=stem,
+                    img_out=img_out,
+                    lbl_out=lbl_out,
+                    bg_seed=idx,
+                    indoor_bg=(target_cls in ("drink-citrus-soda", "drink-yogurt-probiotic", "drink-beer", "whey-shake", "drink-bottled-coffee", "drink-sports-isotonic")),
+                )
+            else:
+                xc, yc, bw, bh = bbox
+                rgb.save(img_out / f"{stem}.jpg", format="JPEG", quality=90)
+                (lbl_out / f"{stem}.txt").write_text(
+                    f"{name_to_idx[target_cls]} {xc:.6f} {yc:.6f} {bw:.6f} {bh:.6f}\n",
+                    encoding="utf-8",
+                )
+                n_saved = 1
+            per_class_files[target_cls] += n_saved
+            if idx % 250 == 0:
+                print(f"  ... da xu ly {idx}/{len(tasks)} URLs | da luu={sum(per_class_files.values())}", flush=True)
+
+    # Download LVIS bounding-box images sequentially/parallel without rate-limit risk
+    def _dl_lvis(item: tuple[str, str, list[str], str]) -> tuple[str, list[str], str, bytes | None]:
+        stem, url, lines, primary = item
+        try:
+            req = urllib.request.Request(url, headers={"User-Agent": "VigorAI-Research/1.6"})
+            return stem, lines, primary, urllib.request.urlopen(req, timeout=18).read()
+        except Exception:
+            return stem, lines, primary, None
+
+    lvis_saved = 0
+    with ThreadPoolExecutor(max_workers=12) as pool:
+        for stem, lines, primary, raw_bytes in pool.map(_dl_lvis, lvis_items):
+            if not raw_bytes:
+                errors += 1
+                continue
+            try:
+                with Image.open(io.BytesIO(raw_bytes)) as im:
+                    rgb = im.convert("RGB")
+                if min(rgb.size) < 80:
+                    continue
+                if max(rgb.size) > 720:
+                    rgb.thumbnail((720, 720), Image.Resampling.LANCZOS)
+                rgb.save(img_out / f"{stem}.jpg", format="JPEG", quality=90)
+                (lbl_out / f"{stem}.txt").write_text("\n".join(lines) + "\n", encoding="utf-8")
+                per_class_files[primary] += 1
+                lvis_saved += 1
+            except Exception:
+                errors += 1
+    print(f"[LVIS saved] {lvis_saved}/{len(lvis_items)} anh bbox chuan.")
+
+    # Optional Wikimedia Category:Oatmeal supplement if oatmeal < 100
+    if per_class_files["oatmeal"] < 100:
+        oat_extra = _fetch_wikimedia_category_oatmeal(img_out, lbl_out, name_to_idx["oatmeal"], limit=35)
+        per_class_files["oatmeal"] += oat_extra
+
+    _write_yolo_dataset_yaml(out_dir, names)
+    summary = {
+        "sources": [
+            "stperez/beverages Beer (MIT)",
+            "TeeA/nutrition5k-food-name-gemini",
+            "henningheyen/LVIS_Fruits_And_Vegetables (Apache-2.0)",
+            "SunnyAgarwal4274/Food_Ingredients (CC-BY-4.0)",
+            "ethz/food101 pork_chop",
+            "c2p-cmd/hass_avocado",
+            "Wikimedia Commons Category:Oatmeal (CC-BY / CC0)",
+            "Open Food Facts Search v3 (CC-BY-SA-3.0)",
+        ],
+        "urls_attempted": len(tasks) + len(lvis_items),
+        "download_or_decode_errors": errors,
+        "images_saved": sum(per_class_files.values()),
+        "per_class_images": dict(per_class_files),
+    }
+    (out_dir / "extract_summary.json").write_text(
+        json.dumps(summary, indent=2, ensure_ascii=False), encoding="utf-8"
+    )
+    print("[OK] v16-foods-drinks extract:", json.dumps(summary, ensure_ascii=False))
+    return out_dir
+
+
+V17_VN_COMBINED_KEEP: set[str] = {
+    "bo-luc-lac", "bo-ne", "ga-hap-la-chanh",
+    "banh-beo", "banh-bot-loc", "banh-duc", "banh-trang-nuong",
+    "bo-kho", "ca-ri-ga", "bun-mam", "bun-cha-ca", "banh-da-cua",
+    "nem-chua", "nem-nuong-nha-trang", "bo-la-lot", "sup-cua",
+    "ca-loc-nuong", "ca-sot-ca-chua", "cha-ca-la-vong",
+    "trung-vit-lon", "cut-lon-xao-me",
+    "oc-buou-hap", "oc-huong-xao", "oc-len-xao-dua", "cua-hap-bia",
+    "banh-pia", "banh-trung-thu", "banh-troi-nuoc", "banh-da-lon", "banh-bo",
+    "nui-xao", "tau-hu-non", "tau-hu-nhoi-thit", "cha-com",
+    "xoi-gac", "xoi-nep-than", "xoi-xeo", "chao-long", "chao-vit",
+}
+
+V17_VN_EXTRA_SHARDS = (
+    ("val0", "data/validation-00000-of-00002.parquet"),
+    ("val1", "data/validation-00001-of-00002.parquet"),
+    ("test0", "data/test-00000-of-00002.parquet"),
+    ("test1", "data/test-00001-of-00002.parquet"),
+)
+
+V17_VN_TRAIN_SHARDS = (
+    ("tr0", "data/train-00000-of-00008.parquet"),
+    ("tr6", "data/train-00006-of-00008.parquet"),
+)
+
+TUYENTRUNGLE_VAL_URL = "https://huggingface.co/datasets/TuyenTrungLe/vietnamese_food_images/resolve/main/data/validation-00000-of-00001.parquet"
+TUYENTRUNGLE_KEEP_BY_IDX: dict[int, str] = {
+    0: "banh-beo",
+    1: "banh-bot-loc",
+    5: "banh-cuon",
+    6: "banh-duc",
+    7: "banh-gio",
+    10: "banh-pia",
+    12: "banh-trang-nuong",
+    15: "bun-dau-mam-tom",
+    16: "bun-mam",
+    22: "chao-long",
+    27: "nem-chua",
+    29: "xoi-xeo",
+}
+
+V17_FOOD_ING_FOLDERS: dict[str, tuple[str, int]] = {
+    "Watermelon": ("watermelon", 90),
+    "Orange": ("orange-citrus", 75),
+    "Mango": ("mango", 90),
+    "Pineapple": ("pineapple", 100),
+    "Grapes": ("grapes", 100),
+    "Dragon_fruit": ("dragon-fruit", 65),
+    "Strawberry": ("strawberry-berry", 85),
+    "Blueberry": ("strawberry-berry", 40),
+    "Corn": ("corn-boiled", 90),
+    "Sweetcorn": ("corn-boiled", 90),
+    "Carrot": ("carrot-veg", 85),
+    "Cabbage": ("cabbage-spinach", 95),
+    "Spinach": ("cabbage-spinach", 95),
+    "Apple": ("apple", 70),
+    "Banana": ("banana", 75),
+    "Broccoli": ("broccoli", 80),
+}
+
+V17_LVIS_CLASS_MAP: dict[int, str] = {
+    14: "carrot-veg",
+    21: "orange-citrus",
+    23: "corn-boiled",
+    30: "strawberry-berry",
+    32: "grapes",
+    40: "orange-citrus",
+    44: "orange-citrus",
+    51: "pineapple",
+    57: "strawberry-berry",
+    61: "watermelon",
+}
+
+V17_LVIS_CAPS: dict[str, int] = {
+    "carrot-veg": 120,
+    "orange-citrus": 170,
+    "corn-boiled": 40,
+    "strawberry-berry": 85,
+    "grapes": 15,
+    "pineapple": 50,
+    "watermelon": 35,
+}
+
+V17_OFF_QUERIES: dict[str, list[tuple[str, int]]] = {
+    "tuna-canned": [("canned tuna", 60), ("tuna in water", 50), ("tuna chunks", 50), ("starkist tuna", 40), ("rio mare", 40)],
+    "peanut-butter": [("peanut butter", 70), ("skippy peanut butter", 45), ("jif peanut butter", 45), ("crunchy peanut butter", 45)],
+    "whole-wheat-bread": [("whole wheat bread", 65), ("wholemeal bread", 55), ("whole grain bread", 55), ("multigrain bread", 45)],
+    "drink-soy-nut-milk": [("soy milk", 65), ("soymilk", 50), ("vinasoy", 30), ("fami", 30), ("almond milk", 55), ("oat milk", 50), ("vitasoy", 45)],
+    "drink-kombucha-herbal": [("kombucha", 80), ("gt kombucha", 45), ("remedy kombucha", 45), ("herbal tea can", 45), ("winter melon tea", 35)],
+    "drink-wine-cider": [("red wine", 65), ("white wine", 55), ("apple cider", 55), ("somersby", 40)],
+}
+
+
+def _is_valid_v17_off_hit(hit: dict, target_cls: str) -> bool:
+    text = f"{hit.get('product_name') or ''} {hit.get('brands') or ''}".lower()
+    if target_cls == "tuna-canned":
+        return not any(w in text for w in ("cat", "pet", "dog", "whiskas", "fancy feast", "friskies"))
+    if target_cls == "peanut-butter":
+        return not any(w in text for w in ("reese", "cup", "cookie", "bar", "candy", "chocolate", "wafer"))
+    if target_cls == "whole-wheat-bread":
+        return not any(w in text for w in ("crumb", "flour", "cracker", "pasta", "tortilla"))
+    if target_cls in ("drink-soy-nut-milk", "drink-kombucha-herbal"):
+        return _is_valid_off_rtd_hit(hit)
+    if target_cls == "drink-wine-cider":
+        return "vinegar" not in text
+    return True
+
+
+def fetch_v17_missing_foods_drinks(
+    raw_dir: Path,
+    cache_dir: Path,
+    force: bool = False,
+) -> Path:
+    """Tai du lieu sach cho 31 lop moi + bo sung yeu v1.7 (Mon Viet, Gym, Trai cay, Rau cu, Do uong)."""
+    import urllib.parse
+    from concurrent.futures import ThreadPoolExecutor, as_completed
+    import pyarrow.parquet as pq
+
+    out_dir = raw_dir / "v17-foods-drinks"
+    if (out_dir / "data.yaml").is_file() and not force:
+        print(f"[SKIP] Da tao san: {out_dir}")
+        return out_dir
+    if out_dir.exists():
+        shutil.rmtree(out_dir)
+
+    names = sorted(
+        V17_VN_COMBINED_KEEP
+        | set(TUYENTRUNGLE_KEEP_BY_IDX.values())
+        | {cls for cls, _ in V17_FOOD_ING_FOLDERS.values()}
+        | set(V17_LVIS_CLASS_MAP.values())
+        | set(V17_OFF_QUERIES.keys())
+    )
+    name_to_idx = {n: i for i, n in enumerate(names)}
+    img_out = out_dir / "images"
+    lbl_out = out_dir / "labels"
+    img_out.mkdir(parents=True, exist_ok=True)
+    lbl_out.mkdir(parents=True, exist_ok=True)
+
+    per_class_files: Counter = Counter()
+
+    def _save_dish(rgb: Image.Image, stem: str, cname: str) -> None:
+        if max(rgb.size) > 720:
+            rgb.thumbnail((720, 720), Image.Resampling.LANCZOS)
+        xc, yc, bw, bh = estimate_dish_bbox(rgb)
+        rgb.save(img_out / f"{stem}.jpg", format="JPEG", quality=88)
+        (lbl_out / f"{stem}.txt").write_text(
+            f"{name_to_idx[cname]} {xc:.6f} {yc:.6f} {bw:.6f} {bh:.6f}\n",
+            encoding="utf-8",
+        )
+        per_class_files[cname] += 1
+
+    # 1. jeandeanny/vn-food-combined-2026 (val+test, them train0/train6 neu nhan < 90, xoa parquet ngay)
+    vn_counts: Counter = Counter()
+    vn_scanned = 0
+
+    def _scan_jeandeanny_shard(split_tag: str, rel_path: str) -> None:
+        nonlocal vn_scanned
+        pq_path = download_file(f"{VN_COMBINED_BASE}/{rel_path}", cache_dir / "vn_food_combined_v17" / Path(rel_path).name)
+        try:
+            pf = pq.ParquetFile(pq_path)
+            for batch in pf.iter_batches(batch_size=128):
+                for row in batch.to_pylist():
+                    vn_scanned += 1
+                    raw_lbl = row.get("label")
+                    cname = (
+                        VN_COMBINED_CLASSES[raw_lbl]
+                        if isinstance(raw_lbl, int) and 0 <= raw_lbl < len(VN_COMBINED_CLASSES)
+                        else str(raw_lbl or "").strip().lower()
+                    )
+                    if cname not in V17_VN_COMBINED_KEEP or vn_counts[cname] >= 130:
+                        continue
+                    try:
+                        rgb = _open_hf_image(row["image"]).convert("RGB")
+                    except Exception:
+                        continue
+                    if min(rgb.size) < 120:
+                        continue
+                    _save_dish(rgb, f"vn17_{split_tag}_{vn_scanned}", cname)
+                    vn_counts[cname] += 1
+        finally:
+            try:
+                pq_path.unlink(missing_ok=True)
+            except OSError:
+                pass
+        print(f"  [jeandeanny] {Path(rel_path).name} -> tong luu={sum(vn_counts.values())}", flush=True)
+
+    for st, rp in V17_VN_EXTRA_SHARDS:
+        _scan_jeandeanny_shard(st, rp)
+    if any(vn_counts[c] < 90 for c in V17_VN_COMBINED_KEEP):
+        for st, rp in V17_VN_TRAIN_SHARDS:
+            if all(vn_counts[c] >= 90 for c in V17_VN_COMBINED_KEEP):
+                break
+            _scan_jeandeanny_shard(st, rp)
+    print(f"[jeandeanny v1.7] Da luu {sum(vn_counts.values())} anh qua {len(vn_counts)} nhan VN.", flush=True)
+
+    # 2. TuyenTrungLe/vietnamese_food_images validation shard (443 MB -> xoa ngay)
+    ttl_pq = download_file(TUYENTRUNGLE_VAL_URL, cache_dir / "tuyentrungle_v17" / "validation-00000-of-00001.parquet")
+    ttl_counts: Counter = Counter()
+    try:
+        pf = pq.ParquetFile(ttl_pq)
+        for idx_b, batch in enumerate(pf.iter_batches(batch_size=128)):
+            for row_i, row in enumerate(batch.to_pylist()):
+                lbl = row.get("label")
+                if not isinstance(lbl, int) or lbl not in TUYENTRUNGLE_KEEP_BY_IDX:
+                    continue
+                cname = TUYENTRUNGLE_KEEP_BY_IDX[lbl]
+                if ttl_counts[cname] >= 85:
+                    continue
+                try:
+                    rgb = _open_hf_image(row["image"]).convert("RGB")
+                except Exception:
+                    continue
+                if min(rgb.size) < 120:
+                    continue
+                _save_dish(rgb, f"ttl17_{idx_b}_{row_i}", cname)
+                ttl_counts[cname] += 1
+    finally:
+        try:
+            ttl_pq.unlink(missing_ok=True)
+        except OSError:
+            pass
+    print(f"[TuyenTrungLe] Da luu {sum(ttl_counts.values())} anh: {dict(ttl_counts)}", flush=True)
+
+    # 3. Collect parallel URL tasks from SunnyAgarwal4274/Food_Ingredients + OpenFoodFacts
+    tasks: list[tuple[str, str, str, str]] = []
+    fi_added: Counter = Counter()
+    try:
+        info = json.loads(urllib.request.urlopen("https://huggingface.co/api/datasets/SunnyAgarwal4274/Food_Ingredients", timeout=20).read().decode("utf-8"))
+        for sib in info.get("siblings", []):
+            rf = sib.get("rfilename", "")
+            if not rf.lower().endswith((".jpg", ".jpeg", ".png")):
+                continue
+            parts = rf.split("/")
+            if len(parts) < 3 or parts[0] not in ("Train", "Test", "Validation"):
+                continue
+            spec = V17_FOOD_ING_FOLDERS.get(parts[1])
+            if not spec:
+                continue
+            target_cls, cap = spec
+            key_c = f"{parts[1]}"
+            if fi_added[key_c] >= cap:
+                continue
+            quoted = "/".join(urllib.parse.quote(seg) for seg in rf.split("/"))
+            url = f"https://huggingface.co/datasets/SunnyAgarwal4274/Food_Ingredients/resolve/main/{quoted}"
+            tasks.append((f"fi17_{parts[1].lower()}_{fi_added[key_c]:03d}", target_cls, url, "dish"))
+            fi_added[key_c] += 1
+    except Exception as exc:
+        print(f"[Food_Ingredients v17 warn] {exc}", flush=True)
+    print(f"[Food_Ingredients v17] Da lap {sum(fi_added.values())} anh: {dict(fi_added)}", flush=True)
+
+    seen_off: set[str] = set()
+    off_added = 0
+    off_jobs = [(tcls, q, cap) for tcls, qlist in V17_OFF_QUERIES.items() for q, cap in qlist]
+
+    def _fetch_off_q(job: tuple[str, str, int]) -> tuple[str, str, int, list[dict]]:
+        tcls, q, cap = job
+        try:
+            u = f"{OFF_SEARCH_BASE}?q={urllib.parse.quote(q)}&page_size={min(100, cap * 2)}"
+            req = urllib.request.Request(u, headers={"User-Agent": "VigorAI-Research/1.7 (https://github.com/HPhucTV/VigorAI)"})
+            res = json.loads(urllib.request.urlopen(req, timeout=12).read().decode("utf-8", errors="replace"))
+            return tcls, q, cap, res.get("hits", [])
+        except Exception as exc:
+            print(f"  [OFF17 warn] {q}: {exc}", flush=True)
+            return tcls, q, cap, []
+
+    with ThreadPoolExecutor(max_workers=8) as off_pool:
+        for tcls, q, cap, hits in off_pool.map(_fetch_off_q, off_jobs):
+            added = 0
+            for hit in hits:
+                if added >= cap:
+                    break
+                if not _is_valid_v17_off_hit(hit, tcls):
+                    continue
+                code = str(hit.get("code") or "").strip()
+                if not code or code in seen_off:
+                    continue
+                img_url = _off_front_url(hit)
+                if not img_url:
+                    continue
+                seen_off.add(code)
+                q_tag = "".join(ch for ch in q if ch.isalnum())[:12]
+                tasks.append((f"off17_{q_tag}_{code}", tcls, img_url, "pkg"))
+                added += 1
+                off_added += 1
+    print(f"[OpenFoodFacts v1.7] Da lap {off_added} anh (tong URL HF+OFF={len(tasks)}).", flush=True)
+
+    lvis_items = _collect_lvis_yolo_items(
+        cache_dir=cache_dir,
+        name_to_idx=name_to_idx,
+        class_map=V17_LVIS_CLASS_MAP,
+        min_area=0.03,
+        per_class_cap=V17_LVIS_CAPS,
+        stem_prefix="lvis17",
+        max_boxes_per_image=1,
+    )
+
+    def _dl(item: tuple[int, str, str, str, str]) -> tuple[int, str, str, str, bytes | None]:
+        idx, stem, target_cls, url, mode = item
+        try:
+            req = urllib.request.Request(url, headers={"User-Agent": "VigorAI-Research/1.7 (https://github.com/HPhucTV/VigorAI)"})
+            return idx, stem, target_cls, mode, urllib.request.urlopen(req, timeout=18).read()
+        except Exception:
+            return idx, stem, target_cls, mode, None
+
+    errors = 0
+    with ThreadPoolExecutor(max_workers=16) as pool:
+        futs = [pool.submit(_dl, (i, st, cls, u, m)) for i, (st, cls, u, m) in enumerate(tasks)]
+        for idx, fut in enumerate(as_completed(futs), 1):
+            _i, stem, target_cls, mode, raw_bytes = fut.result()
+            if not raw_bytes:
+                errors += 1
+                continue
+            try:
+                with Image.open(io.BytesIO(raw_bytes)) as im:
+                    if mode == "pkg":
+                        rgb, bbox = estimate_beverage_bbox(im, bg_idx=idx)
+                    else:
+                        rgb = im.convert("RGB")
+                        bbox = estimate_dish_bbox(rgb)
+            except Exception:
+                errors += 1
+                continue
+            if not _is_clean_beverage_image(rgb):
+                continue
+            if max(rgb.size) > 720:
+                rgb.thumbnail((720, 720), Image.Resampling.LANCZOS)
+            if mode == "pkg":
+                n_saved = _save_with_optional_white_studio(
+                    rgb=rgb,
+                    bbox=bbox,
+                    cls_idx=name_to_idx[target_cls],
+                    stem=stem,
+                    img_out=img_out,
+                    lbl_out=lbl_out,
+                    bg_seed=idx,
+                    indoor_bg=target_cls.startswith("drink-"),
+                )
+                per_class_files[target_cls] += n_saved
+            else:
+                xc, yc, bw, bh = bbox
+                rgb.save(img_out / f"{stem}.jpg", format="JPEG", quality=88)
+                (lbl_out / f"{stem}.txt").write_text(
+                    f"{name_to_idx[target_cls]} {xc:.6f} {yc:.6f} {bw:.6f} {bh:.6f}\n",
+                    encoding="utf-8",
+                )
+                per_class_files[target_cls] += 1
+            if idx % 300 == 0:
+                print(f"  ... v17 da xu ly {idx}/{len(tasks)} URLs | tong={sum(per_class_files.values())}", flush=True)
+
+    def _dl_lvis(item: tuple[str, str, list[str], str]) -> tuple[str, list[str], str, bytes | None]:
+        stem, url, lines, primary = item
+        try:
+            req = urllib.request.Request(url, headers={"User-Agent": "VigorAI-Research/1.7"})
+            return stem, lines, primary, urllib.request.urlopen(req, timeout=18).read()
+        except Exception:
+            return stem, lines, primary, None
+
+    lvis_saved = 0
+    with ThreadPoolExecutor(max_workers=12) as pool:
+        for stem, lines, primary, raw_bytes in pool.map(_dl_lvis, lvis_items):
+            if not raw_bytes:
+                errors += 1
+                continue
+            try:
+                with Image.open(io.BytesIO(raw_bytes)) as im:
+                    rgb = im.convert("RGB")
+                if min(rgb.size) < 80:
+                    continue
+                if max(rgb.size) > 720:
+                    rgb.thumbnail((720, 720), Image.Resampling.LANCZOS)
+                rgb.save(img_out / f"{stem}.jpg", format="JPEG", quality=90)
+                (lbl_out / f"{stem}.txt").write_text("\n".join(lines) + "\n", encoding="utf-8")
+                per_class_files[primary] += 1
+                lvis_saved += 1
+            except Exception:
+                errors += 1
+    print(f"[LVIS v17 saved] {lvis_saved}/{len(lvis_items)} anh bbox chuan.", flush=True)
+
+    _write_yolo_dataset_yaml(out_dir, names)
+    summary = {
+        "sources": [
+            "jeandeanny/vn-food-combined-2026 (CC-BY-NC-SA-4.0)",
+            "TuyenTrungLe/vietnamese_food_images",
+            "SunnyAgarwal4274/Food_Ingredients (CC-BY-4.0)",
+            "henningheyen/LVIS_Fruits_And_Vegetables (Apache-2.0)",
+            "Open Food Facts Search v3 (CC-BY-SA-3.0)",
+        ],
+        "urls_attempted": len(tasks) + len(lvis_items),
+        "download_or_decode_errors": errors,
+        "images_saved": sum(per_class_files.values()),
+        "per_class_images": dict(per_class_files),
+    }
+    (out_dir / "extract_summary.json").write_text(
+        json.dumps(summary, indent=2, ensure_ascii=False), encoding="utf-8"
+    )
+    print("[OK] v17-foods-drinks extract:", json.dumps(summary, ensure_ascii=False), flush=True)
+    return out_dir
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Tai dataset mo cho AI Model B (T-M4-01, T-M4-09)")
     parser.add_argument("--raw-dir", type=Path, default=RAW_DIR)
     parser.add_argument("--cache-dir", type=Path, default=CACHE_DIR)
     parser.add_argument(
         "--only",
-        choices=("all", "vn-streetfood", "foodseg103", "drinks-snacks", "soda-bottles", "coco-val", "matthijs-snacks", "vn-food-combined", "branded-beverages"),
+        choices=("all", "vn-streetfood", "foodseg103", "drinks-snacks", "soda-bottles", "coco-val", "matthijs-snacks", "vn-food-combined", "branded-beverages", "v16-foods-drinks", "v17-foods-drinks"),
         default="all",
     )
     parser.add_argument("--max-per-class", type=int, default=260)
@@ -1335,6 +2256,10 @@ def main(argv: list[str] | None = None) -> int:
         fetch_vn_food_combined(args.raw_dir, args.cache_dir, max_per_class=min(180, args.max_per_class), force=args.force)
     if args.only in ("all", "drinks-snacks", "branded-beverages"):
         fetch_branded_beverages(args.raw_dir, args.cache_dir, force=args.force)
+    if args.only in ("all", "v16-foods-drinks"):
+        fetch_v16_missing_foods_drinks(args.raw_dir, args.cache_dir, force=args.force)
+    if args.only in ("all", "v17-foods-drinks"):
+        fetch_v17_missing_foods_drinks(args.raw_dir, args.cache_dir, force=args.force)
     return 0
 
 

@@ -63,9 +63,12 @@ class DetectedFoodItemModel {
         : ((raw / step).floor() * step);
   }
 
+  bool get _isUnmodified => (adjustedGrams - baseEstimatedGrams).abs() < 0.05;
+
   int get caloriesMin {
     if (calories <= 0) return 0;
-    final step = calories < 120 ? 5 : 10;
+    if (_isUnmodified && baseCaloriesMin > 0) return baseCaloriesMin;
+    final step = (calories < 120 || baseCaloriesMin % 10 != 0) ? 5 : 10;
     final scaled = baseCaloriesMin > 0
         ? (baseCaloriesMin * _ratio)
         : (calories * 0.8);
@@ -75,7 +78,8 @@ class DetectedFoodItemModel {
 
   int get caloriesMax {
     if (calories <= 0) return 0;
-    final step = calories < 120 ? 5 : 10;
+    if (_isUnmodified && baseCaloriesMax > caloriesMin) return baseCaloriesMax;
+    final step = (calories < 120 || baseCaloriesMax % 10 != 0) ? 5 : 10;
     final scaled = baseCaloriesMax > 0
         ? (baseCaloriesMax * _ratio)
         : (calories * 1.2);
@@ -158,10 +162,31 @@ class FoodAnalyzeResultModel {
 
   double get totalCalories =>
       detectedItems.fold<double>(0.0, (s, e) => s + e.calories);
-  int get totalCaloriesMin =>
-      detectedItems.fold<int>(0, (s, e) => s + e.caloriesMin);
-  int get totalCaloriesMax =>
-      detectedItems.fold<int>(0, (s, e) => s + e.caloriesMax);
+
+  (int, int) get _effectiveTotalBounds {
+    if (totalCalories <= 0) return (0, 0);
+    var rawMin = detectedItems.fold<int>(0, (s, e) => s + e.caloriesMin);
+    var rawMax = detectedItems.fold<int>(0, (s, e) => s + e.caloriesMax);
+    if (detectedItems.length >= 2 && totalCalories >= 60) {
+      for (var i = 0; i < 40 && (rawMax - rawMin) > 100; i++) {
+        if ((rawMin + 5) <= totalCalories &&
+            (totalCalories - (rawMin + 5)) >= (rawMax - totalCalories)) {
+          rawMin += 5;
+        } else if ((rawMax - 5) >= totalCalories) {
+          rawMax -= 5;
+        } else {
+          break;
+        }
+      }
+      if ((rawMax - rawMin) < 50) {
+        rawMax = rawMin + 50;
+      }
+    }
+    return (rawMin, rawMax);
+  }
+
+  int get totalCaloriesMin => _effectiveTotalBounds.$1;
+  int get totalCaloriesMax => _effectiveTotalBounds.$2;
   String get totalCaloriesRangeText => totalCalories <= 0
       ? '0 kcal'
       : '~$totalCaloriesMin – $totalCaloriesMax kcal';

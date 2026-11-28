@@ -17,7 +17,89 @@
 
 ---
 
-## Phiên 48 — 2026-11-28 10:56 | Thành viên: M1 + M3 + M4 | Task: Khắc phục bản `.aab` CH Play trả dữ liệu giả Ức gà + Cơm trắng trên `vigorai-production.up.railway.app` (`T-M1-10` `[x]`)
+## Phiên 52 — 2026-11-28 22:02 | Thành viên: M1 + M3 + M4 | Task: Xử lý Xung đột & Hợp nhất PR #24 (`vu` $\rightarrow$ `main`) — AI Model B `v1.8` + Cầu nối Railway Production
+- **Mục tiêu phiên:** Giải quyết toàn bộ xung đột khi hợp nhất PR #24 (`vu`, `364d199b` — AI Model B `v1.6`/`v1.7`/`v1.8` `100/100` lớp) vào `main` (`f1c9cfe` — kiểm toán Taskboard Phiên 47 + cầu nối AI `VIGOR_AI_UPSTREAM_URL` & khóa stub Production Phiên 48) mà không làm mất bất kỳ dữ liệu hay tính năng nào từ hai nhánh.
+- **Những file đã hợp nhất / xử lý (`0` file `[LOCKED STUB]` bị chạm):**
+  - `backend/tests/test_ai_api.py`: Bảo toàn đủ **`38` tests** gồm cả 2 bài test cầu nối upstream/khóa stub từ `main` (`f029892`) lẫn toàn bộ test Model B `v1.6`/`v1.7`/`v1.8` từ `vu` (bổ sung fallback `try/except ImportError` cho `FOOD_CATALOG_SEED` trong `test_calorie_range_is_tight_50_to_100_kcal_single_and_multi_item` khi chạy trên môi trường không cài `sqlalchemy`).
+  - `docs/taskboard.md`: Giữ nguyên bảng kiểm toán toàn repo của `main` (`39 / 63 Done (61.9%) · 8 [~] · 16 [ ]`, `T-M1-10` `[x]`) và cập nhật đồng bộ thông số Model B `v1.8` (`100/100` lớp, `103` catalog items, ONNX `mAP@0.5 = 0.9016`, `P = 86.19%`, `R = 84.53%`, `F1 = 85.36%`, CPU `97.99 ms`) trên hàng `M1`, `M4`, `T-M1-10`, `T-M4-10..14`.
+  - `session_log.md`: Giữ nguyên 100% nhật ký từ cả `main` và `vu` theo đúng thứ tự thời gian (`Phiên 47` $\rightarrow$ `Phiên 52`, có chú thích số phiên gốc trên từng nhánh).
+  - Bảo toàn nguyên vẹn `backend/app/routers/ai.py` + `mobile/lib/core/network/api_endpoints.dart` (`main`), `backend/app/services/ai_food_yolo.py` + `backend/ai_models/model_b_manifest.json` + `mobile/lib/features/health/food_scan/*` (`vu`) và thư mục `docs/figma_4_members/`.
+- **Kiểm tra / Kết quả chạy thử:**
+  - `python -m py_compile` (`ai_food_yolo.py`, `ai.py`, `test_ai_api.py`): Exit `0`.
+  - `python -m pytest backend/tests/test_ai_api.py -rs -q`: Exit `0` (`0` failed).
+  - `flutter analyze --no-fatal-infos` & `flutter test --no-pub test/health/ test/workout/`: Exit `0` (**`49 / 49` PASS**).
+- **Việc cần làm ở phiên kế tiếp:**
+  - Tiếp tục theo dõi Closed Testing (`T-M1-12` / `T-M2-06`) đủ 14 ngày để mở Production `v1.1.0` (`T-M2-12`), và triển khai **AI Model C** (`T-M4-05`, `T-M4-07`, `T-M4-08`).
+
+---
+
+## Phiên 51 (nhánh vu: Phiên 49) — 2026-11-28 21:00 | Thành viên: M4 (Pure AI Engineer) | Task: `T-M4-10` (`[x]`)
+
+### Mục tiêu & Ngữ cảnh
+- Nâng cấp **AI Model B** lên **`yolov8s-gymfood-v1.8` (`100/100` lớp hoạt động, `103` mục catalog)** theo phản hồi 3 ảnh chụp thực tế từ app của người dùng để giải quyết triệt để 3 vấn đề:
+  1. Thu hẹp **khoảng ước tính Calo còn `50–100 kcal`** (thay vì biên độ rộng ~`150–260 kcal`), đồng bộ cả trên `total_nutrition` lẫn tổng cộng từng món mà APK hiện tại tự cộng dồn.
+  2. Huấn luyện bổ sung hãng đồ uống Việt Nam (**Highlands Coffee Cà Phê Sữa/Đen**, **Warrior Nho/Dâu**, **Sting**, **Red Bull**, **Wake-up 247**, **Tea+**, **C2**, **Không Độ**, **Boncha**, **TH True Tea**, **Dr. Thanh**, **Wonderfarm**, **Revive**, **7Up/Mirinda/Sprite/Pepsi/Coca-Cola**, **Vinamilk/Milo/Fami/Yakult/Nutriboost/Aquafina/LaVie/Tiger/Heineken**) để không nhận nhầm Highlands thành Coca-Cola hay Warrior thành Bia.
+  3. Hỗ trợ **quét nhiều món ăn / nhiều thức uống đồng thời** trong cùng khung hình với bounding box ôm sát từng vật thể thay vì 1 box lớn bao trùm cả khung ảnh.
+
+### Việc đã làm & Quyết định kỹ thuật
+1. **Siết khoảng Calo `50–100 kcal`, nhãn hãng Việt & phục hồi đa vật thể trong [ai_food_yolo.py](file:///C:/Users/ASUS/Downloads/VigorAI/backend/app/services/ai_food_yolo.py):**
+   - Cập nhật `compute_calorie_range()`, `build_items()` và `summarize()` (kèm điều chỉnh từng bước `5 kcal` khi đa món có món phụ `< 60 kcal`) để cả đơn món (`>= 60 kcal`) và đa món luôn giữ `50 <= calories_max - calories_min <= 100 kcal`; giữ mức co giãn diện tích cho `DRINK_*` trong `[0.75, 1.25]` quanh khẩu phần chuẩn `default_serving_g` (tránh thổi phồng `860 ml` khi chụp cận cảnh).
+   - Bổ sung khử box giả đồng nhất cấp bao trùm toàn khung (`area > 0.70` bọc `area < 0.60`) trong `suppress_cross_class_duplicates()` và quét dải rìa (`_detect_peripheral_strips()`) khi ảnh chân dung có 1 chai cao hẹp ở tiền cảnh để phục hồi lon/món ở rìa hậu cảnh (`0/60` dương tính giả trên ảnh đơn).
+   - Cập nhật tên hiển thị tiếng Việt trong `EXTENDED_BEVERAGE_SNACK_CATALOG` kèm danh sách hãng Việt Nam phổ biến.
+2. **Làm sạch, cân bằng nguồn & dựng `model_b_v11` (`22.718` ảnh, `100/100` lớp hoạt động):**
+   - Sửa `balance_items_per_class` trong [prepare_dataset.py](file:///C:/Users/ASUS/Downloads/VigorAI/ai_research/model_b_food_yolo/prepare_dataset.py) lấy ưu tiên ảnh thật (`55%`) + `vn-beverages-v18` (`25%`) + `multi-item-v18` (`20%`) để dữ liệu thật (`branded-beverages`, `v16`, `v17`, `soda-bottles`) không bị ảnh ghép đẩy ra ngoài, và thêm `--close-mosaic` vào [train_yolo.py](file:///C:/Users/ASUS/Downloads/VigorAI/ai_research/model_b_food_yolo/train_yolo.py).
+   - Sinh `vn-beverages-v18` (`1.400` ảnh đơn trung/cận cảnh có tay cầm & mô phỏng chai PET nửa rỗng) và `multi-item-v18` (`2.475` ảnh ghép 2–3 món/chai lệch chiều sâu) trên `102` nền bàn học/văn phòng/lớp học thực tế từ Wikimedia Commons kết hợp cutout đồ uống từ Tiki & Open Food Facts.
+   - Auto-tighten toàn bộ box đồ uống `> 0.50` diện tích qua COCO `yolov8s.pt` trên Colab; dựng [model_b_v11_dataset_report.json](file:///C:/Users/ASUS/Downloads/VigorAI/ai_research/evaluation_reports/model_b_v11_dataset_report.json): **`16.896` train / `3.882` val / `1.940` test** (`22.718` ảnh), `100/100` lớp hoạt động, `0` lỗi bbox, `0` rò rỉ tập.
+3. **Train Google Colab T4, đánh giá ONNX CPU & kiểm thử đủ 9 ảnh thực tế:**
+   - Warm-start `18 epochs` từ checkpoint sạch `v1_7_best.pt` trên **Tesla T4 GPU**, xuất `best.pt` (`sha256: d5835e6554c06c32828f9263161b68dd7bad0abd644ca705bcd4aa4f98486572`) và `best.onnx` (`44.901.745 B`, `sha256: b1e58869b632b990e67bf995ee680d32dc866c744229af71d521409cc4501451`, shape `[1, 104, 8400]`).
+   - Đánh giá ONNX Runtime (CPU) trên **`1.940` ảnh `test`** ([model_b_v1_8_onnx_eval.json](file:///C:/Users/ASUS/Downloads/VigorAI/ai_research/evaluation_reports/model_b_v1_8_100classes/model_b_v1_8_onnx_eval.json)):
+     - **`mAP@0.5 = 0.9016 >= 0.80`**, **`Precision = 0.8619 >= 0.82`**, **`Recall = 0.8453 >= 0.78`**, **`F1 = 0.8536 >= 0.80`**, **`CPU infer mean = 97.99 ms < 150 ms`** (`p50 = 97.0 ms`, `p95 = 114.0 ms`) — đạt **6/6 KPI**.
+   - Bổ sung unit test trong [test_ai_api.py](file:///C:/Users/ASUS/Downloads/VigorAI/backend/tests/test_ai_api.py): **`36 passed`**; đạt **3/3 ảnh mới + 6/6 ảnh đồ uống cũ** với bbox ôm sát & khoảng Calo `60–85 kcal`.
+   - Tinh chỉnh UI [food_scan_repository.dart](file:///C:/Users/ASUS/Downloads/VigorAI/mobile/lib/features/health/food_scan/data/food_scan_repository.dart) & [food_scan_screen.dart](file:///C:/Users/ASUS/Downloads/VigorAI/mobile/lib/features/health/food_scan/presentation/food_scan_screen.dart): giữ nguyên biên độ `[caloriesMin, caloriesMax]` từ server khi chưa kéo thanh gram, siết tổng khoảng đa món `[50, 100] kcal` và chống tràn mép phải cho nhãn bbox đồ uống; build release `VigorAI-test-ai.apk` (`70.680.884 B` = `70.7 MB`, `sha256: bfbeb0d616fae985812fcd1e763c6227779523943547b69ffe9fe5b6e5c6319c`, Flutter test `49/49 pass`) vào `C:\Users\ASUS\Downloads\VigorAI-test-ai.apk`.
+4. **Hot-deploy Railway Production & kiểm tra trực tiếp HTTPS:**
+   - Upload `food_yolo_v1.onnx` lên S3 `gym3d-assets-5d0aytya2fro`, cập nhật `VIGOR_FOOD_MODEL_SHA256`, deploy deployment **`26c11d71-b502-4a03-a6f6-7b05783ea91e`** trạng thái **`SUCCESS`**.
+   - Xác minh live HTTPS tại `https://vigorai-api-production.up.railway.app`: `GET /api/v1/ai/food-model/info` (`yolov8s-gymfood-v1.8`, `100` lớp, `catalog_size = 103`, `stub_fallback_enabled: false`) và `POST /api/v1/ai/food-analyze` qua **tất cả 9 ảnh thực tế + cảnh đa món** đều trả đúng hãng, đa vật thể & khoảng `50–85 kcal`.
+
+### Kiểm tra sau sửa đổi
+- `prepare_dataset.py` (`model_b_v11`): `22.718` ảnh, `100/100` lớp hoạt động, `0` lỗi.
+- `evaluate_model.py` (ONNX CPU, `1.940` ảnh `test`): **6/6 KPI PASS** (`mAP@0.5 = 0.9016`, `P = 0.8619`, `R = 0.8453`, `F1 = 0.8536`, `infer = 97.99 ms`).
+- `pytest backend/tests/test_ai_api.py -q`: `36 passed`.
+- Live Railway HTTPS (`26c11d71`): pass `3/3` ảnh mới (`Warrior + Highlands` bàn `240–315 kcal`, `Warrior cầm tay + Highlands` `365–450 kcal`, `Highlands đơn` `170–230 kcal`) + `6/6` ảnh cũ (`60–70 kcal`) + cảnh đa món (`50–80 kcal`).
+
+---
+
+## Phiên 50 (nhánh vu: Phiên 48) — 2026-11-28 15:05 | Thành viên: M4 (Pure AI Engineer) | Task: `T-M4-10` (`[x]`)
+
+### Mục tiêu & Ngữ cảnh
+- Mở rộng **AI Model B** lên **`yolov8s-gymfood-v1.7` (`100/100` lớp hoạt động, `103` mục catalog dinh dưỡng)** để phủ đủ 5 lớp gym còn thiếu trong `FOOD_CATALOG_SEED` (`STIR_FRIED_BEEF`, `BOILED_CHICKEN_BREAST`, `TUNA_CANNED`, `PEANUT_BUTTER`, `WHOLE_WHEAT_BREAD`), 11 món ăn phổ biến Việt Nam (`BANH_BEO_BOT_LOC`, `BANH_TRANG_NUONG`, `BO_KHO`, `BUN_MAM`, `NEM_CHUA_NUONG`, `SUP_CUA`, `CA_CHIEN_NUONG`, `TRUNG_VIT_LON`, `OC_HAI_SAN`, `BANH_PIA_TRUNG_THU`, `CHE_TROINUOC`), 2 món quốc tế (`SUSHI_ROLL`, `SPAGHETTI_PASTA`), 10 rau củ/trái cây và 3 nhóm đồ uống mới (`DRINK_SOY_NUT_MILK`, `DRINK_KOMBUCHA_HERBAL`, `DRINK_WINE_CIDER`).
+
+### Việc đã làm & Quyết định kỹ thuật
+1. **Mở rộng lớp nhận diện, catalog & tối ưu ONNX Runtime (`100` lớp, `103` catalog items):**
+   - Tăng `MAX_CLASSES = 120` trong [prepare_dataset.py](file:///C:/Users/ASUS/Downloads/VigorAI/ai_research/model_b_food_yolo/prepare_dataset.py) và mở rộng `CORE_CLASSES_V1` lên **100 lớp (`0..99`)** trong [food_classes.py](file:///C:/Users/ASUS/Downloads/VigorAI/ai_research/model_b_food_yolo/food_classes.py).
+   - Bổ sung 26 lớp mới ngoài `FOOD_CATALOG_SEED` vào `EXTENDED_BEVERAGE_SNACK_CATALOG` và thiết lập mặc định `intra_op_num_threads = min(4, cpu_count)` + `inter_op_num_threads = 1` trong [ai_food_yolo.py](file:///C:/Users/ASUS/Downloads/VigorAI/backend/app/services/ai_food_yolo.py) để tránh tranh chấp E-core trên CPU hybrid (~tăng tốc 3x).
+   - Cập nhật unit test [test_ai_api.py](file:///C:/Users/ASUS/Downloads/VigorAI/backend/tests/test_ai_api.py) khớp 100 lớp & `model_b_v9`.
+2. **Thu thập, làm sạch 2 nhịp & dựng `model_b_v9` (`18.578` ảnh, `100/100` lớp hoạt động):**
+   - Bổ sung `fetch_v17_missing_foods_drinks` & ràng buộc `max_boxes_per_image` cho LVIS trong [fetch_open_datasets.py](file:///C:/Users/ASUS/Downloads/VigorAI/ai_research/model_b_food_yolo/fetch_open_datasets.py), đồng thời ghi nguồn đầy đủ vào [SOURCES.md](file:///C:/Users/ASUS/Downloads/VigorAI/ai_research/SOURCES.md).
+   - Sau nhịp huấn luyện đầu (`25 epochs` từ checkpoint `v1.6` bị reset classification head `nc: 69 -> 100`, ONNX `mAP@0.5 = 0.8398`, `R = 0.7677`), phát hiện 545 ảnh LVIS nhiều khung nhỏ gây xung đột với ảnh đơn món và biến thể nền trắng bánh mì dễ nhầm chai nước; đã dọn sạch dữ liệu nhiễu, bổ sung biến thể sáng/nội cảnh cho đồ uống, và dựng lại [model_b_v9_dataset_report.json](file:///C:/Users/ASUS/Downloads/VigorAI/ai_research/evaluation_reports/model_b_v9_dataset_report.json): **`13.952` train / `3.088` val / `1.538` test** (`18.578` ảnh), **`100/100` lớp hoạt động**, `0` lỗi bbox, `0` rò rỉ dữ liệu.
+3. **Train ấm nhịp 2 trên Colab T4, đánh giá ONNX CPU & kiểm thử nước uống:**
+   - Warm-start `18 epochs` từ checkpoint `nc=100` trên Google Colab **Tesla T4 GPU** (Colab T4 `test`: `mAP@0.5 = 0.9289`, `mAP@0.5:0.95 = 0.8025`), xuất `best.pt` (`sha256: 0bbd0114...`) và `best.onnx` (`44.901.747 B`, `sha256: c51ce74f...`, output shape `[1, 104, 8400]`).
+   - Đánh giá ONNX Runtime (CPU) trên toàn bộ **`1.538` ảnh `test`** ([model_b_v1_7_onnx_eval.json](file:///C:/Users/ASUS/Downloads/VigorAI/ai_research/evaluation_reports/model_b_v1_7_100classes/model_b_v1_7_onnx_eval.json)):
+     - **`mAP@0.5 = 0.9261`**, **`Precision = 0.8595`**, **`Recall = 0.8803`**, **`F1 = 0.8698`** (`conf=0.30`), **`CPU infer mean = 120.79 ms`** (`p50 = 98.0 ms`) — đạt **6/6 KPI**.
+     - *Ghi chú nhỏ cho đợt sau:* `DRINK_KOMBUCHA_HERBAL` hiện đạt `AP50 = 0.3788` (do ảnh chai tối màu từ Open Food Facts), cần lọc tinh hơn ở phiên bản kế tiếp nếu mở rộng thêm.
+   - `pytest backend/tests/test_ai_api.py -q`: **`35 passed`**; kiểm thử nước uống thực tế: **`OVERALL_BEVERAGE_SAFETY_PASS: True`** (`6/6` mẫu đạt).
+4. **Triển khai Railway Production & xác minh trực tiếp HTTPS:**
+   - Upload `food_yolo_v1.onnx` lên S3 `gym3d-assets-5d0aytya2fro`, cập nhật `VIGOR_FOOD_MODEL_SHA256`, deploy deployment `cca50834-8770-4493-8f17-3f0b6bf5a6c8` trạng thái **`SUCCESS`**.
+   - Kiểm tra trực tiếp `https://vigorai-api-production.up.railway.app`: `GET /api/v1/ai/food-model/info` trả `yolov8s-gymfood-v1.7`, `100` lớp, `catalog_size = 103`, `stub_fallback_enabled: false`; `POST /api/v1/ai/food-analyze` qua HTTPS nhận chuẩn **`6/6` ảnh nước uống** (`Kirin1 64.9%`, `7Up 85.9%`, `Kirin3 40.3%`, `Coca-Cola 87.3%`, `Sting 79.6%`, `Revive 69.1%`) và **`10/10` lớp mới đại diện** (`STIR_FRIED_BEEF 78.8%`, `BOILED_CHICKEN_BREAST 95.7%`, `BANH_BEO_BOT_LOC 74.7%`, `BANH_TRANG_NUONG 84.6%`, `SUSHI_ROLL 87.0%`, `WATERMELON 90.4%`, `DRAGON_FRUIT 88.1%`, `CARROT_VEG 87.1%`, `DRINK_SOY_NUT_MILK 66.6%`, `DRINK_WINE_CIDER 86.8%`).
+
+### Kiểm tra sau sửa đổi
+- `prepare_dataset.py` (`model_b_v9`): `100/100` lớp hoạt động, `0` lỗi bbox, `0` rò rỉ dữ liệu.
+- `evaluate_model.py` (ONNX CPU, `1.538` ảnh `test`): **6/6 KPI PASS** (`mAP@0.5 = 0.9261`, `P = 0.8595`, `R = 0.8803`, `F1 = 0.8698`, `infer = 120.79 ms`).
+- `pytest backend/tests/test_ai_api.py -q`: `35 passed in 2.46s`.
+- Live Railway HTTPS (`food-model/info` & `food-analyze`): pass (`6/6` nước uống + `10/10` lớp mới).
+
+---
+
+## Phiên 49 (nhánh main: Phiên 48) — 2026-11-28 10:56 | Thành viên: M1 + M3 + M4 | Task: Khắc phục bản `.aab` CH Play trả dữ liệu giả Ức gà + Cơm trắng trên `vigorai-production.up.railway.app` (`T-M1-10` `[x]`)
 - **Mục tiêu phiên:** Điều tra nguyên nhân bản `.aab` (`v1.0.0+2`) trên Google Play Closed Testing nhận diện ra dữ liệu mẫu `Ức gà áp chảo 93%` + `Cơm trắng 91%` (`~390 – 600 kcal`), và khắc phục ngay từ phía Server Railway để bản `.aab` hiện tại trên CH Play chạy AI YOLOv8 ONNX thật mà không cần đóng gói hay nộp duyệt lại `.aab`.
 - **Nguyên nhân gốc rễ xác định được:**
   - Bản `.aab` trên CH Play được build với `API_BASE_URL=https://vigorai-production.up.railway.app` (service chính của M3), trong khi bản `.apk` test rời trỏ sang `https://vigorai-api-production.up.railway.app` (service AI riêng chứa S3 bucket trọng số `.onnx` của M4). Do `vigorai-production` chưa có file trọng số cục bộ và `VIGOR_FOOD_ALLOW_STUB` mặc định mở, `/api/v1/ai/food-analyze` rơi vào `_stub_food_response()`.
@@ -35,6 +117,36 @@
     - `GET /healthz` & `GET /delete-account`: `200 OK`.
 - **Việc cần làm ở phiên kế tiếp:**
   - Người dùng mở trực tiếp app tải từ CH Play chụp thử món ăn để nghiệm thu AI thật; M4 tiếp tục huấn luyện mở rộng Model B và triển khai **AI Model C** (`T-M4-05`, `T-M4-07`, `T-M4-08`).
+
+---
+
+## Phiên 48 (nhánh vu: Phiên 47) — 2026-11-27 22:25 | Thành viên: M4 (Pure AI Engineer) | Task: `T-M4-10` (`[x]`)
+
+### Mục tiêu & Ngữ cảnh
+- Mở rộng **AI Model B** lên **`v1.6` (`69/69` lớp hoạt động)** để phủ kín 2 lớp bị bỏ trống từ trước (`BROWN_RICE`, `SWEET_POTATO`), 8 món ăn Gym/healthy đã có trong `FOOD_CATALOG_SEED` (`AVOCADO`, `CUCUMBER`, `CHERRY_TOMATO`, `LEAN_PORK`, `ALMONDS`, `OATMEAL`, `GREEK_YOGURT`, `WHEY_SHAKE`) và 3 nhóm đồ uống phổ biến (`DRINK_COCONUT_WATER`, `DRINK_YOGURT_PROBIOTIC`, `DRINK_BEER`).
+
+### Việc đã làm & Quyết định kỹ thuật
+1. **Mở rộng danh mục & backend AI Model B (`69` lớp, `77` catalog items):**
+   - Cập nhật [food_classes.py](file:///C:/Users/ASUS/Downloads/VigorAI/ai_research/model_b_food_yolo/food_classes.py) từ 58 lên **69 lớp (`0..68`)** và chuyển alias `"almond"` sang lớp riêng `ALMONDS`.
+   - Cập nhật `EXTENDED_BEVERAGE_SNACK_CATALOG` trong [ai_food_yolo.py](file:///C:/Users/ASUS/Downloads/VigorAI/backend/app/services/ai_food_yolo.py) thêm dinh dưỡng chuẩn theo `100 ml` cho `DRINK_COCONUT_WATER`, `DRINK_YOGURT_PROBIOTIC`, `DRINK_BEER`; cập nhật unit test trong [test_ai_api.py](file:///C:/Users/ASUS/Downloads/VigorAI/backend/tests/test_ai_api.py).
+2. **Làm sạch dữ liệu và build dataset `model_b_v8` (`13.648` ảnh, `69/69` lớp hoạt động):**
+   - Sau vòng thử nghiệm đầu phát hiện một số lớp bổ sung từ `FoodSeg103` (`hanamaki baozi`, `pork`, `avocado`, `tomato`, `cucumber`) và ảnh tìm kiếm tự do gây giảm `BANH_BAO` / `GRILLED_CHICKEN_BREAST` / Kirin Latte nền sáng, đã tinh chỉnh [fetch_open_datasets.py](file:///C:/Users/ASUS/Downloads/VigorAI/ai_research/model_b_food_yolo/fetch_open_datasets.py): loại bỏ 5 lớp `FoodSeg103` gây nhiễu (`3.099` ảnh sạch còn lại) và dùng hoàn toàn các bộ chuẩn HuggingFace (`TeeA/nutrition5k-food-name-gemini`, `henningheyen/LVIS_Fruits_And_Vegetables`, `SunnyAgarwal4274/Food_Ingredients`, `ethz/food101 pork_chop`, `c2p-cmd/hass_avocado`, `stperez/beverages Beer`, `Open Food Facts Search v3`, Wikimedia `Category:Oatmeal` → `3.052` ảnh sạch).
+   - Build và xác thực [model_b_v8_dataset_report.json](file:///C:/Users/ASUS/Downloads/VigorAI/ai_research/evaluation_reports/model_b_v8_dataset_report.json): **`10.275` train / `2.251` val / `1.122` test** (`13.648` ảnh), **`69/69` lớp có dữ liệu**, `0` lỗi bbox, `0` rò rỉ dữ liệu giữa các tập.
+3. **Train Colab T4 GPU, đánh giá ONNX CPU & kiểm thử an toàn đồ uống:**
+   - Fine-tune `20 epochs` trên Google Colab **Tesla T4 GPU** (warm-start từ checkpoint `nc=69`, không reset head), xuất `best.pt` (`sha256: 1c18a18f...`) và `best.onnx` (`sha256: bafffc3a...`, `44.85 MB`).
+   - Đánh giá ONNX Runtime (CPU) trên toàn bộ **`1.122` ảnh `test`** ([model_b_v1_6_onnx_eval.json](file:///C:/Users/ASUS/Downloads/VigorAI/ai_research/evaluation_reports/model_b_v1_6_69classes/model_b_v1_6_onnx_eval.json)):
+     - **`mAP@0.5 = 0.8738`**, **`Precision = 0.8369`**, **`Recall = 0.7951`**, **`F1 = 0.8154`** (`conf=0.3`), **`CPU infer mean = 88.82 ms`** (`p50 = 88.0 ms`, `p95 = 98.0 ms`) — đạt toàn bộ KPI.
+     - Các lớp phục hồi & bật mới nổi bật: `BANH_BAO` (`0.995`), `BROWN_RICE` (`0.895`), `DRINK_CITRUS_SODA` (`0.995`), `DRINK_COLA` (`0.993`), `DRINK_ENERGY` (`0.992`), `GREEK_YOGURT` (`0.969`), `DRINK_COCONUT_WATER` (`0.925`), `WHEY_SHAKE` (`0.919`), `DRINK_YOGURT_PROBIOTIC` (`0.909`), `DRINK_BEER` (`0.906`), `ALMONDS` (`0.837`), `OATMEAL` (`0.810`), `GRILLED_CHICKEN_BREAST` (`0.804`), `LEAN_PORK` (`0.798`).
+   - `pytest backend/tests/test_ai_api.py -v`: **`35 passed`**.
+   - Kiểm thử 5 ảnh nước uống thực tế + Revive: `OVERALL_BEVERAGE_SAFETY_PASS: True` (`0` miss `0 kcal` / `0` nhầm sang `CHOCOLATE_CANDY`).
+4. **Triển khai Railway Production & xác minh trực tiếp HTTPS:**
+   - Upload `food_yolo_v1.onnx` lên S3 `gym3d-assets-5d0aytya2fro`, cập nhật `VIGOR_FOOD_MODEL_SHA256`, deploy deployment `b85b55f1-1b91-46d6-a24f-c4a52c4b9941` trạng thái **`SUCCESS`**.
+   - Kiểm tra live `https://vigorai-api-production.up.railway.app`: `GET /api/v1/ai/food-model/info` trả `yolov8s-gymfood-v1.6`, `69` classes, `77` catalog, `stub_fallback_enabled: false`; `POST /api/v1/ai/food-analyze` qua HTTPS nhận chuẩn cả 5 ảnh nước uống (`Kirin img1 78.8%`, `7Up img2 54.3%`, `Kirin img3 50.2%`, `Cola img4 81.2%`, `Sting img5 72.5%`) lẫn các món mới (`SWEET_POTATO 92.3%`, `GREEK_YOGURT 89.8%`, `DRINK_COCONUT_WATER 89.5%`, `WHEY_SHAKE 89.5%`, `AVOCADO 88.4%`, `BROWN_RICE 85.3%`, `DRINK_BEER 83.8%`).
+
+### Kiểm tra sau sửa đổi
+- `prepare_dataset.py --validate-only`: pass (`69/69` lớp, 0 lỗi).
+- `pytest backend/tests/test_ai_api.py -v`: `35 passed in 3.29s`.
+- Live HTTPS `GET /api/v1/ai/food-model/info` & `POST /api/v1/ai/food-analyze`: pass.
 
 ---
 

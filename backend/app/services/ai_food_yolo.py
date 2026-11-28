@@ -380,7 +380,7 @@ EXTENDED_BEVERAGE_SNACK_CATALOG: list[dict[str, Any]] = [
     },
     {
         "class_code": "DRINK_CITRUS_SODA",
-        "name_vi": "Nước ngọt có gas (7Up / Sprite / Fanta / Mirinda)",
+        "name_vi": "Nước ngọt có gas (7Up / Sprite / Mirinda / Fanta)",
         "kcal_per_100g": 41.0,
         "protein_per_100g": 0.0,
         "carbs_per_100g": 10.2,
@@ -390,7 +390,7 @@ EXTENDED_BEVERAGE_SNACK_CATALOG: list[dict[str, Any]] = [
     },
     {
         "class_code": "DRINK_ENERGY",
-        "name_vi": "Nước tăng lực (Sting / Red Bull / Monster)",
+        "name_vi": "Nước tăng lực (Sting / Warrior / Red Bull / 247)",
         "kcal_per_100g": 62.0,
         "protein_per_100g": 0.0,
         "carbs_per_100g": 15.5,
@@ -410,7 +410,7 @@ EXTENDED_BEVERAGE_SNACK_CATALOG: list[dict[str, Any]] = [
     },
     {
         "class_code": "DRINK_BOTTLED_TEA",
-        "name_vi": "Trà đóng chai (C2 / Trà xanh 0 Độ / Tea+)",
+        "name_vi": "Trà đóng chai (C2 / Không Độ / Tea+ / Boncha)",
         "kcal_per_100g": 28.0,
         "protein_per_100g": 0.0,
         "carbs_per_100g": 7.0,
@@ -420,12 +420,12 @@ EXTENDED_BEVERAGE_SNACK_CATALOG: list[dict[str, Any]] = [
     },
     {
         "class_code": "DRINK_BOTTLED_COFFEE",
-        "name_vi": "Cà phê sữa đóng chai / lon (Kirin Latte / Nescafé)",
+        "name_vi": "Cà phê đóng lon / chai (Highlands / Kirin / Nescafé / Birdy)",
         "kcal_per_100g": 58.0,
         "protein_per_100g": 1.6,
         "carbs_per_100g": 9.5,
         "fat_per_100g": 1.5,
-        "default_serving_g": 345.0,
+        "default_serving_g": 280.0,
         "kcal_spread_ratio": 0.25,
     },
     {
@@ -447,6 +447,298 @@ EXTENDED_BEVERAGE_SNACK_CATALOG: list[dict[str, Any]] = [
         "fat_per_100g": 0.0,
         "default_serving_g": 500.0,
         "kcal_spread_ratio": 0.0,
+    },
+    # 3 nhom do uong bo sung cho v1.6 (cac lop Gym/healthy con lai dung san FOOD_CATALOG_SEED cua M3)
+    {
+        "class_code": "DRINK_COCONUT_WATER",
+        "name_vi": "Nước dừa (tươi / đóng hộp)",
+        "kcal_per_100g": 19.0,
+        "protein_per_100g": 0.7,
+        "carbs_per_100g": 3.7,
+        "fat_per_100g": 0.2,
+        "default_serving_g": 330.0,
+        "kcal_spread_ratio": 0.25,
+    },
+    {
+        "class_code": "DRINK_YOGURT_PROBIOTIC",
+        "name_vi": "Sữa chua uống / Sữa trái cây (Yakult / Probi / Nutriboost)",
+        "kcal_per_100g": 68.0,
+        "protein_per_100g": 1.3,
+        "carbs_per_100g": 15.0,
+        "fat_per_100g": 0.1,
+        "default_serving_g": 130.0,
+        "kcal_spread_ratio": 0.30,
+    },
+    {
+        "class_code": "DRINK_BEER",
+        "name_vi": "Bia (Heineken / Tiger / Sài Gòn)",
+        "kcal_per_100g": 43.0,
+        "protein_per_100g": 0.5,
+        "carbs_per_100g": 3.6,
+        "fat_per_100g": 0.0,
+        "default_serving_g": 330.0,
+        "kcal_spread_ratio": 0.20,
+    },
+    # 26 mon Viet, trai cay, rau cu & do uong bo sung cho v1.7 (5 mon Gym con lai da co san trong FOOD_CATALOG_SEED)
+    {
+        "class_code": "BANH_BEO_BOT_LOC",
+        "name_vi": "Bánh bèo / Bánh bột lọc",
+        "kcal_per_100g": 178.0,
+        "protein_per_100g": 4.8,
+        "carbs_per_100g": 31.0,
+        "fat_per_100g": 4.0,
+        "default_serving_g": 200.0,
+        "kcal_spread_ratio": 0.22,
+    },
+    {
+        "class_code": "BANH_TRANG_NUONG",
+        "name_vi": "Bánh tráng nướng",
+        "kcal_per_100g": 285.0,
+        "protein_per_100g": 9.5,
+        "carbs_per_100g": 36.0,
+        "fat_per_100g": 11.5,
+        "default_serving_g": 120.0,
+        "kcal_spread_ratio": 0.22,
+    },
+    {
+        "class_code": "BO_KHO",
+        "name_vi": "Bò kho / Cà ri gà",
+        "kcal_per_100g": 148.0,
+        "protein_per_100g": 11.5,
+        "carbs_per_100g": 8.5,
+        "fat_per_100g": 7.5,
+        "default_serving_g": 350.0,
+        "kcal_spread_ratio": 0.22,
+    },
+    {
+        "class_code": "BUN_MAM",
+        "name_vi": "Bún mắm / Bún chả cá",
+        "kcal_per_100g": 112.0,
+        "protein_per_100g": 8.2,
+        "carbs_per_100g": 13.5,
+        "fat_per_100g": 2.8,
+        "default_serving_g": 450.0,
+        "kcal_spread_ratio": 0.22,
+    },
+    {
+        "class_code": "NEM_CHUA_NUONG",
+        "name_vi": "Nem chua / Nem nướng / Thịt xiên",
+        "kcal_per_100g": 225.0,
+        "protein_per_100g": 14.5,
+        "carbs_per_100g": 14.0,
+        "fat_per_100g": 12.5,
+        "default_serving_g": 150.0,
+        "kcal_spread_ratio": 0.22,
+    },
+    {
+        "class_code": "SUP_CUA",
+        "name_vi": "Súp cua",
+        "kcal_per_100g": 82.0,
+        "protein_per_100g": 6.5,
+        "carbs_per_100g": 8.8,
+        "fat_per_100g": 2.2,
+        "default_serving_g": 300.0,
+        "kcal_spread_ratio": 0.22,
+    },
+    {
+        "class_code": "CA_CHIEN_NUONG",
+        "name_vi": "Cá chiên / Cá nướng",
+        "kcal_per_100g": 192.0,
+        "protein_per_100g": 20.5,
+        "carbs_per_100g": 3.5,
+        "fat_per_100g": 10.5,
+        "default_serving_g": 180.0,
+        "kcal_spread_ratio": 0.22,
+    },
+    {
+        "class_code": "TRUNG_VIT_LON",
+        "name_vi": "Trứng vịt lộn / Cút lộn xào me",
+        "kcal_per_100g": 182.0,
+        "protein_per_100g": 13.6,
+        "carbs_per_100g": 4.0,
+        "fat_per_100g": 12.4,
+        "default_serving_g": 100.0,
+        "kcal_spread_ratio": 0.20,
+    },
+    {
+        "class_code": "OC_HAI_SAN",
+        "name_vi": "Ốc hấp / Hải sản",
+        "kcal_per_100g": 115.0,
+        "protein_per_100g": 14.0,
+        "carbs_per_100g": 5.5,
+        "fat_per_100g": 3.8,
+        "default_serving_g": 200.0,
+        "kcal_spread_ratio": 0.25,
+    },
+    {
+        "class_code": "BANH_PIA_TRUNG_THU",
+        "name_vi": "Bánh pía / Bánh trung thu",
+        "kcal_per_100g": 365.0,
+        "protein_per_100g": 6.5,
+        "carbs_per_100g": 54.0,
+        "fat_per_100g": 13.5,
+        "default_serving_g": 100.0,
+        "kcal_spread_ratio": 0.22,
+    },
+    {
+        "class_code": "CHE_TROINUOC",
+        "name_vi": "Chè trôi nước / Bánh da lợn",
+        "kcal_per_100g": 210.0,
+        "protein_per_100g": 3.5,
+        "carbs_per_100g": 42.0,
+        "fat_per_100g": 3.2,
+        "default_serving_g": 200.0,
+        "kcal_spread_ratio": 0.22,
+    },
+    {
+        "class_code": "SUSHI_ROLL",
+        "name_vi": "Sushi / Cơm cuộn",
+        "kcal_per_100g": 150.0,
+        "protein_per_100g": 6.2,
+        "carbs_per_100g": 26.0,
+        "fat_per_100g": 2.2,
+        "default_serving_g": 180.0,
+        "kcal_spread_ratio": 0.22,
+    },
+    {
+        "class_code": "SPAGHETTI_PASTA",
+        "name_vi": "Mì Ý sốt bò bằm / Nui xào",
+        "kcal_per_100g": 158.0,
+        "protein_per_100g": 7.2,
+        "carbs_per_100g": 23.0,
+        "fat_per_100g": 4.2,
+        "default_serving_g": 280.0,
+        "kcal_spread_ratio": 0.22,
+    },
+    {
+        "class_code": "WATERMELON",
+        "name_vi": "Dưa hấu",
+        "kcal_per_100g": 30.0,
+        "protein_per_100g": 0.6,
+        "carbs_per_100g": 7.6,
+        "fat_per_100g": 0.2,
+        "default_serving_g": 200.0,
+        "kcal_spread_ratio": 0.20,
+    },
+    {
+        "class_code": "ORANGE_CITRUS",
+        "name_vi": "Cam / Quýt tươi",
+        "kcal_per_100g": 47.0,
+        "protein_per_100g": 0.9,
+        "carbs_per_100g": 11.8,
+        "fat_per_100g": 0.1,
+        "default_serving_g": 180.0,
+        "kcal_spread_ratio": 0.20,
+    },
+    {
+        "class_code": "MANGO",
+        "name_vi": "Xoài chín",
+        "kcal_per_100g": 60.0,
+        "protein_per_100g": 0.8,
+        "carbs_per_100g": 15.0,
+        "fat_per_100g": 0.4,
+        "default_serving_g": 180.0,
+        "kcal_spread_ratio": 0.20,
+    },
+    {
+        "class_code": "PINEAPPLE",
+        "name_vi": "Dứa / Thơm",
+        "kcal_per_100g": 50.0,
+        "protein_per_100g": 0.5,
+        "carbs_per_100g": 13.1,
+        "fat_per_100g": 0.1,
+        "default_serving_g": 160.0,
+        "kcal_spread_ratio": 0.20,
+    },
+    {
+        "class_code": "GRAPES",
+        "name_vi": "Nho tươi",
+        "kcal_per_100g": 69.0,
+        "protein_per_100g": 0.7,
+        "carbs_per_100g": 18.1,
+        "fat_per_100g": 0.2,
+        "default_serving_g": 150.0,
+        "kcal_spread_ratio": 0.20,
+    },
+    {
+        "class_code": "DRAGON_FRUIT",
+        "name_vi": "Thanh long",
+        "kcal_per_100g": 51.0,
+        "protein_per_100g": 1.1,
+        "carbs_per_100g": 11.0,
+        "fat_per_100g": 0.4,
+        "default_serving_g": 200.0,
+        "kcal_spread_ratio": 0.20,
+    },
+    {
+        "class_code": "STRAWBERRY_BERRY",
+        "name_vi": "Dâu tây / Việt quất",
+        "kcal_per_100g": 33.0,
+        "protein_per_100g": 0.7,
+        "carbs_per_100g": 7.7,
+        "fat_per_100g": 0.3,
+        "default_serving_g": 120.0,
+        "kcal_spread_ratio": 0.20,
+    },
+    {
+        "class_code": "CORN_BOILED",
+        "name_vi": "Bắp / Ngô luộc",
+        "kcal_per_100g": 96.0,
+        "protein_per_100g": 3.4,
+        "carbs_per_100g": 21.0,
+        "fat_per_100g": 1.5,
+        "default_serving_g": 160.0,
+        "kcal_spread_ratio": 0.20,
+    },
+    {
+        "class_code": "CARROT_VEG",
+        "name_vi": "Cà rốt",
+        "kcal_per_100g": 41.0,
+        "protein_per_100g": 0.9,
+        "carbs_per_100g": 9.6,
+        "fat_per_100g": 0.2,
+        "default_serving_g": 100.0,
+        "kcal_spread_ratio": 0.20,
+    },
+    {
+        "class_code": "CABBAGE_SPINACH",
+        "name_vi": "Bắp cải / Rau bina luộc",
+        "kcal_per_100g": 25.0,
+        "protein_per_100g": 1.8,
+        "carbs_per_100g": 5.2,
+        "fat_per_100g": 0.2,
+        "default_serving_g": 120.0,
+        "kcal_spread_ratio": 0.20,
+    },
+    {
+        "class_code": "DRINK_SOY_NUT_MILK",
+        "name_vi": "Sữa đậu nành / Sữa hạt (Fami / Vinasoy)",
+        "kcal_per_100g": 54.0,
+        "protein_per_100g": 3.1,
+        "carbs_per_100g": 6.2,
+        "fat_per_100g": 1.8,
+        "default_serving_g": 200.0,
+        "kcal_spread_ratio": 0.22,
+    },
+    {
+        "class_code": "DRINK_KOMBUCHA_HERBAL",
+        "name_vi": "Trà thảo mộc / Bí đao / Kombucha (Dr. Thanh / Wonderfarm)",
+        "kcal_per_100g": 22.0,
+        "protein_per_100g": 0.0,
+        "carbs_per_100g": 5.2,
+        "fat_per_100g": 0.0,
+        "default_serving_g": 330.0,
+        "kcal_spread_ratio": 0.25,
+    },
+    {
+        "class_code": "DRINK_WINE_CIDER",
+        "name_vi": "Rượu vang / Nước táo lên men",
+        "kcal_per_100g": 83.0,
+        "protein_per_100g": 0.1,
+        "carbs_per_100g": 2.7,
+        "fat_per_100g": 0.0,
+        "default_serving_g": 150.0,
+        "kcal_spread_ratio": 0.22,
     },
 ]
 
@@ -511,15 +803,32 @@ def suppress_cross_class_duplicates(
     detections: list[Detection],
     cross_iou_threshold: float = 0.75,
 ) -> list[Detection]:
-    """Loai bo truong hop 2 lop khac nhau de chong cung 1 mon an (tranh cong doi Calo)."""
-    if cross_iou_threshold <= 0.0 or len(detections) <= 1:
+    """Loai bo 2 lop de chong hoac box lon trum toan khung bao boc box chat hon cung lop."""
+    if len(detections) <= 1:
         return list(detections)
     ordered = sorted(detections, key=lambda d: d.confidence, reverse=True)
     kept: list[Detection] = []
     for det in ordered:
         duplicate = False
-        for prev in kept:
-            if prev.class_code != det.class_code and bbox_iou(prev.bbox_norm, det.bbox_norm) >= cross_iou_threshold:
+        area_det = bbox_area_ratio(det.bbox_norm)
+        for idx, prev in enumerate(kept):
+            if prev.class_code != det.class_code:
+                if cross_iou_threshold > 0.0 and bbox_iou(prev.bbox_norm, det.bbox_norm) >= cross_iou_threshold:
+                    duplicate = True
+                    break
+                continue
+            area_prev = bbox_area_ratio(prev.bbox_norm)
+            min_area = min(area_prev, area_det)
+            if min_area <= 0.0 or max(area_prev, area_det) <= 0.70 or min_area >= 0.60:
+                continue
+            ix1 = max(prev.bbox_norm[0], det.bbox_norm[0])
+            iy1 = max(prev.bbox_norm[1], det.bbox_norm[1])
+            ix2 = min(prev.bbox_norm[2], det.bbox_norm[2])
+            iy2 = min(prev.bbox_norm[3], det.bbox_norm[3])
+            inter = max(0.0, ix2 - ix1) * max(0.0, iy2 - iy1)
+            if (inter / min_area) >= 0.85:
+                if area_prev > 0.70 and det.confidence >= 0.35:
+                    kept[idx] = det
                 duplicate = True
                 break
         if not duplicate:
@@ -546,19 +855,46 @@ def compute_item_nutrition(entry: dict[str, Any], grams: float) -> dict[str, flo
     }
 
 
-def compute_calorie_range(calories: float, spread_ratio: float = 0.20) -> tuple[int, int, str]:
-    """Quy doi muc calo diem sang khoang uoc chung (`~min - max kcal`) lam tron de doc."""
+def compute_calorie_range(
+    calories: float,
+    spread_ratio: float = 0.12,
+    min_span: int = 50,
+    max_span: int = 90,
+    step_override: int | None = None,
+) -> tuple[int, int, str]:
+    """Quy doi muc calo diem sang khoang uoc chung (`~min - max kcal`) hep trong 50-100 kcal."""
     if calories <= 0.0:
         return 0, 0, "0 kcal"
-    step = 5 if calories < 120.0 else 10
-    raw_min = max(0.0, calories * (1.0 - spread_ratio))
-    raw_max = max(raw_min + step, calories * (1.0 + spread_ratio))
-    c_min = int((raw_min // step) * step)
-    c_max = int(((raw_max + step - 1e-6) // step) * step)
-    if c_min == 0 and calories >= 10.0:
-        c_min = step
-    if c_max <= c_min:
-        c_max = c_min + step
+    if calories < 60.0:
+        step = step_override or 5
+        delta = max(float(step), min(20.0, calories * 0.35))
+        c_min = int((max(0.0, calories - delta) // step) * step)
+        if c_min == 0 and calories >= 10.0:
+            c_min = step
+        c_min = min(c_min, int(calories))
+        c_max = int((((calories + delta) + step - 1e-6) // step) * step)
+        if c_max <= c_min:
+            c_max = c_min + step
+        if c_max - c_min > 45 and (c_max - step) >= calories:
+            c_max = min(c_max, c_min + 45)
+        return c_min, c_max, f"~{c_min} \u2013 {c_max} kcal"
+
+    step = step_override or (5 if calories < 120.0 else 10)
+    half = max(min_span / 2.0, min(max_span / 2.0, calories * spread_ratio))
+    c_min = int((max(float(step), calories - half) // step) * step)
+    c_min = min(c_min, int(calories))
+    c_max = int((((calories + half) + step - 1e-6) // step) * step)
+    allowed_max = min(100, max(min_span, max_span + 10)) if max_span <= 90 else max(min_span, max_span)
+    while (c_max - c_min) > allowed_max:
+        if (c_min + step) <= calories and (calories - (c_min + step)) >= (c_max - calories):
+            c_min += step
+        elif (c_max - step) >= calories:
+            c_max -= step
+        else:
+            break
+    if (c_max - c_min) < min_span:
+        needed = min_span - (c_max - c_min)
+        c_max += int(((needed + step - 1) // step) * step)
     return c_min, c_max, f"~{c_min} \u2013 {c_max} kcal"
 
 
@@ -569,17 +905,41 @@ def build_items(
 ) -> list[dict[str, Any]]:
     """Moi Detection -> 1 DetectedFoodItem (dict). Bo qua lop khong co trong catalog."""
     filtered = suppress_cross_class_duplicates(detections, cross_class_iou)
-    items: list[dict[str, Any]] = []
+    valid: list[tuple[Detection, str, dict[str, Any], tuple[float, float, float, float]]] = []
     for det in sorted(filtered, key=lambda d: d.confidence, reverse=True):
         code = normalize_class_code(det.class_code)
         entry = catalog.get(code)
         box = clamp_bbox(det.bbox_norm)
         if entry is None or box is None:
             continue
-        grams = estimate_portion_grams(float(entry["default_serving_g"]), bbox_area_ratio(box))
+        valid.append((det, code, entry, box))
+        if len(valid) >= MAX_ITEMS:
+            break
+
+    n_cal_items = max(1, sum(1 for _, _, entry, _ in valid if float(entry["kcal_per_100g"]) > 0.0))
+    if n_cal_items == 1:
+        item_min_span, item_max_span, item_step = 50, 90, None
+    else:
+        item_min_span = max(15, 55 // n_cal_items)
+        item_max_span = max(20, 80 // n_cal_items)
+        item_step = 5
+
+    items: list[dict[str, Any]] = []
+    for det, code, entry, box in valid:
+        area = bbox_area_ratio(box)
+        if code.startswith("DRINK_"):
+            # Do uong dong chai/lon co the tich co dinh hon mon dia; tranh phong dai 2.5x khi chup can canh
+            scale = max(0.75, min(1.25, area / max(REF_AREA_RATIO, 1e-6)))
+            grams = round(float(entry["default_serving_g"]) * scale, 1)
+        else:
+            grams = estimate_portion_grams(float(entry["default_serving_g"]), area)
         macros = compute_item_nutrition(entry, grams)
-        spread = float(entry.get("kcal_spread_ratio", 0.20))
-        c_min, c_max, range_label = compute_calorie_range(macros["calories"], spread_ratio=spread)
+        c_min, c_max, range_label = compute_calorie_range(
+            macros["calories"],
+            min_span=item_min_span,
+            max_span=item_max_span,
+            step_override=item_step,
+        )
         items.append(
             {
                 "class_code": code,
@@ -593,13 +953,45 @@ def build_items(
                 "calories_range_label": range_label,
             }
         )
-        if len(items) >= MAX_ITEMS:
-            break
+
+    if len(items) >= 2 and sum(it["calories"] for it in items) >= 60.0:
+        for _ in range(12):
+            sum_min = sum(it["calories_min"] for it in items)
+            sum_max = sum(it["calories_max"] for it in items)
+            diff = sum_max - sum_min
+            if 50 <= diff <= 100:
+                break
+            if diff < 50:
+                target = max(items, key=lambda it: it["calories"])
+                target["calories_max"] += 5
+                target["calories_range_label"] = f"~{target['calories_min']} \u2013 {target['calories_max']} kcal"
+            else:
+                candidates = [
+                    it
+                    for it in items
+                    if (it["calories_max"] - it["calories_min"]) > 10
+                    and (
+                        (it["calories_min"] + 5) <= it["calories"]
+                        or (it["calories_max"] - 5) >= it["calories"]
+                    )
+                ]
+                if not candidates:
+                    break
+                target = max(candidates, key=lambda it: it["calories_max"] - it["calories_min"])
+                if (target["calories_max"] - target["calories"]) >= (target["calories"] - target["calories_min"]) and (
+                    target["calories_max"] - 5
+                ) >= target["calories"]:
+                    target["calories_max"] -= 5
+                elif (target["calories_min"] + 5) <= target["calories"]:
+                    target["calories_min"] += 5
+                else:
+                    target["calories_max"] = max(target["calories_min"] + 5, target["calories_max"] - 5)
+                target["calories_range_label"] = f"~{target['calories_min']} \u2013 {target['calories_max']} kcal"
     return items
 
 
 def summarize(items: list[dict[str, Any]]) -> dict[str, Any]:
-    """Tong = tong cac gia tri da lam tron cua tung mon + khoang Calo uoc chung."""
+    """Tong = tong cac gia tri da lam tron cua tung mon + khoang Calo uoc chung (chenh lech <= 100 kcal)."""
     totals: dict[str, Any] = {
         key: round(sum(item[key] for item in items), 1)
         for key in ("calories", "protein_g", "carbs_g", "fat_g")
@@ -609,8 +1001,18 @@ def summarize(items: list[dict[str, Any]]) -> dict[str, Any]:
         totals["calories_max"] = 0
         totals["calories_range_label"] = "0 kcal"
     else:
-        c_min = sum(int(item.get("calories_min", round(item["calories"] * 0.8))) for item in items)
-        c_max = sum(int(item.get("calories_max", round(item["calories"] * 1.2))) for item in items)
+        c_min = sum(int(item.get("calories_min", round(item["calories"] * 0.85))) for item in items)
+        c_max = sum(int(item.get("calories_max", round(item["calories"] * 1.15))) for item in items)
+        cal = totals["calories"]
+        while (c_max - c_min) > 100:
+            if (c_min + 5) <= cal and (cal - (c_min + 5)) >= (c_max - cal):
+                c_min += 5
+            elif (c_max - 5) >= cal:
+                c_max -= 5
+            else:
+                break
+        if cal >= 60.0 and (c_max - c_min) < 50:
+            c_max = c_min + 50
         totals["calories_min"] = c_min
         totals["calories_max"] = c_max
         totals["calories_range_label"] = f"~{c_min} \u2013 {c_max} kcal"
@@ -1075,9 +1477,11 @@ class FoodYoloService:
         try:
             opts = ort.SessionOptions()
             opts.graph_optimization_level = ort.GraphOptimizationLevel.ORT_ENABLE_ALL
-            threads = _env_int("VIGOR_FOOD_ORT_THREADS", None)
+            default_threads = min(4, max(1, os.cpu_count() or 4))
+            threads = _env_int("VIGOR_FOOD_ORT_THREADS", default_threads)
             if threads and threads > 0:
                 opts.intra_op_num_threads = threads
+            opts.inter_op_num_threads = 1
             session = ort.InferenceSession(
                 str(path),
                 sess_options=opts,
@@ -1155,6 +1559,39 @@ class FoodYoloService:
             detections.append(Detection(class_code, float(box.conf[0]), (x1, y1, x2, y2)))
         return detections
 
+    def _detect_peripheral_strips(self, image, detections: list[Detection]) -> list[Detection]:
+        """Tim them mon/chai nho o ria anh khi co 1 vat the cao hep chiem tien canh."""
+        if self._onnx_session is None or len(detections) != 1 or min(image.size) < 160:
+            return detections
+        d0 = detections[0]
+        x1, y1, x2, y2 = d0.bbox_norm
+        bw, bh = x2 - x1, y2 - y1
+        if bh < 0.65 or bw > 0.50:
+            return detections
+        strips: list[tuple[float, float, float, float]] = []
+        if (1.0 - x2) >= 0.28:
+            strips.append((max(0.0, x2 - 0.04), 0.10, 1.0, 0.90))
+        if x1 >= 0.28:
+            strips.append((0.0, 0.10, min(1.0, x1 + 0.04), 0.90))
+        if not strips:
+            return detections
+
+        w, h = image.size
+        out = list(detections)
+        for sx1, sy1, sx2, sy2 in strips:
+            sub = image.crop((int(sx1 * w), int(sy1 * h), int(sx2 * w), int(sy2 * h)))
+            for sd in self._detect_onnx(sub):
+                if sd.confidence < 0.34 or not (0.15 <= bbox_area_ratio(sd.bbox_norm) <= 0.85):
+                    continue
+                gx1 = sx1 + sd.bbox_norm[0] * (sx2 - sx1)
+                gy1 = sy1 + sd.bbox_norm[1] * (sy2 - sy1)
+                gx2 = sx1 + sd.bbox_norm[2] * (sx2 - sx1)
+                gy2 = sy1 + sd.bbox_norm[3] * (sy2 - sy1)
+                gbox = (gx1, gy1, gx2, gy2)
+                if (gx2 - gx1) <= 0.50 and bbox_area_ratio(gbox) < 0.45 and bbox_iou(gbox, d0.bbox_norm) < 0.15:
+                    out.append(Detection(sd.class_code, sd.confidence, gbox))
+        return out
+
     def detect(self, image) -> list[Detection]:
         self._ensure_loaded()
         if self._onnx_session is not None:
@@ -1167,6 +1604,7 @@ class FoodYoloService:
         self._ensure_loaded()
         started = time.perf_counter()
         detections = self.detect(image)
+        detections = self._detect_peripheral_strips(image, detections)
         inference_ms = int(round((time.perf_counter() - started) * 1000))
         return build_response_payload(
             detections,
