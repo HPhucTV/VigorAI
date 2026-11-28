@@ -280,8 +280,17 @@ def collect_items(
     return items, stats, unmapped, mapping_log
 
 
+def _group_has_oversized_box(members: list[dict], area_thresh: float = 0.55) -> int:
+    for m in members:
+        for ln in m["lines"]:
+            parts = ln.split()
+            if len(parts) >= 5 and (float(parts[3]) * float(parts[4])) > area_thresh:
+                return 1
+    return 0
+
+
 def balance_items_per_class(items: list[dict], max_per_class: int, seed: int) -> tuple[list[dict], int]:
-    """Gioi han toi da `max_per_class` nhom anh cho moi lop de tranh mat can bang du lieu."""
+    """Gioi han `max_per_class` nhom/lop nhung uu tien du lieu that truoc, sau do moi den anh ghep."""
     if max_per_class <= 0:
         return items, 0
     groups: dict[str, list[dict]] = defaultdict(list)
@@ -294,19 +303,44 @@ def balance_items_per_class(items: list[dict], max_per_class: int, seed: int) ->
     group_keys = sorted(groups)
     rng.shuffle(group_keys)
 
-    # Uu tien giu cac nhom chua lop hiem hon truoc
     freq: Counter = Counter()
     for cs in group_classes.values():
         freq.update(cs)
-    group_keys.sort(key=lambda g: min(freq[c] for c in group_classes[g]))
 
+    def sort_key(g: str) -> tuple[int, int]:
+        return (_group_has_oversized_box(groups[g]), min(freq[c] for c in group_classes[g]))
+
+    buckets: dict[str, list[str]] = {"real": [], "synth_single": [], "synth_multi": []}
+    for g in group_keys:
+        src = groups[g][0]["src"]
+        if src.startswith("multi-item"):
+            buckets["synth_multi"].append(g)
+        elif src.startswith("vn-beverages"):
+            buckets["synth_single"].append(g)
+        else:
+            buckets["real"].append(g)
+    for b_keys in buckets.values():
+        b_keys.sort(key=sort_key)
+
+    real_cap = max(1, int(round(max_per_class * 0.55)))
+    single_cap = max(1, int(round(max_per_class * 0.80)))
     kept_counts: Counter = Counter()
     kept_groups: set[str] = set()
-    for g in group_keys:
-        cs = group_classes[g]
-        if any(kept_counts[c] < max_per_class for c in cs):
-            kept_groups.add(g)
-            kept_counts.update(cs)
+
+    def take_pass(keys: list[str], cap: int) -> None:
+        for g in keys:
+            if g in kept_groups:
+                continue
+            cs = group_classes[g]
+            if any(kept_counts[c] < cap for c in cs):
+                kept_groups.add(g)
+                kept_counts.update(cs)
+
+    take_pass(buckets["real"], real_cap)
+    take_pass(buckets["synth_single"], single_cap)
+    take_pass(buckets["synth_multi"], max_per_class)
+    take_pass(buckets["real"], max_per_class)
+    take_pass(buckets["synth_single"], max_per_class)
 
     kept_items = [it for it in items if it["group"] in kept_groups]
     dropped = len(items) - len(kept_items)

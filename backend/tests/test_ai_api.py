@@ -201,6 +201,71 @@ def test_payload_matches_response_schema_fields():
     assert item["calories_range_label"].startswith("~") and item["calories_range_label"].endswith("kcal")
 
 
+def test_calorie_range_is_tight_50_to_100_kcal_single_and_multi_item():
+    from app.db.seed_catalog_and_exercises import FOOD_CATALOG_SEED
+
+    seeded = {e["class_code"]: e for e in FOOD_CATALOG_SEED}
+    for e in food.EXTENDED_BEVERAGE_SNACK_CATALOG:
+        seeded.setdefault(e["class_code"], e)
+
+    for kcal in (120.0, 250.0, 500.0, 750.0):
+        c_min, c_max, _ = food.compute_calorie_range(kcal)
+        assert 0 < c_min <= kcal <= c_max
+        assert 50 <= (c_max - c_min) <= 100, f"Unexpected single spread for {kcal}: {c_min}..{c_max}"
+
+    # Hai mon/chai dung canh nhau khong bi gop khung va tong khoang calo van trong [50, 100]
+    p2 = build_response_payload(
+        [
+            Detection("DRINK_ENERGY", 0.91, (0.12, 0.25, 0.36, 0.78)),
+            Detection("DRINK_BOTTLED_COFFEE", 0.87, (0.58, 0.35, 0.82, 0.78)),
+        ],
+        seeded,
+        18,
+        "v1.8",
+    )
+    assert [i["class_code"] for i in p2["detected_items"]] == ["DRINK_ENERGY", "DRINK_BOTTLED_COFFEE"]
+    assert 50 <= (p2["total_nutrition"]["calories_max"] - p2["total_nutrition"]["calories_min"]) <= 100
+    assert 50 <= sum(i["calories_max"] - i["calories_min"] for i in p2["detected_items"]) <= 100
+
+    # Ba mon (com + ga + cola) van giu tong khoang <= 100 kcal
+    p3 = build_response_payload(
+        [
+            Detection("WHITE_RICE", 0.92, (0.05, 0.35, 0.45, 0.85)),
+            Detection("GRILLED_CHICKEN_BREAST", 0.89, (0.48, 0.35, 0.82, 0.80)),
+            Detection("DRINK_COLA", 0.85, (0.76, 0.15, 0.94, 0.75)),
+        ],
+        seeded,
+        22,
+        "v1.8",
+    )
+    assert len(p3["detected_items"]) == 3
+    assert 50 <= (p3["total_nutrition"]["calories_max"] - p3["total_nutrition"]["calories_min"]) <= 100
+    assert 50 <= sum(i["calories_max"] - i["calories_min"] for i in p3["detected_items"]) <= 100
+
+    # Mon phu it calo (<60 kcal) + nuoc ngot van giu tong khoang APK trong [50, 100]
+    p_low = build_response_payload(
+        [
+            Detection("DRINK_COLA", 0.93, (0.10, 0.20, 0.42, 0.85)),
+            Detection("GREEN_SALAD", 0.89, (0.55, 0.40, 0.85, 0.78)),
+        ],
+        seeded,
+        15,
+        "v1.8",
+    )
+    assert len(p_low["detected_items"]) == 2
+    assert 50 <= sum(i["calories_max"] - i["calories_min"] for i in p_low["detected_items"]) <= 100
+
+    # Cung lop: box lon trum toan khung (>0.70) bao boc box chat hon (<0.60) bi loai de giu box chat
+    kept_nested = food.suppress_cross_class_duplicates(
+        [
+            Detection("DRINK_BOTTLED_COFFEE", 0.82, (0.02, 0.01, 0.98, 0.99)),
+            Detection("DRINK_BOTTLED_COFFEE", 0.65, (0.25, 0.12, 0.66, 0.84)),
+        ]
+    )
+    assert len(kept_nested) == 1
+    assert kept_nested[0].bbox_norm == pytest.approx((0.25, 0.12, 0.66, 0.84))
+
+
 # --------------------------------------------------------------------------- #
 # ONNX letterbox & decode YOLOv8 output
 # --------------------------------------------------------------------------- #
@@ -644,7 +709,7 @@ def test_real_onnx_inference_end_to_end(client, monkeypatch):
     test_dir = next(
         (
             REPO_ROOT / "ai_research" / "datasets" / name / "images" / "test"
-            for name in ("model_b_v9", "model_b_v8", "model_b_v7", "model_b_v6", "model_b_v5", "model_b_v4", "model_b_v3", "model_b_v2")
+            for name in ("model_b_v11", "model_b_v10", "model_b_v9", "model_b_v8", "model_b_v7", "model_b_v6", "model_b_v5", "model_b_v4", "model_b_v3", "model_b_v2")
             if (REPO_ROOT / "ai_research" / "datasets" / name / "images" / "test").is_dir()
         ),
         REPO_ROOT / "ai_research" / "datasets" / "model_b_v2" / "images" / "test",
