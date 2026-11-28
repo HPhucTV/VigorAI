@@ -283,7 +283,7 @@ def test_seed_catalog_covers_all_core_classes():
     seeded = {e["class_code"]: e for e in FOOD_CATALOG_SEED}
     for e in food.EXTENDED_BEVERAGE_SNACK_CATALOG:
         seeded.setdefault(e["class_code"], e)
-    assert len(classes.CLASS_CODES) == 69
+    assert len(classes.CLASS_CODES) == 100
     for code in classes.CLASS_CODES:
         assert code in seeded, f"{code} thieu trong catalog"
         for key in ("name_vi", "kcal_per_100g", "protein_per_100g", "carbs_per_100g", "fat_per_100g", "default_serving_g"):
@@ -299,7 +299,7 @@ def test_branded_beverages_and_zero_calorie_mineral_water():
     assert water_items[0]["calories_max"] == 0
     assert water_items[0]["calories_range_label"] == "0 kcal"
 
-    for code in ("DRINK_COLA", "DRINK_CITRUS_SODA", "DRINK_ENERGY", "DRINK_SPORTS_ISOTONIC", "DRINK_BOTTLED_TEA", "DRINK_BOTTLED_COFFEE", "DRINK_MILK_CARTON", "DRINK_COCONUT_WATER", "DRINK_YOGURT_PROBIOTIC", "DRINK_BEER"):
+    for code in ("DRINK_COLA", "DRINK_CITRUS_SODA", "DRINK_ENERGY", "DRINK_SPORTS_ISOTONIC", "DRINK_BOTTLED_TEA", "DRINK_BOTTLED_COFFEE", "DRINK_MILK_CARTON", "DRINK_COCONUT_WATER", "DRINK_YOGURT_PROBIOTIC", "DRINK_BEER", "DRINK_SOY_NUT_MILK", "DRINK_KOMBUCHA_HERBAL", "DRINK_WINE_CIDER"):
         items = build_items([Detection(code, 0.9, (0.3, 0.1, 0.7, 0.9))], seeded)
         assert len(items) == 1
         item = items[0]
@@ -317,7 +317,7 @@ def test_manifest_json_is_valid_and_matches_core_classes():
     data = json.loads(manifest_path.read_text(encoding="utf-8"))
     assert data["model_version"]
     assert data["active_file"].endswith(".onnx")
-    assert len(data["classes"]) in (18, 30, 40, 50, 58, 69)
+    assert len(data["classes"]) in (18, 30, 40, 50, 58, 69, 100)
     assert data["imgsz"] == 640
 
 
@@ -644,7 +644,7 @@ def test_real_onnx_inference_end_to_end(client, monkeypatch):
     test_dir = next(
         (
             REPO_ROOT / "ai_research" / "datasets" / name / "images" / "test"
-            for name in ("model_b_v8", "model_b_v7", "model_b_v6", "model_b_v5", "model_b_v4", "model_b_v3", "model_b_v2")
+            for name in ("model_b_v9", "model_b_v8", "model_b_v7", "model_b_v6", "model_b_v5", "model_b_v4", "model_b_v3", "model_b_v2")
             if (REPO_ROOT / "ai_research" / "datasets" / name / "images" / "test").is_dir()
         ),
         REPO_ROOT / "ai_research" / "datasets" / "model_b_v2" / "images" / "test",
