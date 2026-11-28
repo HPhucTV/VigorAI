@@ -594,6 +594,132 @@ def test_api_returns_503_without_weights_when_stub_disabled(client, monkeypatch)
     assert _post(client).status_code == 503
 
 
+def test_api_bridges_to_upstream_when_local_weights_missing(client, monkeypatch):
+    class NoWeights:
+        available = False
+
+    monkeypatch.setattr(client.ai_router, "get_food_service", lambda: NoWeights())
+    monkeypatch.setenv("VIGOR_AI_UPSTREAM_URL", "https://vigorai-api-production.up.railway.app")
+    monkeypatch.setenv("RAILWAY_PUBLIC_DOMAIN", "vigorai-production.up.railway.app")
+
+    captured = {}
+
+    class _FakeUpstreamClient:
+        def __init__(self, timeout=10.0):
+            captured["timeout"] = timeout
+
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, *args):
+            return False
+
+        async def get(self, url, headers=None):
+            captured["get_url"] = url
+            captured["get_headers"] = headers
+            return SimpleNamespace(
+                status_code=200,
+                json=lambda: {
+                    "available": True,
+                    "backend": "onnxruntime",
+                    "model_version": "yolov8s-gymfood-v1.6",
+                    "model_file": "food_yolo_v1.onnx",
+                    "imgsz": 640,
+                    "conf_threshold": 0.30,
+                    "iou_threshold": 0.45,
+                    "cross_class_iou_threshold": 0.75,
+                    "supported_classes": ["WHITE_RICE", "AVOCADO"],
+                    "catalog_size": 77,
+                    "stub_fallback_enabled": False,
+                },
+            )
+
+        async def post(self, url, headers=None, files=None, data=None):
+            captured["post_url"] = url
+            captured["post_headers"] = headers
+            captured["meal_type"] = data["meal_type"]
+            return SimpleNamespace(
+                status_code=200,
+                json=lambda: {
+                    "inference_time_ms": 91,
+                    "model_version": "yolov8s-gymfood-v1.6",
+                    "detected_items": [
+                        {
+                            "class_code": "BEEF_PHO",
+                            "name_vi": "Phở bò tái",
+                            "confidence": 0.91,
+                            "bbox_norm": [0.1, 0.1, 0.9, 0.9],
+                            "estimated_grams": 450.0,
+                            "calories": 427.5,
+                            "calories_min": 340,
+                            "calories_max": 520,
+                            "calories_range_label": "~340 – 520 kcal",
+                            "protein_g": 24.8,
+                            "carbs_g": 58.5,
+                            "fat_g": 10.4,
+                        }
+                    ],
+                    "total_nutrition": {
+                        "calories": 427.5,
+                        "calories_min": 340,
+                        "calories_max": 520,
+                        "calories_range_label": "~340 – 520 kcal",
+                        "protein_g": 24.8,
+                        "carbs_g": 58.5,
+                        "fat_g": 10.4,
+                    },
+                    "disclaimer": "AI ước tính dựa trên ảnh.",
+                },
+            )
+
+    monkeypatch.setattr(client.ai_router.httpx, "AsyncClient", _FakeUpstreamClient)
+
+    info_resp = client.get("/api/v1/ai/food-model/info")
+    assert info_resp.status_code == 200
+    assert info_resp.json()["model_version"] == "yolov8s-gymfood-v1.6"
+    assert captured["get_headers"] == {"X-Vigor-AI-Forwarded": "1"}
+
+    analyze_resp = _post(client, b"fake-jpeg-bytes", meal_type="dinner")
+    assert analyze_resp.status_code == 200
+    body = analyze_resp.json()
+    assert body["model_version"] == "yolov8s-gymfood-v1.6"
+    assert body["detected_items"][0]["class_code"] == "BEEF_PHO"
+    assert captured["meal_type"] == "DINNER"
+    assert captured["post_headers"] == {"X-Vigor-AI-Forwarded": "1"}
+
+
+def test_api_production_blocks_self_loop_and_disables_default_stub(client, monkeypatch):
+    class NoWeights:
+        available = False
+        backend_name = "stub"
+
+        def info(self, catalog_size, stub_allowed):
+            return {
+                "available": False,
+                "backend": "stub",
+                "model_version": "unavailable",
+                "model_file": None,
+                "imgsz": 640,
+                "conf_threshold": 0.30,
+                "iou_threshold": 0.45,
+                "cross_class_iou_threshold": 0.75,
+                "supported_classes": [],
+                "catalog_size": catalog_size,
+                "stub_fallback_enabled": stub_allowed,
+            }
+
+    monkeypatch.setattr(client.ai_router, "get_food_service", lambda: NoWeights())
+    monkeypatch.setenv("RAILWAY_PUBLIC_DOMAIN", "vigorai-api-production.up.railway.app")
+    monkeypatch.delenv("VIGOR_AI_UPSTREAM_URL", raising=False)
+    monkeypatch.delenv("VIGOR_FOOD_ALLOW_STUB", raising=False)
+
+    # Khong tu goi lai chinh minh va khong tra du lieu gia tren Production -> 503 sach se
+    assert _post(client).status_code == 503
+    info_resp = client.get("/api/v1/ai/food-model/info")
+    assert info_resp.status_code == 200
+    assert info_resp.json()["stub_fallback_enabled"] is False
+
+
 def test_api_readiness_and_overload_contract(client):
     resp = client.get("/api/v1/ai/readiness-and-overload")
     assert resp.status_code == 200
