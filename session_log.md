@@ -17,7 +17,23 @@
 
 ---
 
-## Phiên 49 — 2026-11-28 21:00 | Thành viên: M4 (Pure AI Engineer) | Task: `T-M4-10` (`[x]`)
+## Phiên 52 — 2026-11-28 22:02 | Thành viên: M1 + M3 + M4 | Task: Xử lý Xung đột & Hợp nhất PR #24 (`vu` $\rightarrow$ `main`) — AI Model B `v1.8` + Cầu nối Railway Production
+- **Mục tiêu phiên:** Giải quyết toàn bộ xung đột khi hợp nhất PR #24 (`vu`, `364d199b` — AI Model B `v1.6`/`v1.7`/`v1.8` `100/100` lớp) vào `main` (`f1c9cfe` — kiểm toán Taskboard Phiên 47 + cầu nối AI `VIGOR_AI_UPSTREAM_URL` & khóa stub Production Phiên 48) mà không làm mất bất kỳ dữ liệu hay tính năng nào từ hai nhánh.
+- **Những file đã hợp nhất / xử lý (`0` file `[LOCKED STUB]` bị chạm):**
+  - `backend/tests/test_ai_api.py`: Bảo toàn đủ **`38` tests** gồm cả 2 bài test cầu nối upstream/khóa stub từ `main` (`f029892`) lẫn toàn bộ test Model B `v1.6`/`v1.7`/`v1.8` từ `vu` (bổ sung fallback `try/except ImportError` cho `FOOD_CATALOG_SEED` trong `test_calorie_range_is_tight_50_to_100_kcal_single_and_multi_item` khi chạy trên môi trường không cài `sqlalchemy`).
+  - `docs/taskboard.md`: Giữ nguyên bảng kiểm toán toàn repo của `main` (`39 / 63 Done (61.9%) · 8 [~] · 16 [ ]`, `T-M1-10` `[x]`) và cập nhật đồng bộ thông số Model B `v1.8` (`100/100` lớp, `103` catalog items, ONNX `mAP@0.5 = 0.9016`, `P = 86.19%`, `R = 84.53%`, `F1 = 85.36%`, CPU `97.99 ms`) trên hàng `M1`, `M4`, `T-M1-10`, `T-M4-10..14`.
+  - `session_log.md`: Giữ nguyên 100% nhật ký từ cả `main` và `vu` theo đúng thứ tự thời gian (`Phiên 47` $\rightarrow$ `Phiên 52`, có chú thích số phiên gốc trên từng nhánh).
+  - Bảo toàn nguyên vẹn `backend/app/routers/ai.py` + `mobile/lib/core/network/api_endpoints.dart` (`main`), `backend/app/services/ai_food_yolo.py` + `backend/ai_models/model_b_manifest.json` + `mobile/lib/features/health/food_scan/*` (`vu`) và thư mục `docs/figma_4_members/`.
+- **Kiểm tra / Kết quả chạy thử:**
+  - `python -m py_compile` (`ai_food_yolo.py`, `ai.py`, `test_ai_api.py`): Exit `0`.
+  - `python -m pytest backend/tests/test_ai_api.py -rs -q`: Exit `0` (`0` failed).
+  - `flutter analyze --no-fatal-infos` & `flutter test --no-pub test/health/ test/workout/`: Exit `0` (**`49 / 49` PASS**).
+- **Việc cần làm ở phiên kế tiếp:**
+  - Tiếp tục theo dõi Closed Testing (`T-M1-12` / `T-M2-06`) đủ 14 ngày để mở Production `v1.1.0` (`T-M2-12`), và triển khai **AI Model C** (`T-M4-05`, `T-M4-07`, `T-M4-08`).
+
+---
+
+## Phiên 51 (nhánh vu: Phiên 49) — 2026-11-28 21:00 | Thành viên: M4 (Pure AI Engineer) | Task: `T-M4-10` (`[x]`)
 
 ### Mục tiêu & Ngữ cảnh
 - Nâng cấp **AI Model B** lên **`yolov8s-gymfood-v1.8` (`100/100` lớp hoạt động, `103` mục catalog)** theo phản hồi 3 ảnh chụp thực tế từ app của người dùng để giải quyết triệt để 3 vấn đề:
@@ -52,7 +68,7 @@
 
 ---
 
-## Phiên 48 — 2026-11-28 15:05 | Thành viên: M4 (Pure AI Engineer) | Task: `T-M4-10` (`[x]`)
+## Phiên 50 (nhánh vu: Phiên 48) — 2026-11-28 15:05 | Thành viên: M4 (Pure AI Engineer) | Task: `T-M4-10` (`[x]`)
 
 ### Mục tiêu & Ngữ cảnh
 - Mở rộng **AI Model B** lên **`yolov8s-gymfood-v1.7` (`100/100` lớp hoạt động, `103` mục catalog dinh dưỡng)** để phủ đủ 5 lớp gym còn thiếu trong `FOOD_CATALOG_SEED` (`STIR_FRIED_BEEF`, `BOILED_CHICKEN_BREAST`, `TUNA_CANNED`, `PEANUT_BUTTER`, `WHOLE_WHEAT_BREAD`), 11 món ăn phổ biến Việt Nam (`BANH_BEO_BOT_LOC`, `BANH_TRANG_NUONG`, `BO_KHO`, `BUN_MAM`, `NEM_CHUA_NUONG`, `SUP_CUA`, `CA_CHIEN_NUONG`, `TRUNG_VIT_LON`, `OC_HAI_SAN`, `BANH_PIA_TRUNG_THU`, `CHE_TROINUOC`), 2 món quốc tế (`SUSHI_ROLL`, `SPAGHETTI_PASTA`), 10 rau củ/trái cây và 3 nhóm đồ uống mới (`DRINK_SOY_NUT_MILK`, `DRINK_KOMBUCHA_HERBAL`, `DRINK_WINE_CIDER`).
@@ -83,7 +99,28 @@
 
 ---
 
-## Phiên 47 — 2026-11-27 22:25 | Thành viên: M4 (Pure AI Engineer) | Task: `T-M4-10` (`[x]`)
+## Phiên 49 (nhánh main: Phiên 48) — 2026-11-28 10:56 | Thành viên: M1 + M3 + M4 | Task: Khắc phục bản `.aab` CH Play trả dữ liệu giả Ức gà + Cơm trắng trên `vigorai-production.up.railway.app` (`T-M1-10` `[x]`)
+- **Mục tiêu phiên:** Điều tra nguyên nhân bản `.aab` (`v1.0.0+2`) trên Google Play Closed Testing nhận diện ra dữ liệu mẫu `Ức gà áp chảo 93%` + `Cơm trắng 91%` (`~390 – 600 kcal`), và khắc phục ngay từ phía Server Railway để bản `.aab` hiện tại trên CH Play chạy AI YOLOv8 ONNX thật mà không cần đóng gói hay nộp duyệt lại `.aab`.
+- **Nguyên nhân gốc rễ xác định được:**
+  - Bản `.aab` trên CH Play được build với `API_BASE_URL=https://vigorai-production.up.railway.app` (service chính của M3), trong khi bản `.apk` test rời trỏ sang `https://vigorai-api-production.up.railway.app` (service AI riêng chứa S3 bucket trọng số `.onnx` của M4). Do `vigorai-production` chưa có file trọng số cục bộ và `VIGOR_FOOD_ALLOW_STUB` mặc định mở, `/api/v1/ai/food-analyze` rơi vào `_stub_food_response()`.
+- **Những file đã chỉnh sửa (`0` file `[LOCKED STUB]` bị chạm):**
+  - `backend/app/routers/ai.py`: Bổ sung cơ chế cầu nối `VIGOR_AI_UPSTREAM_URL` (mặc định trên Railway trỏ sang `https://vigorai-api-production.up.railway.app` kèm chống vòng lặp qua hostname + `RAILWAY_PUBLIC_DOMAIN` + header `X-Vigor-AI-Forwarded: 1`) khi container chưa gắn file `.onnx` cục bộ; tự động tắt `stub_fallback_enabled` trên môi trường Railway Production để tuyệt đối không trả kết quả `Ức gà + Cơm trắng` giả.
+  - `mobile/lib/core/network/api_endpoints.dart`: Bổ sung `productionBaseUrl = 'https://vigorai-production.up.railway.app'` làm mặc định tự động khi build `USE_MOCK_API=false` mà không truyền `API_BASE_URL`, thống nhất 1 domain duy nhất cho mọi bản `.apk`/`.aab` về sau.
+  - `backend/tests/test_ai_api.py`, `backend/ai_models/README.md`: Bổ sung 2 unit test cho cầu nối upstream, chặn vòng lặp và khóa stub trên Production.
+  - `docs/taskboard.md`, `session_log.md`: Đóng `[x]` `T-M1-10` (`39 / 63 Done — 61.9%`).
+- **Kiểm tra / Kết quả chạy thử:**
+  - `python -m pytest backend/tests/test_ai_api.py -rs -q` & FastAPI `TestClient` live bridge test: Exit `0`.
+  - `flutter analyze --no-fatal-infos` & `flutter test --no-pub`: Exit `0` (**`49 / 49` PASS**).
+  - **Xác minh Live trên `https://vigorai-production.up.railway.app` (`f029892`):**
+    - `GET /api/v1/ai/food-model/info`: `200 OK` (`available: true`, `backend: "onnxruntime"`, `model_version: "yolov8s-gymfood-v1.6"`, `catalog_size: 77`, `stub_fallback_enabled: false`).
+    - `POST /api/v1/ai/food-analyze` (ảnh trắng không có món ăn): `200 OK` (`detected_items: []`, `0 kcal` — hết hoàn toàn lỗi trả Ức gà + Cơm trắng giả).
+    - `GET /healthz` & `GET /delete-account`: `200 OK`.
+- **Việc cần làm ở phiên kế tiếp:**
+  - Người dùng mở trực tiếp app tải từ CH Play chụp thử món ăn để nghiệm thu AI thật; M4 tiếp tục huấn luyện mở rộng Model B và triển khai **AI Model C** (`T-M4-05`, `T-M4-07`, `T-M4-08`).
+
+---
+
+## Phiên 48 (nhánh vu: Phiên 47) — 2026-11-27 22:25 | Thành viên: M4 (Pure AI Engineer) | Task: `T-M4-10` (`[x]`)
 
 ### Mục tiêu & Ngữ cảnh
 - Mở rộng **AI Model B** lên **`v1.6` (`69/69` lớp hoạt động)** để phủ kín 2 lớp bị bỏ trống từ trước (`BROWN_RICE`, `SWEET_POTATO`), 8 món ăn Gym/healthy đã có trong `FOOD_CATALOG_SEED` (`AVOCADO`, `CUCUMBER`, `CHERRY_TOMATO`, `LEAN_PORK`, `ALMONDS`, `OATMEAL`, `GREEK_YOGURT`, `WHEY_SHAKE`) và 3 nhóm đồ uống phổ biến (`DRINK_COCONUT_WATER`, `DRINK_YOGURT_PROBIOTIC`, `DRINK_BEER`).
@@ -110,6 +147,21 @@
 - `prepare_dataset.py --validate-only`: pass (`69/69` lớp, 0 lỗi).
 - `pytest backend/tests/test_ai_api.py -v`: `35 passed in 3.29s`.
 - Live HTTPS `GET /api/v1/ai/food-model/info` & `POST /api/v1/ai/food-analyze`: pass.
+
+---
+
+## Phiên 47 — 2026-11-27 18:00 | Thành viên: M1 + M2 + M3 (Kiểm toán toàn Repo) | Task: Rà soát toàn bộ Codebase sau PR #22 (`d237645`) & Đồng bộ `docs/taskboard.md`
+- **Mục tiêu phiên:** Đọc rà soát toàn bộ codebase 4 phân hệ (`mobile/`, `backend/`, `assets_3d/`, `ai_research/`, `docs/`) trên bản mới nhất `d237645` (sau khi pull PR #22 — AI Model B `v1.5`), đối chiếu từng task trên `docs/taskboard.md` với Definition of Done thực tế và push lên GitHub (`HPhucTV`).
+- **Những file đã cập nhật (`0` file `[LOCKED STUB]` bị chạm):**
+  - `docs/taskboard.md`: Đồng bộ dashboard (`38 / 63 Done (60.3%)`, `9 [~]`, `16 [ ]`), cập nhật số liệu mới nhất (`targetSdk 36`, `39/39` bài 3D, `8` Avatar Nam/Nữ, `36` món + `39` bài + `4` giáo án DB seed, `T-M1-10` đang chờ đồng bộ env AI sang `vigorai-production.up.railway.app`, đánh dấu `[~]` thực chất cho `T-M3-12`, `T-M4-12`, `T-M4-13`, `T-M1-16`, `T-M2-16`, `T-M3-14`).
+  - `session_log.md`: Ghi nhật ký Phiên 47.
+- **Kiểm tra / Kết quả chạy thử:**
+  - `flutter test --no-pub test/health/` (`27/27 PASS`) & `flutter test --no-pub test/workout/` (`22/22 PASS`, tổng `49/49 PASS`).
+  - `python -m pytest backend/tests/test_ai_api.py -rs -q`: `24 passed, 11 skipped` (35 tests collected; skip do môi trường Windows local thiếu `sqlalchemy`/`onnxruntime`).
+  - Live Railway verification: `vigorai-production.up.railway.app` (`/healthz` `200`, `/delete-account` `200`, `/api/v1/ai/food-model/info` hiện trả `stub` vì chưa đồng bộ biến S3/ONNX); `vigorai-api-production.up.railway.app/api/v1/ai/food-model/info` đang chạy `yolov8s-gymfood-v1.5` (`onnxruntime`, `catalog_size: 74`).
+- **Việc cần làm ở phiên kế tiếp:**
+  - Đồng bộ biến môi trường `VIGOR_FOOD_MODEL_URL` / `S3_ADDRESSING_STYLE=virtual` / `VIGOR_FOOD_ALLOW_STUB=0` sang backend chính `vigorai-production.up.railway.app` để đóng `[x]` `T-M1-10`.
+  - Theo dõi duyệt Closed Testing (`T-M2-06`) đủ 14 ngày (`T-M1-12`) để phát hành Production `v1.1.0` (`T-M2-12`), và hoàn thiện **AI Model C** (`T-M4-05`, `T-M4-07`, `T-M4-08`).
 
 ---
 

@@ -9,7 +9,8 @@
   2. Điền `download_url` + `sha256` trong `model_b_manifest.json` hoặc đặt biến môi trường:
      - `VIGOR_FOOD_MODEL_URL=s3://gym3d-assets/ai_models/food_yolo_v1.onnx` *(Railway Storage Bucket private, dùng `S3_*` hoặc `AWS_*`)* hoặc `https://.../food_yolo_v1.onnx`
      - `VIGOR_FOOD_MODEL_SHA256=<sha256>` *(tùy chọn, khuyến nghị)*
-     - `VIGOR_FOOD_ALLOW_STUB=0` *(tắt dữ liệu giả khi lên Production)*
+     - `VIGOR_FOOD_ALLOW_STUB=0` *(mặc định tự động tắt trên Railway Production để không bao giờ trả kết quả Ức gà + Cơm trắng giả)*
+     - `VIGOR_AI_UPSTREAM_URL=https://vigorai-api-production.up.railway.app` *(mặc định bật tự động trên Railway khi service chính `vigorai-production` chưa gắn bucket trọng số `.onnx` riêng, giúp bản `.aab` trên CH Play luôn chạy model ONNX mới nhất của `M4`)*
      - `VIGOR_FOOD_CONF=0.30` *(tùy chọn)*
      - `VIGOR_FOOD_IOU=0.45` *(tùy chọn)*
   3. Server cần tối thiểu `onnxruntime`, `numpy`, `pillow` (đã có trong `backend/requirements.txt`; với `backend/Dockerfile.railway` của `M3`, bật `INSTALL_AI_DEPS=true` hoặc cài 3 gói nhẹ này cho nhánh ONNX).

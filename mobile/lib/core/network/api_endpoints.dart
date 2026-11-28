@@ -2,16 +2,23 @@
 class ApiEndpoints {
   ApiEndpoints._();
 
-  static const String baseUrl = String.fromEnvironment(
-    'API_BASE_URL',
-    defaultValue: 'http://10.0.2.2:8000',
-  );
+  /// Domain Production chuẩn duy nhất trên Railway (phục vụ cả Core DB, 3D GLB & AI).
+  static const String productionBaseUrl =
+      'https://vigorai-production.up.railway.app';
 
-  // Bat false khi ket noi FastAPI that (Staging / Docker local)
+  // Bật false khi kết nối FastAPI thật (Production / Staging / Docker local)
   static const bool useMockApi = bool.fromEnvironment(
     'USE_MOCK_API',
     defaultValue: true,
   );
+
+  static const String _envBaseUrl = String.fromEnvironment('API_BASE_URL');
+
+  /// Khi `USE_MOCK_API=false` mà không truyền `API_BASE_URL`, tự động trỏ về
+  /// `productionBaseUrl` để đồng nhất 1 domain duy nhất giữa `.aab` và `.apk`.
+  static const String baseUrl = _envBaseUrl != ''
+      ? _envBaseUrl
+      : (useMockApi ? 'http://10.0.2.2:8000' : productionBaseUrl);
 
   // Auth & CH Play Compliance (M3 & M1)
   static const String register = '/api/v1/auth/register';
