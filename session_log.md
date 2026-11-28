@@ -17,6 +17,27 @@
 
 ---
 
+## Phiên 48 — 2026-11-28 10:56 | Thành viên: M1 + M3 + M4 | Task: Khắc phục bản `.aab` CH Play trả dữ liệu giả Ức gà + Cơm trắng trên `vigorai-production.up.railway.app` (`T-M1-10` `[x]`)
+- **Mục tiêu phiên:** Điều tra nguyên nhân bản `.aab` (`v1.0.0+2`) trên Google Play Closed Testing nhận diện ra dữ liệu mẫu `Ức gà áp chảo 93%` + `Cơm trắng 91%` (`~390 – 600 kcal`), và khắc phục ngay từ phía Server Railway để bản `.aab` hiện tại trên CH Play chạy AI YOLOv8 ONNX thật mà không cần đóng gói hay nộp duyệt lại `.aab`.
+- **Nguyên nhân gốc rễ xác định được:**
+  - Bản `.aab` trên CH Play được build với `API_BASE_URL=https://vigorai-production.up.railway.app` (service chính của M3), trong khi bản `.apk` test rời trỏ sang `https://vigorai-api-production.up.railway.app` (service AI riêng chứa S3 bucket trọng số `.onnx` của M4). Do `vigorai-production` chưa có file trọng số cục bộ và `VIGOR_FOOD_ALLOW_STUB` mặc định mở, `/api/v1/ai/food-analyze` rơi vào `_stub_food_response()`.
+- **Những file đã chỉnh sửa (`0` file `[LOCKED STUB]` bị chạm):**
+  - `backend/app/routers/ai.py`: Bổ sung cơ chế cầu nối `VIGOR_AI_UPSTREAM_URL` (mặc định trên Railway trỏ sang `https://vigorai-api-production.up.railway.app` kèm chống vòng lặp qua hostname + `RAILWAY_PUBLIC_DOMAIN` + header `X-Vigor-AI-Forwarded: 1`) khi container chưa gắn file `.onnx` cục bộ; tự động tắt `stub_fallback_enabled` trên môi trường Railway Production để tuyệt đối không trả kết quả `Ức gà + Cơm trắng` giả.
+  - `mobile/lib/core/network/api_endpoints.dart`: Bổ sung `productionBaseUrl = 'https://vigorai-production.up.railway.app'` làm mặc định tự động khi build `USE_MOCK_API=false` mà không truyền `API_BASE_URL`, thống nhất 1 domain duy nhất cho mọi bản `.apk`/`.aab` về sau.
+  - `backend/tests/test_ai_api.py`, `backend/ai_models/README.md`: Bổ sung 2 unit test cho cầu nối upstream, chặn vòng lặp và khóa stub trên Production.
+  - `docs/taskboard.md`, `session_log.md`: Đóng `[x]` `T-M1-10` (`39 / 63 Done — 61.9%`).
+- **Kiểm tra / Kết quả chạy thử:**
+  - `python -m pytest backend/tests/test_ai_api.py -rs -q` & FastAPI `TestClient` live bridge test: Exit `0`.
+  - `flutter analyze --no-fatal-infos` & `flutter test --no-pub`: Exit `0` (**`49 / 49` PASS**).
+  - **Xác minh Live trên `https://vigorai-production.up.railway.app` (`f029892`):**
+    - `GET /api/v1/ai/food-model/info`: `200 OK` (`available: true`, `backend: "onnxruntime"`, `model_version: "yolov8s-gymfood-v1.6"`, `catalog_size: 77`, `stub_fallback_enabled: false`).
+    - `POST /api/v1/ai/food-analyze` (ảnh trắng không có món ăn): `200 OK` (`detected_items: []`, `0 kcal` — hết hoàn toàn lỗi trả Ức gà + Cơm trắng giả).
+    - `GET /healthz` & `GET /delete-account`: `200 OK`.
+- **Việc cần làm ở phiên kế tiếp:**
+  - Người dùng mở trực tiếp app tải từ CH Play chụp thử món ăn để nghiệm thu AI thật; M4 tiếp tục huấn luyện mở rộng Model B và triển khai **AI Model C** (`T-M4-05`, `T-M4-07`, `T-M4-08`).
+
+---
+
 ## Phiên 47 — 2026-11-27 18:00 | Thành viên: M1 + M2 + M3 (Kiểm toán toàn Repo) | Task: Rà soát toàn bộ Codebase sau PR #22 (`d237645`) & Đồng bộ `docs/taskboard.md`
 - **Mục tiêu phiên:** Đọc rà soát toàn bộ codebase 4 phân hệ (`mobile/`, `backend/`, `assets_3d/`, `ai_research/`, `docs/`) trên bản mới nhất `d237645` (sau khi pull PR #22 — AI Model B `v1.5`), đối chiếu từng task trên `docs/taskboard.md` với Definition of Done thực tế và push lên GitHub (`HPhucTV`).
 - **Những file đã cập nhật (`0` file `[LOCKED STUB]` bị chạm):**
